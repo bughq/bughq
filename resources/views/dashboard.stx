@@ -243,7 +243,18 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
    and never match. */
 a.pill:hover, button.pill:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, transparent); }
 a.pill:active, button.pill:active { transform: translateY(1px); }
-select.panel { transition: border-color 0.15s ease; cursor: pointer; }
+/* Project dropdown: replace the native select chevron (which hugged the rounded
+   border) with a custom one that has a comfortable inset + room for the value. */
+select.panel {
+  transition: border-color 0.15s ease; cursor: pointer;
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  padding-right: 2rem; background-repeat: no-repeat;
+  background-position: right 0.7rem center; background-size: 13px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2397a1b2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) { select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); } }
+:root[data-theme="dark"] select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
+:root[data-theme="light"] select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2397a1b2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
 select.panel:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
 /* JS-injected chrome (Log out / Upgrade): inline styles cannot hover, so the
    colors live here and the script only sets position/typography inline. */
@@ -272,11 +283,11 @@ summary::-webkit-details-marker { display: none; }
   <div class="max-w-5xl mx-auto">
 
     @if (!user)
-      <div id="auth-pending" class="text-center py-24 text-sm" style="color: var(--text-3)">Loading…</div>
+      <div id="auth-pending" class="text-center py-24 text-sm text-subtle">Loading…</div>
     @endif
 
     @if (user && needsOnboarding)
-      <div class="text-center py-24 text-sm" style="color: var(--text-3)">Setting up your workspace…</div>
+      <div class="text-center py-24 text-sm text-subtle">Setting up your workspace…</div>
       <script>window.location.replace('/projects/new')</script>
     @endif
 
@@ -288,8 +299,8 @@ summary::-webkit-details-marker { display: none; }
           <div class="panel flex flex-wrap items-center gap-3 px-5 py-3.5 mb-2.5" style="border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, var(--panel))" data-token="{{ inv.token }}">
             <span class="text-sm">🎉 You've been invited to <span class="font-semibold">{{ inv.project_name }}</span>.</span>
             <div class="ml-auto flex items-center gap-2">
-              <button class="js-invite-join pill px-4 py-1.5 text-sm font-semibold border" style="color:#fff; background:var(--accent); border-color:var(--accent)">Join</button>
-              <button class="js-invite-dismiss pill px-3 py-1.5 text-sm border" style="color:var(--text-3); border-color:var(--border)" title="Hide for now">Dismiss</button>
+              <button class="js-invite-join pill px-4 py-1.5 text-sm font-semibold border bg-accent border-accent" style="color:#fff">Join</button>
+              <button class="js-invite-dismiss pill px-3 py-1.5 text-sm border text-subtle border-line" title="Hide for now">Dismiss</button>
             </div>
           </div>
         @endforeach
@@ -302,16 +313,16 @@ summary::-webkit-details-marker { display: none; }
         <a href="/projects" class="wordmark-link"><h1 class="wordmark text-2xl md:text-[28px] leading-none">bughq</h1></a>
         @if (projects.length > 1)
           <select onchange="document.cookie = 'bughq_project=' + encodeURIComponent(this.value) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : ''); location.href = '{{ pageUrl({ page: 1 }) }}'"
-                  class="panel mono px-3 py-1.5 text-sm" style="color: var(--text-2)">
+                  class="panel mono px-3 py-1.5 text-sm text-muted">
             @foreach (projects as p)
               <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}{{ p.is_active === false ? ' (archived)' : '' }}</option>
             @endforeach
           </select>
         @else
-          <span class="mono text-sm" style="color: var(--text-2)">{{ activeProject.name }}{{ activeProject.is_active === false ? ' (archived)' : '' }}</span>
+          <span class="mono text-sm text-muted">{{ activeProject.name }}{{ activeProject.is_active === false ? ' (archived)' : '' }}</span>
         @endif
-        <a href="/projects" class="pill px-3 py-1.5 text-sm font-medium border" style="color: var(--text-2); border-color: var(--border)">All apps</a>
-        <a href="/projects/new" class="pill px-3 py-1.5 text-sm font-medium border" style="color: var(--text-2); border-color: var(--border)">+ New app</a>
+        <a href="/projects" class="pill px-3 py-1.5 text-sm font-medium border text-muted border-line">All apps</a>
+        <a href="/projects/new" class="pill px-3 py-1.5 text-sm font-medium border text-muted border-line">+ New app</a>
         <button id="theme-toggle" class="icon-btn theme-btn" title="Toggle theme" aria-label="Toggle theme">
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -336,33 +347,33 @@ summary::-webkit-details-marker { display: none; }
     </header>
 
     @if (!live)
-      <div class="panel px-4 py-3 mb-8 text-sm reveal" style="color: var(--text-2)">
-        <span class="font-semibold" style="color: var(--text)">Waiting for data.</span> Make sure Postgres is provisioned.
+      <div class="panel px-4 py-3 mb-8 text-sm reveal text-muted">
+        <span class="font-semibold text-ink">Waiting for data.</span> Make sure Postgres is provisioned.
       </div>
     @endif
 
     <!-- Stats: hairline-separated, mono numerics, no heavy card chrome -->
-    <div class="panel grid grid-cols-3 divide-x mb-8 reveal" style="border-color: var(--border)">
+    <div class="panel grid grid-cols-3 divide-x mb-8 reveal border-line">
       @foreach (stats as s)
-        <div class="px-5 py-5" style="border-color: var(--border)">
-          <div class="text-xs font-medium uppercase tracking-wider mb-2" style="color: var(--text-3)">{{ s.label }}</div>
+        <div class="px-5 py-5 border-line">
+          <div class="text-xs font-medium uppercase tracking-wider mb-2 text-subtle">{{ s.label }}</div>
           <div class="mono text-3xl font-semibold tracking-tight">{{ s.value }}</div>
         </div>
       @endforeach
     </div>
 
     <section class="panel overflow-hidden reveal">
-      <div class="flex items-center justify-between px-5 py-3.5 border-b" style="border-color: var(--border)">
-        <span class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-3)">Issues</span>
-        <span class="mono text-xs" style="color: var(--text-3)">{{ pager.total === 0 ? 'none' : `${pager.from}-${pager.to} of ${pager.total.toLocaleString()}` }}</span>
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-line">
+        <span class="text-xs font-semibold uppercase tracking-wider text-subtle">Issues</span>
+        <span class="mono text-xs text-subtle">{{ pager.total === 0 ? 'none' : `${pager.from}-${pager.to} of ${pager.total.toLocaleString()}` }}</span>
       </div>
 
       @forelse (issues as issue)
-        <a href="/issue/{{ issue.id }}" class="row-link flex items-center gap-4 px-5 py-4 border-b" style="border-color: var(--border)">
+        <a href="/issue/{{ issue.id }}" class="row-link flex items-center gap-4 px-5 py-4 border-b border-line">
           <span class="w-1 h-11 rounded-full shrink-0" style="background: {{ levelColor(issue.level) }}"></span>
           <div class="min-w-0 flex-1">
             <div class="font-medium truncate" style="letter-spacing: -0.01em">{{ issue.title }}</div>
-            <div class="flex items-center gap-2 mt-1 text-xs" style="color: var(--text-3)">
+            <div class="flex items-center gap-2 mt-1 text-xs text-subtle">
               <span class="font-semibold uppercase tracking-wide" style="color: {{ levelColor(issue.level) }}">{{ levelLabel(issue.level) }}</span>
               <span aria-hidden="true">/</span>
               <span class="mono truncate">{{ issue.culprit || issue.error_type }}</span>
@@ -370,35 +381,35 @@ summary::-webkit-details-marker { display: none; }
           </div>
           <div class="text-right shrink-0">
             <div class="mono font-semibold tabular-nums">{{ Number(issue.count).toLocaleString() }}</div>
-            <div class="text-xs mt-0.5" style="color: var(--text-3)">
+            <div class="text-xs mt-0.5 text-subtle">
               <span class="mono">{{ Number(issue.users_affected || 0).toLocaleString() }}</span> users
             </div>
           </div>
           <div class="hidden sm:block text-right shrink-0 w-20">
-            <div class="text-xs" style="color: var(--text-3)">{{ fromNow(issue.last_seen) }}</div>
+            <div class="text-xs text-subtle">{{ fromNow(issue.last_seen) }}</div>
           </div>
         </a>
       @empty
         <div class="px-5 py-16 text-center">
           <div class="text-base font-medium mb-1">No {{ statusFilter === 'all' ? '' : statusFilter }} issues{{ activeRange.interval ? ` in the last ${activeRange.interval}` : '' }}</div>
-          <div class="text-sm" style="color: var(--text-3)">Nothing to triage right now. New errors land here as they are captured.</div>
+          <div class="text-sm text-subtle">Nothing to triage right now. New errors land here as they are captured.</div>
         </div>
       @endforelse
 
       @if (pager.pages > 1)
         <div class="flex items-center justify-between px-5 py-3.5">
-          <span class="mono text-xs" style="color: var(--text-3)">{{ pager.from }}-{{ pager.to }} of {{ pager.total.toLocaleString() }}</span>
+          <span class="mono text-xs text-subtle">{{ pager.from }}-{{ pager.to }} of {{ pager.total.toLocaleString() }}</span>
           <div class="flex items-center gap-2">
             @if (pager.hasPrev)
-              <a href="{{ pager.prevHref }}" class="pill px-3 py-1.5 text-xs font-medium border" style="color: var(--text-2); border-color: var(--border)">&larr; Prev</a>
+              <a href="{{ pager.prevHref }}" class="pill px-3 py-1.5 text-xs font-medium border text-muted border-line">&larr; Prev</a>
             @else
-              <span class="pill px-3 py-1.5 text-xs font-medium border" style="color: var(--text-3); border-color: var(--border); opacity: 0.45">&larr; Prev</span>
+              <span class="pill px-3 py-1.5 text-xs font-medium border text-subtle border-line" style="opacity: 0.45">&larr; Prev</span>
             @endif
-            <span class="mono text-xs tabular-nums" style="color: var(--text-3)">{{ pager.page }} / {{ pager.pages }}</span>
+            <span class="mono text-xs tabular-nums text-subtle">{{ pager.page }} / {{ pager.pages }}</span>
             @if (pager.hasNext)
-              <a href="{{ pager.nextHref }}" class="pill px-3 py-1.5 text-xs font-medium border" style="color: var(--text-2); border-color: var(--border)">Next &rarr;</a>
+              <a href="{{ pager.nextHref }}" class="pill px-3 py-1.5 text-xs font-medium border text-muted border-line">Next &rarr;</a>
             @else
-              <span class="pill px-3 py-1.5 text-xs font-medium border" style="color: var(--text-3); border-color: var(--border); opacity: 0.45">Next &rarr;</span>
+              <span class="pill px-3 py-1.5 text-xs font-medium border text-subtle border-line" style="opacity: 0.45">Next &rarr;</span>
             @endif
           </div>
         </div>
@@ -407,12 +418,12 @@ summary::-webkit-details-marker { display: none; }
     @else
       <div class="text-center py-20">
         <a href="/projects" data-no-router class="wordmark-link"><h1 class="wordmark text-2xl mb-3">bughq</h1></a>
-        <p class="text-sm" style="color: var(--text-3)">Accept an invitation above to get started, or <a href="/projects/new" data-no-router style="color: var(--accent)">create your own app</a>.</p>
+        <p class="text-sm text-subtle">Accept an invitation above to get started, or <a href="/projects/new" data-no-router class="text-accent">create your own app</a>.</p>
       </div>
     @endif
     @endif
 
-    <footer class="mt-12 text-center text-xs" style="color: var(--text-3)">
+    <footer class="mt-12 text-center text-xs text-subtle">
       Error tracking on Stacks and Postgres. <span class="mono">bughq.org</span>
     </footer>
 
