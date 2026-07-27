@@ -96,7 +96,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 
     <div class="text-center mb-8">
       <h1 class="text-xl font-semibold tracking-tight">Create your first app</h1>
-      <p class="text-sm mt-2" style="color: var(--text-3)">Each app gets its own error stream and ingest key.</p>
+      <p class="text-sm mt-2 text-subtle">Each app gets its own error stream and ingest key.</p>
     </div>
 
     <form @submit="handleSubmit" class="space-y-4">
@@ -105,11 +105,11 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       @endif
 
       <div>
-        <label class="block text-xs font-medium mb-1.5" style="color: var(--text-2)">App name</label>
+        <label class="block text-xs font-medium mb-1.5 text-muted">App name</label>
         <input name="name" type="text" required autofocus placeholder="Acme Web" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
       <div>
-        <label class="block text-xs font-medium mb-1.5" style="color: var(--text-2)">Platform</label>
+        <label class="block text-xs font-medium mb-1.5 text-muted">Platform</label>
         <select name="platform" class="field w-full px-3.5 py-2.5 text-sm">
           <option value="javascript">JavaScript / Browser</option>
           <option value="node">Node.js</option>

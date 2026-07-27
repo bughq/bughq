@@ -100,7 +100,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
   <div class="w-full max-w-sm">
     <div class="text-center mb-8">
       <a href="/" class="wordmark text-2xl">bughq</a>
-      <p class="text-sm mt-2" style="color: var(--text-3)">Create your account</p>
+      <p class="text-sm mt-2 text-subtle">Create your account</p>
     </div>
 
     <form @submit="handleSubmit" class="space-y-4">
@@ -109,15 +109,15 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       @endif
 
       <div>
-        <label class="block text-xs font-medium mb-1.5" style="color: var(--text-2)">Name</label>
+        <label class="block text-xs font-medium mb-1.5 text-muted">Name</label>
         <input name="name" type="text" required autocomplete="name" placeholder="Ada Lovelace" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
       <div>
-        <label class="block text-xs font-medium mb-1.5" style="color: var(--text-2)">Email</label>
+        <label class="block text-xs font-medium mb-1.5 text-muted">Email</label>
         <input name="email" type="email" required autocomplete="email" placeholder="you@example.com" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
       <div>
-        <label class="block text-xs font-medium mb-1.5" style="color: var(--text-2)">Password</label>
+        <label class="block text-xs font-medium mb-1.5 text-muted">Password</label>
         <input name="password" type="password" required autocomplete="new-password" placeholder="At least 8 characters" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
 
@@ -145,9 +145,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     </div>
     @endif
 
-    <p class="text-center text-sm mt-6" style="color: var(--text-3)">
+    <p class="text-center text-sm mt-6 text-subtle">
       Already have an account?
-      <a href="/login" class="font-medium" style="color: var(--accent)">Sign in</a>
+      <a href="/login" class="font-medium text-accent">Sign in</a>
     </p>
   </div>
 </div>

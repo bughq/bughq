@@ -209,7 +209,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     </header>
 
     @if (!user)
-      <div class="text-center py-24 text-sm" style="color: var(--text-3)">Loading…</div>
+      <div class="text-center py-24 text-sm text-subtle">Loading…</div>
     @endif
 
     @if (needsOnboarding)
@@ -221,16 +221,16 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
         <div class="flex items-center gap-3 flex-wrap">
           <h2 class="text-xl font-semibold" style="letter-spacing:-0.02em">Settings</h2>
           @if (projects.length > 1)
-            <select id="proj-switch" class="panel mono px-3 py-1.5 text-sm" style="color: var(--text-2)">
+            <select id="proj-switch" class="panel mono px-3 py-1.5 text-sm text-muted">
               @foreach (projects as p)
                 <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}</option>
               @endforeach
             </select>
           @else
-            <span class="mono text-sm" style="color: var(--text-2)">{{ activeProject.name }}</span>
+            <span class="mono text-sm text-muted">{{ activeProject.name }}</span>
           @endif
         </div>
-        <p class="text-sm mt-1.5" style="color: var(--text-3)">Manage the API key, team, alerts, and deletion for this project.</p>
+        <p class="text-sm mt-1.5 text-subtle">Manage the API key, team, alerts, and deletion for this project.</p>
       </div>
 
       <nav class="tabnav flex items-center gap-2 mb-8 text-sm">
@@ -246,7 +246,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
         <div class="sec-title mb-3">Install</div>
         <div class="panel px-5 py-5">
           <div class="flex items-center justify-between gap-3 mb-3.5">
-            <p class="text-sm" style="color: var(--text-3)">Wire bughq into <span class="mono" style="color: var(--text-2)">{{ activeProject.name }}</span> to start capturing errors — they group into issues automatically.</p>
+            <p class="text-sm text-subtle">Wire bughq into <span class="mono text-muted">{{ activeProject.name }}</span> to start capturing errors — they group into issues automatically.</p>
             <span class="badge badge-soft shrink-0">{{ guide.label }}</span>
           </div>
           @if (guide.install)
@@ -266,8 +266,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       <section id="keys" class="sec mb-10">
         <div class="sec-title mb-3">API key</div>
         <div class="panel px-5 py-5">
-          <p class="text-sm mb-4" style="color: var(--text-3)">
-            This key authorizes error reports for <span class="mono" style="color: var(--text-2)">{{ activeProject.name }}</span>.
+          <p class="text-sm mb-4 text-subtle">
+            This key authorizes error reports for <span class="mono text-muted">{{ activeProject.name }}</span>.
             It's a public identifier (safe to ship in client code), not a secret — it says <em>which</em> project a report belongs to.
           </p>
           <div class="flex items-center gap-2 flex-wrap">
@@ -276,7 +276,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
             <button id="key-copy" class="btn-ghost px-3 py-2 text-sm font-medium">Copy</button>
             <button id="key-rotate" class="btn-danger px-3 py-2 text-sm font-medium">Rotate</button>
           </div>
-          <p class="text-xs mt-3.5 leading-relaxed" style="color: var(--text-3)">
+          <p class="text-xs mt-3.5 leading-relaxed text-subtle">
             Rotating generates a new key and <span style="color: var(--warn)">invalidates the current one immediately</span> — any SDK still sending the old key will get 401 until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
           </p>
           <span id="key-note" class="note text-xs mt-2"></span>
@@ -292,16 +292,16 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
             <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold badge-owner">{{ (ownerEmail || '?').charAt(0).toUpperCase() }}</span>
             <div class="min-w-0 flex-1">
               <div class="text-sm font-medium truncate">{{ ownerEmail }}</div>
-              <div class="text-xs mt-0.5" style="color: var(--text-3)">Full access</div>
+              <div class="text-xs mt-0.5 text-subtle">Full access</div>
             </div>
             <span class="badge badge-owner">Owner</span>
           </div>
           @foreach (memberView as m)
             <div class="panel flex items-center gap-3.5 px-4 py-3.5" data-member="{{ m.id }}">
-              <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold" style="background: color-mix(in srgb, var(--text-3) 16%, var(--panel)); color: var(--text-2)">{{ (m.email || '?').charAt(0).toUpperCase() }}</span>
+              <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold text-muted" style="background: color-mix(in srgb, var(--text-3) 16%, var(--panel))">{{ (m.email || '?').charAt(0).toUpperCase() }}</span>
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium truncate">{{ m.email }}</div>
-                <div class="text-xs mt-0.5" style="color: var(--text-3)">Can view &amp; triage issues</div>
+                <div class="text-xs mt-0.5 text-subtle">Can view &amp; triage issues</div>
               </div>
               <span class="badge badge-soft">Member</span>
               <button class="js-member-remove btn-danger px-2.5 py-1.5 text-xs font-medium" title="Remove">Remove</button>
@@ -309,10 +309,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
           @endforeach
           @foreach (inviteView as i)
             <div class="panel flex items-center gap-3.5 px-4 py-3.5" data-member="{{ i.id }}" data-join="{{ i.join }}">
-              <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold" style="background: color-mix(in srgb, var(--text-3) 12%, var(--panel)); color: var(--text-3)">{{ (i.email || '?').charAt(0).toUpperCase() }}</span>
+              <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold text-subtle" style="background: color-mix(in srgb, var(--text-3) 12%, var(--panel))">{{ (i.email || '?').charAt(0).toUpperCase() }}</span>
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium truncate">{{ i.email }}</div>
-                <div class="text-xs mt-0.5" style="color: var(--text-3)">{{ i.registered ? 'Has an account — pending accept' : 'Invite sent — awaiting sign-up' }}</div>
+                <div class="text-xs mt-0.5 text-subtle">{{ i.registered ? 'Has an account — pending accept' : 'Invite sent — awaiting sign-up' }}</div>
               </div>
               <span class="badge badge-pending" title="Pending — becomes a member once they accept">Invited</span>
               <button class="js-copy-join btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Copy join link">Copy link</button>
@@ -327,7 +327,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
             <button id="invite-add" class="btn px-4 py-2.5 text-sm font-semibold">Invite</button>
           </div>
           <span id="invite-note" class="note text-xs mt-2.5"></span>
-          <p class="text-xs mt-3.5 leading-relaxed" style="color: var(--text-3)">
+          <p class="text-xs mt-3.5 leading-relaxed text-subtle">
             We email them a join link. They sign up (or log in) with that email, then accept from a banner in the app. Members can view and triage issues; only you can manage keys, members, and deletion.
           </p>
         </div>
@@ -336,7 +336,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       <!-- ============================ ALERTS ============================ -->
       <section id="alerts" class="sec mb-10">
         <div class="sec-title mb-3">Alerts</div>
-        <p class="text-sm mb-4" style="color: var(--text-3)">
+        <p class="text-sm mb-4 text-subtle">
           Get pinged in Slack or Discord on a new issue or a regression. The project owner is always emailed too.
         </p>
         <div id="channel-list" class="flex flex-col gap-2.5 mb-4">
@@ -345,7 +345,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
               <span class="badge badge-{{ c.type }}">{{ c.type === 'slack' ? 'Slack' : 'Discord' }}</span>
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium truncate">{{ c.label }}</div>
-                <div class="text-xs mono truncate mt-0.5" style="color: var(--text-3)">{{ c.mask }}</div>
+                <div class="text-xs mono truncate mt-0.5 text-subtle">{{ c.mask }}</div>
               </div>
               <button class="js-test btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Send a test message">Test</button>
               <div class="js-toggle tgl" data-on="{{ c.enabled ? '1' : '0' }}" role="switch" aria-checked="{{ c.enabled ? 'true' : 'false' }}" title="Enable / disable"></div>
@@ -354,7 +354,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
           @empty
             <div class="panel px-5 py-8 text-center">
               <div class="text-sm font-medium mb-1">No chat alerts yet</div>
-              <div class="text-xs" style="color: var(--text-3)">Add a Slack or Discord webhook below to start getting pinged.</div>
+              <div class="text-xs text-subtle">Add a Slack or Discord webhook below to start getting pinged.</div>
             </div>
           @endforelse
         </div>
@@ -370,8 +370,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
             <button id="wh-add" class="btn px-4 py-2.5 text-sm font-semibold">Add channel</button>
             <span id="wh-note" class="note text-xs"></span>
           </div>
-          <p id="wh-help" class="text-xs mt-3.5 leading-relaxed" style="color: var(--text-3)">
-            In Slack: <span style="color:var(--text-2)">Apps → Incoming Webhooks → Add to a channel</span>, then paste the <span class="mono">hooks.slack.com/services/…</span> URL.
+          <p id="wh-help" class="text-xs mt-3.5 leading-relaxed text-subtle">
+            In Slack: <span class="text-muted">Apps → Incoming Webhooks → Add to a channel</span>, then paste the <span class="mono">hooks.slack.com/services/…</span> URL.
           </p>
         </div>
       </section>
@@ -385,10 +385,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
             <div class="min-w-0">
               @if (activeProject.is_active === false)
                 <div class="text-sm font-semibold mb-0.5">Unarchive this project</div>
-                <p class="text-sm" style="color: var(--text-3)"><span class="mono" style="color: var(--text-2)">{{ activeProject.name }}</span> is archived and isn’t capturing new errors. Unarchiving resumes ingestion right away.</p>
+                <p class="text-sm text-subtle"><span class="mono text-muted">{{ activeProject.name }}</span> is archived and isn’t capturing new errors. Unarchiving resumes ingestion right away.</p>
               @else
                 <div class="text-sm font-semibold mb-0.5">Archive this project</div>
-                <p class="text-sm" style="color: var(--text-3)">Stops capturing new errors and pauses alerts for <span class="mono" style="color: var(--text-2)">{{ activeProject.name }}</span>. Existing issues and events are kept — you can unarchive anytime.</p>
+                <p class="text-sm text-subtle">Stops capturing new errors and pauses alerts for <span class="mono text-muted">{{ activeProject.name }}</span>. Existing issues and events are kept — you can unarchive anytime.</p>
               @endif
             </div>
             <button id="archive-btn" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">{{ activeProject.is_active === false ? 'Unarchive' : 'Archive' }}</button>
@@ -398,7 +398,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
           <div class="flex items-center justify-between gap-4 px-5 py-4">
             <div class="min-w-0">
               <div class="text-sm font-semibold mb-0.5">Delete this project</div>
-              <p class="text-sm" style="color: var(--text-3)">Permanently deletes <span class="mono" style="color: var(--text-2)">{{ activeProject.name }}</span> and all of its issues, events, alert channels, and members. This cannot be undone.</p>
+              <p class="text-sm text-subtle">Permanently deletes <span class="mono text-muted">{{ activeProject.name }}</span> and all of its issues, events, alert channels, and members. This cannot be undone.</p>
             </div>
             <button id="delete-btn" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">Delete</button>
           </div>
@@ -409,8 +409,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       <div id="dz-modal" class="dz-overlay" hidden>
         <div class="dz-card panel" role="dialog" aria-modal="true" aria-labelledby="dz-title">
           <div id="dz-title" class="text-base font-semibold mb-1"></div>
-          <p id="dz-desc" class="text-sm mb-4" style="color: var(--text-2)"></p>
-          <label class="block text-xs mb-1.5" style="color: var(--text-3)">Type <span class="mono" id="dz-name" style="color: var(--text-2)"></span> to confirm</label>
+          <p id="dz-desc" class="text-sm mb-4 text-muted"></p>
+          <label class="block text-xs mb-1.5 text-subtle">Type <span class="mono text-muted" id="dz-name"></span> to confirm</label>
           <input id="dz-input" type="text" class="field w-full px-3.5 py-2.5 text-sm mono mb-4" autocomplete="off" autocapitalize="off" spellcheck="false">
           <div class="flex items-center justify-end gap-2">
             <button id="dz-cancel" type="button" class="btn-ghost px-4 py-2.5 text-sm font-medium">Cancel</button>

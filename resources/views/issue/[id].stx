@@ -440,7 +440,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
       <div class="card px-5 py-16 text-center">
         <div class="text-4xl mb-3">🔍</div>
         <div class="font-semibold mb-1">Issue not found</div>
-        <div class="text-sm" style="color: var(--text-3)">
+        <div class="text-sm text-subtle">
           @if (!live)
             Waiting for data. Provision Postgres and make sure the issue id is correct.
           @else
@@ -456,12 +456,12 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
           <div class="flex items-center gap-2 flex-wrap mb-3">
             <span class="pill lvl lvl-{{ issue.level || 'error' }}">{{ issue.level || 'error' }}</span>
             <span class="pill st-{{ status }}">{{ status }}</span>
-            <span class="text-xs" style="color: var(--text-3)">Last seen {{ lastSeenAgo }}</span>
+            <span class="text-xs text-subtle">Last seen {{ lastSeenAgo }}</span>
           </div>
           <h1 class="mono break-words" style="font-size:1.7rem; line-height:1.15; font-weight:800; letter-spacing:-0.01em">{{ issue.error_type || 'Error' }}</h1>
-          <p class="text-base md:text-lg mt-2.5 break-words" style="color: var(--text)">{{ (latest && latest.message) || issue.title }}</p>
+          <p class="text-base md:text-lg mt-2.5 break-words text-ink">{{ (latest && latest.message) || issue.title }}</p>
           @if (issue.culprit)
-            <p class="text-xs mt-2.5 mono truncate" style="color: var(--text-3)">{{ issue.culprit }}</p>
+            <p class="text-xs mt-2.5 mono truncate text-subtle">{{ issue.culprit }}</p>
           @endif
           <div class="flex flex-wrap items-center gap-2 mt-4">
             @if (isResolved)
@@ -547,7 +547,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
                             </details>
                           @endif
                         @empty
-                          <div class="px-3 py-4 text-xs mono" style="color:var(--text-3)">No frames parsed.</div>
+                          <div class="px-3 py-4 text-xs mono text-subtle">No frames parsed.</div>
                         @endforelse
                       </div>
                     </div>
@@ -565,7 +565,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 
             @if (crumbs.length)
               <section class="card overflow-hidden">
-                <div class="card-head">Breadcrumbs <span style="color:var(--text-2)">{{ crumbs.length }}</span></div>
+                <div class="card-head">Breadcrumbs <span class="text-muted">{{ crumbs.length }}</span></div>
                 <div>
                   @foreach (crumbs as c)
                     <div class="crumb">
@@ -580,21 +580,21 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
             @endif
 
             <section class="card overflow-hidden">
-              <div class="card-head">Recent events <span style="color:var(--text-2)">{{ events.length }}</span></div>
+              <div class="card-head">Recent events <span class="text-muted">{{ events.length }}</span></div>
               @forelse (events as ev)
                 <div class="flex items-center gap-3 px-4 py-2.5" style="border-top:1px solid var(--border-2)">
                   <span class="shrink-0 rounded-full" style="width:7px; height:7px; background: {{ levelColor(ev.severity) }}; box-shadow: 0 0 8px color-mix(in srgb, {{ levelColor(ev.severity) }} 60%, transparent)"></span>
                   <div class="min-w-0 flex-1">
                     <div class="text-sm truncate">{{ ev.url || ev.environment || 'event' }}</div>
-                    <div class="text-xs mono truncate" style="color: var(--text-3)">{{ [ev.browser, ev.os, ev.framework, ev.release].filter(Boolean).join(' · ') || ev.category || '-' }}</div>
+                    <div class="text-xs mono truncate text-subtle">{{ [ev.browser, ev.os, ev.framework, ev.release].filter(Boolean).join(' · ') || ev.category || '-' }}</div>
                   </div>
                   <div class="text-right shrink-0">
-                    <div class="text-xs tabular-nums" style="color: var(--text-2)">{{ fromNow(ev.timestamp) }}</div>
-                    <div class="text-xs" style="color: var(--text-3)">{{ ev.environment || '-' }}</div>
+                    <div class="text-xs tabular-nums text-muted">{{ fromNow(ev.timestamp) }}</div>
+                    <div class="text-xs text-subtle">{{ ev.environment || '-' }}</div>
                   </div>
                 </div>
               @empty
-                <div class="px-5 py-10 text-center text-sm" style="color: var(--text-3)">No events recorded yet.</div>
+                <div class="px-5 py-10 text-center text-sm text-subtle">No events recorded yet.</div>
               @endforelse
             </section>
 
@@ -630,7 +630,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
             @if (latest && latest.url)
               <section class="card overflow-hidden">
                 <div class="card-head">URL</div>
-                <div class="jsonblock" style="color:var(--text)">{{ latest.url }}</div>
+                <div class="jsonblock text-ink">{{ latest.url }}</div>
               </section>
             @endif
 
@@ -667,7 +667,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
                     <dd>{{ r.v }}</dd>
                   </dl>
                 @empty
-                  <div class="px-4 py-3 text-xs mono" style="color:var(--text-3)">empty</div>
+                  <div class="px-4 py-3 text-xs mono text-subtle">empty</div>
                 @endforelse
                 <div style="height:.6rem"></div>
               </section>
@@ -687,7 +687,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 
     @endif
 
-    <footer class="mt-10 text-center text-xs" style="color: var(--text-3)">
+    <footer class="mt-10 text-center text-xs text-subtle">
       Error tracking · powered by Stacks + Postgres · bughq.org
     </footer>
 

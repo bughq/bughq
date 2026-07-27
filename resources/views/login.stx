@@ -87,7 +87,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
   <div class="w-full max-w-sm">
     <div class="text-center mb-8">
       <a href="/" class="wordmark text-2xl">bughq</a>
-      <p class="text-sm mt-2" style="color: var(--text-3)">Sign in to your account</p>
+      <p class="text-sm mt-2 text-subtle">Sign in to your account</p>
     </div>
 
     <form @submit="handleSubmit" class="space-y-4">
@@ -96,13 +96,13 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       @endif
 
       <div>
-        <label class="block text-xs font-medium mb-1.5" style="color: var(--text-2)">Email</label>
+        <label class="block text-xs font-medium mb-1.5 text-muted">Email</label>
         <input name="email" type="email" required autocomplete="email" placeholder="you@example.com" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
       <div>
         <div class="flex items-center justify-between mb-1.5">
-          <label class="block text-xs font-medium" style="color: var(--text-2)">Password</label>
-          <a href="/forgot-password" class="text-xs font-medium" style="color: var(--accent)">Forgot password?</a>
+          <label class="block text-xs font-medium text-muted">Password</label>
+          <a href="/forgot-password" class="text-xs font-medium text-accent">Forgot password?</a>
         </div>
         <input name="password" type="password" required autocomplete="current-password" placeholder="••••••••" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
@@ -133,9 +133,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     </div>
     @endif
 
-    <p class="text-center text-sm mt-6" style="color: var(--text-3)">
+    <p class="text-center text-sm mt-6 text-subtle">
       No account?
-      <a href="/register" class="font-medium" style="color: var(--accent)">Create one</a>
+      <a href="/register" class="font-medium text-accent">Create one</a>
     </p>
   </div>
 </div>

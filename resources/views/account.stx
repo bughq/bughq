@@ -49,10 +49,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     <section class="card p-6 mb-5">
       <div class="flex items-center gap-4">
         <img id="avatar" class="avatar w-14 h-14" alt="" width="56" height="56" style="display:none">
-        <div id="avatar-fallback" class="avatar w-14 h-14 grid place-items-center" style="color: var(--accent); font-weight: 700; font-size: 1.25rem"></div>
+        <div id="avatar-fallback" class="avatar w-14 h-14 grid place-items-center text-accent" style="font-weight: 700; font-size: 1.25rem"></div>
         <div class="min-w-0">
           <div id="name" class="skeleton" style="width: 160px; height: 20px"></div>
-          <div id="email" class="text-sm mt-1.5" style="color: var(--text-2)"></div>
+          <div id="email" class="text-sm mt-1.5 text-muted"></div>
         </div>
         <span id="provider" class="badge px-2.5 py-1 ml-auto" style="display:none"></span>
       </div>
@@ -61,22 +61,22 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     <section class="card mb-5">
       <div class="flex items-center justify-between px-6 py-4">
         <div>
-          <div class="text-xs uppercase tracking-wide" style="color: var(--text-3); font-family: var(--mono)">Plan</div>
+          <div class="text-xs uppercase tracking-wide text-subtle" style="font-family: var(--mono)">Plan</div>
           <div id="plan" class="text-base font-semibold mt-1">Free</div>
         </div>
         <a id="plan-cta" href="/pricing" data-no-router class="btn btn-primary px-4 py-2 text-sm">Upgrade to Pro</a>
       </div>
       <div class="row flex items-center justify-between px-6 py-4">
         <div>
-          <div class="text-xs uppercase tracking-wide" style="color: var(--text-3); font-family: var(--mono)">Member since</div>
-          <div id="since" class="text-base mt-1" style="color: var(--text-2)">--</div>
+          <div class="text-xs uppercase tracking-wide text-subtle" style="font-family: var(--mono)">Member since</div>
+          <div id="since" class="text-base mt-1 text-muted">--</div>
         </div>
         <a href="/dashboard" data-no-router class="btn btn-ghost px-4 py-2 text-sm">Open dashboard</a>
       </div>
     </section>
 
-    <p class="text-sm" style="color: var(--text-3)">
-      Signed in with a private token. <a href="/" data-no-router style="color: var(--accent)">Back to site</a>
+    <p class="text-sm text-subtle">
+      Signed in with a private token. <a href="/" data-no-router class="text-accent">Back to site</a>
     </p>
   </main>
 </div>

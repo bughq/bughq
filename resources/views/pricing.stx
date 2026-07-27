@@ -61,7 +61,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     <header class="text-center mb-10">
       <a href="/" class="wordmark text-2xl">bughq</a>
       <h1 class="wordmark text-3xl md:text-4xl mt-6" style="letter-spacing:-0.035em">Simple, honest pricing</h1>
-      <p class="text-base mt-3" style="color: var(--text-3)">Start free. Upgrade when you outgrow it. Self-host free forever.</p>
+      <p class="text-base mt-3 text-subtle">Start free. Upgrade when you outgrow it. Self-host free forever.</p>
       <div class="seg inline-flex items-center gap-1 p-1 mt-6 text-sm">
         <button @click="pick('monthly')" :class="interval() === 'monthly' ? 'on px-4 py-1.5 font-medium' : 'px-4 py-1.5 font-medium'">Monthly</button>
         <button @click="pick('yearly')" :class="interval() === 'yearly' ? 'on px-4 py-1.5 font-medium' : 'px-4 py-1.5 font-medium'">Yearly <span style="opacity:.8">-17%</span></button>
@@ -70,9 +70,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 
     <div class="grid md:grid-cols-2 gap-5">
       <div class="card p-7">
-        <div class="text-sm font-semibold uppercase tracking-wider" style="color: var(--text-3)">Free</div>
-        <div class="mt-3"><span class="wordmark text-4xl">\$0</span><span class="text-sm" style="color: var(--text-3)"> / forever</span></div>
-        <p class="text-sm mt-2" style="color: var(--text-2)">Everything you need to get started.</p>
+        <div class="text-sm font-semibold uppercase tracking-wider text-subtle">Free</div>
+        <div class="mt-3"><span class="wordmark text-4xl">\$0</span><span class="text-sm text-subtle"> / forever</span></div>
+        <p class="text-sm mt-2 text-muted">Everything you need to get started.</p>
         <ul class="mt-6 space-y-2.5 text-sm">
           <li class="flex items-center gap-2"><span class="check">✓</span> 1 project</li>
           <li class="flex items-center gap-2"><span class="check">✓</span> 5k errors / mo</li>
@@ -83,11 +83,11 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       </div>
 
       <div class="card card-pro p-7">
-        <div class="text-sm font-semibold uppercase tracking-wider" style="color: var(--accent)">Pro</div>
+        <div class="text-sm font-semibold uppercase tracking-wider text-accent">Pro</div>
         <div class="mt-3">
-          <span class="wordmark text-4xl">{{ interval() === 'yearly' ? '\$190' : '\$19' }}</span><span class="text-sm" style="color: var(--text-3)">{{ interval() === 'yearly' ? ' / year' : ' / month' }}</span>
+          <span class="wordmark text-4xl">{{ interval() === 'yearly' ? '\$190' : '\$19' }}</span><span class="text-sm text-subtle">{{ interval() === 'yearly' ? ' / year' : ' / month' }}</span>
         </div>
-        <p class="text-sm mt-2" style="color: var(--text-2)">For teams and sites that are growing.</p>
+        <p class="text-sm mt-2 text-muted">For teams and sites that are growing.</p>
         <ul class="mt-6 space-y-2.5 text-sm">
           <li class="flex items-center gap-2"><span class="check">✓</span> Unlimited projects</li>
           <li class="flex items-center gap-2"><span class="check">✓</span> Unlimited errors</li>
@@ -100,6 +100,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
         @endif
       </div>
     </div>
-    <p class="text-center text-xs mt-10" style="color: var(--text-3)">Prefer to self-host? bughq is open source and free to run yourself.</p>
+    <p class="text-center text-xs mt-10 text-subtle">Prefer to self-host? bughq is open source and free to run yourself.</p>
   </div>
 </div>
