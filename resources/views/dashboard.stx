@@ -337,7 +337,7 @@ summary::-webkit-details-marker { display: none; }
              class="pill px-3.5 py-1.5 text-sm font-medium border"
              style="{{ f.key === statusFilter ? 'color: #fff; background: var(--accent); border-color: var(--accent)' : 'color: var(--text-2); border-color: var(--border)' }}">{{ f.label }}</a>
         @endforeach
-        <span class="w-px h-4 mx-1.5 shrink-0" style="background: var(--border)" aria-hidden="true"></span>
+        <span class="w-px h-4 mx-1.5 shrink-0 bg-line" aria-hidden="true"></span>
         @foreach (rangeTabs as r)
           <a href="{{ r.href }}"
              class="pill mono px-3 py-1.5 text-xs font-medium border"

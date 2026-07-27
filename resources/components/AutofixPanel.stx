@@ -312,7 +312,7 @@ loadAutofix(true)
     <div class="autofix-skeleton" style="width:61%"></div>
   </div>
 
-  <div :class="disabledClass()" style="color:var(--text-2)">AI Autofix is disabled in the server configuration.</div>
+  <div :class="disabledClass()" class="text-muted">AI Autofix is disabled in the server configuration.</div>
 
   <div :class="repositorySetupClass()">
     <p :class="repositoryFieldsClass()" style="color:var(--text-2); font-size:.875rem; margin:0 0 .75rem">Connect the repository that produced this issue. BugHQ reads only the files selected for analysis and opens a draft pull request.</p>
@@ -331,13 +331,13 @@ loadAutofix(true)
         </button>
       </div>
     </div>
-    <p :class="ownerSetupClass()" style="color:var(--text-2)">The project owner needs to connect a GitHub repository before Autofix can run.</p>
+    <p :class="ownerSetupClass()" class="text-muted">The project owner needs to connect a GitHub repository before Autofix can run.</p>
   </div>
 
   <div :class="readyClass()">
     <div>
       <div class="font-semibold text-sm">Prepare a repository fix</div>
-      <p class="mt-1 max-w-2xl text-xs" style="color:var(--text-3)">BugHQ will inspect the stack trace, read a bounded set of source files, and open a draft pull request for review.</p>
+      <p class="mt-1 max-w-2xl text-xs text-subtle">BugHQ will inspect the stack trace, read a bounded set of source files, and open a draft pull request for review.</p>
     </div>
     <button type="button" :class="runButtonClass()" @click="startAutofix" :disabled="autofixStarting()">
       <i class="h-4 w-4 i-hugeicons-ai-magic"></i> Run Autofix
@@ -388,7 +388,7 @@ loadAutofix(true)
     </details>
 
     <div :class="retryClass()">
-      <span class="text-xs" style="color:var(--text-3)">The previous run stopped safely. No partial pull request was opened.</span>
+      <span class="text-xs text-subtle">The previous run stopped safely. No partial pull request was opened.</span>
       <button type="button" class="btn" @click="startAutofix" :disabled="autofixStarting()">Retry Autofix</button>
     </div>
   </div>
