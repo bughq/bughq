@@ -27,12 +27,11 @@ export const tsCloud: TsCloudConfig = {
     region: 'us-east-1', // Default AWS region
   },
 
-  // BugHQ shares the server owned by Stacks. This keeps one provisioned box,
-  // one cloud dashboard, and one rpx gateway while ts-cloud namespaces BugHQ's
-  // releases and services by project slug.
+  // BugHQ owns its dedicated Hetzner server. It keeps its application,
+  // database, rpx gateway, and one server-level cloud dashboard isolated from
+  // the shared Stacks server.
   cloud: {
     provider: 'hetzner',
-    attachTo: 'stacks',
   },
 
   /**
