@@ -41,6 +41,7 @@ export default {
 
   server: {
     enabled: true,
+    attachTo: 'stacks',
     scan: true, // scans for spam and viruses
     subdomain: 'mail', // mail.stacksjs.com
 
