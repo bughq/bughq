@@ -1,4 +1,6 @@
+<main>
 @yield('content')
+</main>
 
 @yield('footer')
 
