@@ -38,12 +38,15 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
   <header class="max-w-3xl mx-auto flex items-center justify-between px-5 md:px-6 h-16">
     <a href="/" data-no-router class="wordmark text-lg">bughq</a>
     <div class="flex items-center gap-2.5">
-      <a href="/dashboard" data-no-router class="btn btn-ghost px-3.5 py-2 text-sm">Dashboard</a>
+      <a href="/dashboard" class="btn btn-ghost px-3.5 py-2 text-sm">Dashboard</a>
       <button id="logout" class="btn btn-ghost px-3.5 py-2 text-sm">Log out</button>
     </div>
   </header>
 
-  <main class="max-w-3xl mx-auto px-5 md:px-6 py-8">
+  <!-- A <div>, not <main>: layouts/default.stx already wraps every page fragment
+       in the <main> the SPA router swaps. Nesting a second one gave the router
+       two candidate containers and broke the fragment swap. -->
+  <div class="max-w-3xl mx-auto px-5 md:px-6 py-8">
     <h1 class="wordmark text-2xl mb-6">Account</h1>
 
     <section class="card p-6 mb-5">
@@ -64,21 +67,21 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
           <div class="text-xs uppercase tracking-wide text-subtle" style="font-family: var(--mono)">Plan</div>
           <div id="plan" class="text-base font-semibold mt-1">Free</div>
         </div>
-        <a id="plan-cta" href="/pricing" data-no-router class="btn btn-primary px-4 py-2 text-sm">Upgrade to Pro</a>
+        <a id="plan-cta" href="/pricing" class="btn btn-primary px-4 py-2 text-sm">Upgrade to Pro</a>
       </div>
       <div class="row flex items-center justify-between px-6 py-4">
         <div>
           <div class="text-xs uppercase tracking-wide text-subtle" style="font-family: var(--mono)">Member since</div>
           <div id="since" class="text-base mt-1 text-muted">--</div>
         </div>
-        <a href="/dashboard" data-no-router class="btn btn-ghost px-4 py-2 text-sm">Open dashboard</a>
+        <a href="/dashboard" class="btn btn-ghost px-4 py-2 text-sm">Open dashboard</a>
       </div>
     </section>
 
     <p class="text-sm text-subtle">
       Signed in with a private token. <a href="/" data-no-router class="text-accent">Back to site</a>
     </p>
-  </main>
+  </div>
 </div>
 
 <script>
