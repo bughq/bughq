@@ -73,12 +73,6 @@
     "bun-plugin-auto-imports": "^0.4.1",
     "stacks": "^0.70.201"
   },
-  "overrides": {
-    "@stacksjs/stx": "0.2.111",
-    "bun-plugin-stx": "0.2.111",
-    "stx-router": "0.2.111",
-    "@stacksjs/sanitizer": "0.2.111"
-  },
   "devDependencies": {
     "better-dx": "^0.2.15"
   },
