@@ -56,6 +56,28 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 .err { color: #ef4444; }
 </style>
 
+<!-- Applies the saved theme on load. Keep this inline in every app page.
+
+     data-theme lives on the root html element, which the SPA router never
+     swaps, so a page reached by a fragment swap inherits it for free. A page
+     loaded DIRECTLY only gets it here — so the seven pages that lacked
+     it rendered the saved theme when navigated to and the OS default when
+     hard-loaded: one URL, two renders depending on how you arrived.
+
+     Not extracted into an @include partial: stx rewrites any page script
+     into a scoped client script either way (verified — this is pre-existing
+     behaviour, not something the inline form avoids), and the include buys
+     no isolation while rendering to nothing in the SSG build path.
+
+     No signal or store either: the theme already lives in two places that
+     outlive a swap (the html attribute and localStorage); a store would add
+     a third copy of the same fact and fix nothing.
+
+     A missing key means "follow the OS", which the prefers-color-scheme CSS
+     already handles, so only an explicit light/dark is applied. try/catch
+     because localStorage throws in Safari private mode. -->
+<script>(function(){try{var t=localStorage.getItem('bughq_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
+
 <div class="min-h-[100dvh] px-5 py-14 md:px-10">
   <div class="max-w-3xl mx-auto">
     <header class="text-center mb-10">
