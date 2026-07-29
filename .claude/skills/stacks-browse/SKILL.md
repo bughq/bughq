@@ -179,6 +179,14 @@ export SPA_LOCALSTORAGE="{\"token\":\"$TOKEN\"}"
   Count DOM elements, or strip `<script>` blocks first.
 - **SSG artifacts differ from what production serves.** `dist/` may have structural
   defects that never ship if production is SSR. Verify against the running server.
+- **A literal `<html>` anywhere in a fragment — even inside an HTML comment — kills
+  SPA navigation.** The router treats a fetched fragment that looks like a full
+  document as a non-stx page and does a native navigation rather than corrupt the
+  shell, and it matches raw text. One comment mentioning `<html>` silently turned
+  every app-to-app navigation into a full reload. Write it as "the root html element".
+- **A newly created partial isn't picked up until it is modified while the dev server
+  runs.** Clearing `.stx/cache` and restarting was not enough; touching the file was.
+  A fresh render can therefore be stale in either direction — re-verify after edits.
 
 ## Extending
 
