@@ -49,9 +49,12 @@ const steps = [
   <body>
     @include('SiteNav')
 
-    <main class="shell">
+    <!-- Bare <main>, .shell on each section below: the SPA router keeps this
+         outer element across a fragment swap, so a class here would leak into
+         the next marketing page and nest .shell inside .shell (48px narrower). -->
+    <main>
 
-      <section class="hero">
+      <section class="hero shell">
         <div class="reveal">
           <h1 class="hero-title">Error tracking for people who ship.</h1>
           <p class="hero-sub">Capture every production error, fold the duplicates into one issue, and see what is actually breaking. Signal, not a wall of noise.</p>
@@ -70,7 +73,7 @@ const steps = [
         </div>
       </section>
 
-      <section id="features" class="section reveal" aria-labelledby="features-heading">
+      <section id="features" class="section shell reveal" aria-labelledby="features-heading">
         <div class="section-head">
           <h2 id="features-heading" class="section-title">From throw to triaged, without the noise.</h2>
         </div>
@@ -85,7 +88,7 @@ const steps = [
         </div>
       </section>
 
-      <section class="section reveal" aria-labelledby="how-heading">
+      <section class="section shell reveal" aria-labelledby="how-heading">
         <div class="section-head">
           <h2 id="how-heading" class="section-title">Live in three steps.</h2>
         </div>
@@ -102,14 +105,14 @@ const steps = [
         </div>
       </section>
 
-      <section class="section reveal" aria-label="Open source and self-hosting">
+      <section class="section shell reveal" aria-label="Open source and self-hosting">
         <div class="open-band">
           <p><strong>Open source, and yours to run.</strong> Host bughq on your own Postgres so sensitive stack data never leaves your infrastructure, or start on the hosted tier in a minute.</p>
           <a class="btn ghost" href="/features/self-host">Read about self-hosting</a>
         </div>
       </section>
 
-      <section class="section reveal" aria-label="Get started">
+      <section class="section shell reveal" aria-label="Get started">
         <div class="cta-band">
           <h2>Ship with a net under you.</h2>
           <div class="cta-actions">
