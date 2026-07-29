@@ -112,6 +112,74 @@ When testing a Stacks app, check:
 - **Local URLs are fine** (`localhost`, `127.0.0.1`).
 - **Report what you see, not what you expect.** Read the PNGs.
 
+## SPA Verification (`spa-probe.ts`, `spa-shot.ts`)
+
+`browse.ts` answers "does this page render?". These two answer the question that actually
+breaks stx apps: **"does page B render the same when you *navigate* to it as when you load
+it directly?"**
+
+### Why this exists
+
+The stx router swaps `<main>`'s *contents* and keeps the outer element and the rest of the
+document. So a page can be perfect on a direct load and broken when arrived at. Real
+examples caught in bughq:
+
+- chrome appended to `document.body` survived the swap and painted stale, unstyled
+  controls over the next page
+- a `class` on `<main>` leaked into the next page, nesting a width constraint and making
+  every page reached from `/` 48px narrower
+- a page arrived completely unstyled after crossing a shell boundary
+
+None were visible on a direct load, so normal browsing never revealed them.
+
+### `spa-probe.ts` — did it actually SPA-navigate?
+
+```bash
+bun .claude/skills/stacks-browse/scripts/spa-probe.ts routes <base> <path...>
+bun .claude/skills/stacks-browse/scripts/spa-probe.ts navs   <base> <from>::<to> ...
+```
+
+Per navigation it reports `SPA` / `FULL_RELOAD` / `DID_NOT_NAVIGATE` / `NO_LINK`, plus
+`mains`, `nestedMains`, `mainClass`, and the layout group before and after.
+
+Detection stamps `window.__spaProbe` before the click and checks whether it survives —
+JS context preserved means a fragment swap, gone means a full navigation. This is
+timing-independent, unlike waiting on CDP navigation events.
+
+### `spa-shot.ts` — does it render the same?
+
+```bash
+bun .claude/skills/stacks-browse/scripts/spa-shot.ts fresh <path> <out.png>
+bun .claude/skills/stacks-browse/scripts/spa-shot.ts via <from> <to> <out.png>
+```
+
+The oracle is **not a stored baseline** — it's the same URL loaded directly seconds
+earlier, in the same browser with the same data and the same clock. The only variable is
+the path taken, which is why the diffs are low-noise and there are no golden files to
+churn. Capture both, then Read the two PNGs and compare.
+
+### Auth-gated routes
+
+Most app routes redirect to `/login` unauthenticated. **An unauthenticated run will
+happily verify the login page N times and report all green** — always check the reported
+`at` matches the path you asked for. Seed credentials via env:
+
+```bash
+export SPA_COOKIE="bughq_token=$TOKEN"
+export SPA_LOCALSTORAGE="{\"token\":\"$TOKEN\"}"
+```
+
+### Gotchas that cost real debugging time
+
+- **Settle time.** Default is 1400ms, right for localhost. Remote hosts need
+  `SETTLE_MS=5000` — too short reads as a false `DID_NOT_NAVIGATE`.
+- **Clicks use `element.click()`, never coordinates.** Coordinate clicks silently miss
+  links below the fold or inside hover menus and report a false "did not navigate".
+- **`grep -c '<main'` lies.** The injected router script mentions `<main` ~6× in comments.
+  Count DOM elements, or strip `<script>` blocks first.
+- **SSG artifacts differ from what production serves.** `dist/` may have structural
+  defects that never ship if production is SSR. Verify against the running server.
+
 ## Extending
 
 The CDP client (`Cdp` class in `browse.ts`) exposes `send(method, params)` and

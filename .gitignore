@@ -79,6 +79,10 @@ storage/framework/cache/
 # up-to-date short-circuit. Local-only — like the channel, it's per-checkout.
 .stacks-version
 
+# Screenshots and scratch output from the headless-browser QA driver
+# (.claude/skills/stacks-browse). Regenerated on every run; never reviewed as source.
+.stacks/
+
 # Temp directory used during a `buddy update` GitHub fetch. Cleaned up by the
 # upgrade action on success but listed here to keep stray copies (e.g. from a
 # kill -9'd run) out of commits.
