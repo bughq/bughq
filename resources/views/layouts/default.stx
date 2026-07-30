@@ -13,13 +13,28 @@
         to document.body outlive the swap and paint stale, unstyled leftovers
         over the next page.
 
+     3. In-app links use <StxLink to="...">, which renders a plain <a> carrying
+        `data-stx-link`. The router matches [data-stx-link] FIRST and does not
+        consult shouldIntercept() for it — so `data-no-router` on an StxLink is
+        silently ignored. Any link that must not be intercepted has to stay a
+        plain <a> (see below).
+
      Marketing pages (/, /features/*, /use-cases/*, /compare/*) are NOT
      fragments — each is a self-contained document with its own <head> and
      /marketing.css. Links from an app page to one of those cross a shell
      boundary the router cannot fragment-swap: the marketing stylesheet lives
      in a <head> the swap never brings along, so the page arrives unstyled.
-     Those links therefore carry `data-no-router` and do a normal navigation.
-     Unifying both shells onto one layout would remove that last exception. --}}
+     Those links therefore stay plain <a href="/"> with `data-no-router`, and
+     do a normal navigation. Same for the /api/auth/*/redirect OAuth links,
+     which are server redirects: intercepting one fetches the redirect as a
+     fragment instead of following it.
+
+     `data-no-router` only works because config/ui.ts sets
+     `router.interceptAllLinks: true` — the marketing site's ~64 plain nav and
+     footer anchors depend on that flag for SPA navigation, so it cannot be
+     turned off without converting them to <StxLink> first. See the comment in
+     config/ui.ts. Unifying both shells onto one layout would remove the
+     marketing-boundary exception entirely. --}}
 <main>
 @yield('content')
 </main>
