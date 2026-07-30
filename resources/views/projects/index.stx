@@ -34,6 +34,33 @@ function fromNow(iso) {
 }
 </script>
 
+<script client>
+// The theme is not owned by this page: it lives on the root html element (which
+// the SPA router never swaps) and in localStorage. The signal mirrors it so the
+// button can render the right icon; it is not the source of truth.
+function effectiveTheme() {
+  return document.documentElement.getAttribute('data-theme')
+    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+}
+
+const theme = state(effectiveTheme())
+
+function toggleTheme() {
+  const next = theme() === 'dark' ? 'light' : 'dark'
+  document.documentElement.setAttribute('data-theme', next)
+  try { localStorage.setItem('bughq_theme', next) }
+  catch { /* Safari private mode */ }
+  theme.set(next)
+}
+
+function logout() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  document.cookie = 'bughq_token=; path=/; max-age=0'
+  window.location.assign('/login')
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
@@ -101,12 +128,12 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
         <p class="text-sm mt-2 text-subtle">Pick an app to track, or create a new one.</p>
       </div>
       <div class="flex items-center gap-2.5">
-        <button id="theme-toggle" class="icon-btn theme-btn" title="Toggle theme" aria-label="Toggle theme">
+        <button class="icon-btn theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
         <StxLink to="/projects/new" class="btn px-4 py-2 text-sm font-semibold">+ New app</StxLink>
-        <button id="logout" class="btn-ghost px-3.5 py-2 text-sm font-medium bg-panel">Log out</button>
+        <button @click="logout" class="btn-ghost px-3.5 py-2 text-sm font-medium bg-panel">Log out</button>
       </div>
     </header>
 
@@ -144,7 +171,15 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
   </div>
 </div>
 
-<!-- Client guard: require a token, mirror it into the cookie, wire logout. -->
+<!-- Client guard: require a token and mirror it into the cookie so the server can
+     authenticate the render. Deliberately NOT a client directive — it has to run
+     before paint to avoid flashing a logged-out page, and it navigates rather
+     than rendering anything. The theme toggle and logout that used to live here
+     are now @click handlers in the client script block at the top of this file.
+
+     Do not write a literal script tag in this comment: the fragment swap
+     re-executes scripts by scanning the incoming HTML for them, and it matches
+     inside comments, so the words alone produce a SyntaxError mid-navigation. -->
 <script>
 (function () {
   var t = localStorage.getItem('token')
@@ -152,28 +187,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
   if (!/(^|;)\s*bughq_token=/.test(document.cookie)) {
     document.cookie = 'bughq_token=' + t + '; path=/; max-age=2592000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
     window.location.reload()
-    return
   }
-  // Theme toggle (light/dark, persisted per device).
-  var themeBtn = document.getElementById('theme-toggle')
-  if (themeBtn) {
-    var mq = window.matchMedia('(prefers-color-scheme: dark)')
-    var effTheme = function () { return document.documentElement.getAttribute('data-theme') || (mq.matches ? 'dark' : 'light') }
-    var paintTheme = function () { themeBtn.setAttribute('data-t', effTheme()) }
-    paintTheme()
-    themeBtn.addEventListener('click', function () {
-      var next = effTheme() === 'dark' ? 'light' : 'dark'
-      document.documentElement.setAttribute('data-theme', next)
-      try { localStorage.setItem('bughq_theme', next) } catch (e) {}
-      paintTheme()
-    })
-  }
-
-  var btn = document.getElementById('logout')
-  if (btn) btn.addEventListener('click', function () {
-    localStorage.removeItem('token'); localStorage.removeItem('user')
-    document.cookie = 'bughq_token=; path=/; max-age=0'
-    window.location.assign('/login')
-  })
 })()
 </script>

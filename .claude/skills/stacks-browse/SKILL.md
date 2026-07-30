@@ -214,6 +214,12 @@ missing link, not a missing credential.
   Count DOM elements, or strip `<script>` blocks first.
 - **SSG artifacts differ from what production serves.** `dist/` may have structural
   defects that never ship if production is SSR. Verify against the running server.
+- **A literal `<script` in a fragment's comment throws mid-navigation.** The fragment
+  swap re-executes scripts by scanning the incoming HTML for script tags, and it matches
+  inside comments too. A comment reading "…now handled in the `<script client>` block"
+  produced `SyntaxError: Unexpected identifier` from `doFragSwap` on every navigation to
+  that page — while the page still *looked* fine, because the swap completed. Same family
+  as the `<html>` trap below; write "the client script block" instead.
 - **A literal `<html>` anywhere in a fragment — even inside an HTML comment — kills
   SPA navigation.** The router treats a fetched fragment that looks like a full
   document as a non-stx page and does a native navigation rather than corrupt the
