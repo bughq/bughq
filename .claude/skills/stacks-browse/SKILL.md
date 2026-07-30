@@ -158,6 +158,35 @@ earlier, in the same browser with the same data and the same clock. The only var
 the path taken, which is why the diffs are low-noise and there are no golden files to
 churn. Capture both, then Read the two PNGs and compare.
 
+### `link-intercept.ts` — did the router intercept this link, or was it native?
+
+```bash
+bun .claude/skills/stacks-browse/scripts/link-intercept.ts <base> <page> <target-href>
+```
+
+`spa-probe.ts` **cannot** answer this, and will report a false pass. For a link
+whose target isn't an stx page — an OAuth redirect, a download, an API route —
+the end state is identical whether the router ignored it or intercepted it,
+fetched it, failed to use the response, and fell back to a native navigation:
+dead JS context, URL sitting on the target either way. Only the network
+distinguishes them:
+
+| Requests for the target | Meaning |
+|---|---|
+| `Fetch`/`XHR` | intercepted — the router called `navigate()` |
+| `Document` only | native navigation |
+
+This is the only way to verify a `data-no-router` attribute actually does
+anything. Exits 0 for native, 1 for intercepted, so it can gate a check. It also
+reports `noRouter`/`stxLink`/`config` — if both attributes are true the
+`data-no-router` is being silently ignored, because the router matches
+`[data-stx-link]` first and never consults `shouldIntercept()` for it.
+
+**Always run the control.** Remove the attribute, confirm the probe flips to
+`INTERCEPTED`, then restore. A probe that says "correct" in both directions is
+measuring nothing — that mistake was made here first, using a marker/URL check
+that couldn't tell the two cases apart.
+
 ### Auth-gated routes
 
 Most app routes redirect to `/login` unauthenticated. **An unauthenticated run will
@@ -168,6 +197,12 @@ happily verify the login page N times and report all green** — always check th
 export SPA_COOKIE="bughq_token=$TOKEN"
 export SPA_LOCALSTORAGE="{\"token\":\"$TOKEN\"}"
 ```
+
+All three scripts read both, and app pages need **both**: the cookie
+authenticates the server render, and the client guard in each page redirects to
+`/login` unless the token is also in `localStorage`. With only the cookie,
+`link-intercept.ts` reports `NO_LINK` for every app page — which looks like a
+missing link, not a missing credential.
 
 ### Gotchas that cost real debugging time
 
