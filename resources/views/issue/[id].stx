@@ -89,6 +89,9 @@ catch {
 const projectId = issue?.project_id || 'demo'
 const latest = events[0] || null
 const stack = latest?.stack || ''
+// Handed to the copy button as a JS literal. JSON.stringify does the escaping,
+// so the client script needs no hidden element to read the text back out of.
+const stackJson = JSON.stringify(stack)
 
 // --- formatting helpers ----------------------------------------------------
 function levelColor(level) {
@@ -304,6 +307,42 @@ const lastSeenAgo = issue ? fromNow(issue.last_seen) : ''
 const firstSeenAgo = issue ? fromNow(issue.first_seen) : ''
 </script>
 
+<script client>
+// The theme is not owned by this page: it lives on the root html element (which
+// the SPA router never swaps) and in localStorage. The signal mirrors it so the
+// button can render the right icon; it is not the source of truth.
+function effectiveTheme() {
+  return document.documentElement.getAttribute('data-theme')
+    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+}
+
+const theme = state(effectiveTheme())
+
+function toggleTheme() {
+  const next = theme() === 'dark' ? 'light' : 'dark'
+  document.documentElement.setAttribute('data-theme', next)
+  try { localStorage.setItem('bughq_theme', next) }
+  catch { /* Safari private mode */ }
+  theme.set(next)
+}
+
+// The stack arrives as a JS literal from the server block, so the copy button
+// no longer reads it back out of a hidden <pre>.
+const stackText = {!! stackJson !!}
+const copyLabel = state('Copy')
+
+function copyStack() {
+  const restore = () => {
+    copyLabel.set('Copied')
+    setTimeout(() => copyLabel.set('Copy'), 1200)
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(stackText).then(restore, restore)
+  else
+    restore()
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
@@ -445,7 +484,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
         <span>&larr;</span> Back to issues
       </StxLink>
       <div class="flex items-center gap-2">
-        <button id="theme-toggle" class="icon-btn theme-btn" title="Toggle theme" aria-label="Toggle theme">
+        <button class="icon-btn theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
@@ -520,7 +559,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
               <section class="card overflow-hidden">
                 <div class="card-head" style="justify-content:space-between">
                   <span>Stack trace</span>
-                  <button type="button" class="copybtn btn" data-copy-stack style="padding:.25rem .55rem">Copy</button>
+                  <button type="button" class="copybtn btn" @click="copyStack" style="padding:.25rem .55rem">{{ copyLabel() }}</button>
                 </div>
                 <div style="padding:.5rem">
                   @foreach (exceptions as ex)
@@ -715,8 +754,6 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
   </div>
 </div>
 
-<!-- Raw stack for the copy button (escaped, safe). -->
-<pre id="raw-stack" hidden>{{ stack }}</pre>
 
 <style>
 @media (min-width: 1024px) {
@@ -725,7 +762,11 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 </style>
 
 <!-- Client guard: require the bearer token and mirror it into the cookie the
-     server authenticates from (matches the dashboard). Plus copy-stack. -->
+     server authenticates from (matches the dashboard), and record which project
+     is being viewed. Deliberately not client directives: the guard has to run
+     before paint to avoid flashing a logged-out page, and both only set cookies
+     or navigate. The theme toggle and copy button that used to live here are
+     now @click handlers in the client script block at the top of this file. -->
 <script>
 (function () {
   var t = localStorage.getItem('token')
@@ -735,20 +776,6 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
     window.location.reload()
     return
   }
-  // Theme toggle (light/dark, persisted per device).
-  var themeBtn = document.getElementById('theme-toggle')
-  if (themeBtn) {
-    var mq = window.matchMedia('(prefers-color-scheme: dark)')
-    var effTheme = function () { return document.documentElement.getAttribute('data-theme') || (mq.matches ? 'dark' : 'light') }
-    var paintTheme = function () { themeBtn.setAttribute('data-t', effTheme()) }
-    paintTheme()
-    themeBtn.addEventListener('click', function () {
-      var next = effTheme() === 'dark' ? 'light' : 'dark'
-      document.documentElement.setAttribute('data-theme', next)
-      try { localStorage.setItem('bughq_theme', next) } catch (e) {}
-      paintTheme()
-    })
-  }
 
   // Viewing an issue makes its project the active one, so "Back to issues"
   // (a clean /dashboard) lands on the right project - e.g. arriving from an
@@ -756,15 +783,5 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
   var proj = '{{ issue ? issue.project_id : '' }}'
   if (proj)
     document.cookie = 'bughq_project=' + encodeURIComponent(proj) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
-  var btn = document.querySelector('[data-copy-stack]')
-  var raw = document.getElementById('raw-stack')
-  if (btn && raw) {
-    btn.addEventListener('click', function () {
-      var text = raw.textContent || ''
-      var done = function () { var o = btn.textContent; btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = o }, 1200) }
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, done)
-      else done()
-    })
-  }
 })()
 </script>
