@@ -1,3 +1,7 @@
+<script server>
+useHead({ title: 'New app - bughq' })
+</script>
+
 <script client>
 // Create-app screen. New users land here after signup. Creates a project via
 // the authenticated API (bearer from localStorage), then drops into that

@@ -2,7 +2,7 @@
 // Projects list. Server-authenticates from the token cookie and shows the
 // user's own apps; each links into its dashboard. New users (or logged-out
 // visitors) are handled by the client guard at the bottom.
-const meta = { title: 'bughq - Your apps', description: 'Error tracking' }
+useHead({ title: 'Your apps - bughq' })
 
 const { db } = await import('@stacksjs/database')
 

@@ -1,3 +1,7 @@
+<script server>
+useHead({ title: 'Account - bughq' })
+</script>
+
 <script client>
 // The account view is entirely client-rendered: /api/me is the only source, so
 // the page ships a skeleton and fills in from these signals. Nothing here

@@ -8,7 +8,6 @@
 // `await import(db)` first and only then touch requestContext, mirroring the
 // dashboard. The `[id]` path segment is NOT injected as a global here, so the
 // issue id is parsed out of `requestContext.url()`.
-const meta = { title: 'bughq - Issue', description: 'Error tracking' }
 
 const { db } = await import('@stacksjs/database')
 
@@ -88,6 +87,24 @@ catch {
 
 const projectId = issue?.project_id || 'demo'
 const latest = events[0] || null
+
+// Mirrors the headline the template renders, so a tab names its own issue
+// instead of reading "Issue" like every other one. Capped — messages run long.
+//
+// Angle brackets are DROPPED, and that is load-bearing. This text is whatever
+// the customer's app threw, and stx's generateDocumentShell interpolates the
+// title straight into the title element with no escaping — a message that
+// closes the title element and opens an inline script tag executes it. Verified
+// against a real event before this line existed.
+//
+// Dropping beats entity-escaping here: `&lt;` would render correctly on a direct
+// load, but the SPA path hands the raw title text to the X-STX-Title header and
+// the router assigns it to document.title, where entities do NOT decode. So
+// escaping would show `&lt;` on arrival and a bare bracket on reload — the same
+// fresh-vs-arrived divergence this app keeps getting bitten by. A tab title
+// loses nothing by dropping them.
+const issueHeadline = String((latest && latest.message) || issue?.title || '').replace(/[<>]/g, '').trim()
+useHead({ title: issueHeadline ? `${issueHeadline.length > 60 ? `${issueHeadline.slice(0, 60)}…` : issueHeadline} - bughq` : 'Issue - bughq' })
 const stack = latest?.stack || ''
 // Handed to the copy button as a JS literal. JSON.stringify does the escaping,
 // so the client script needs no hidden element to read the text back out of.

@@ -42,4 +42,38 @@ export default {
     container: 'main',
     interceptAllLinks: true,
   },
+
+  // Last-resort <title>. Only reached by a page that declares none of its own —
+  // its job is to make that failure read as "bughq" rather than "stx App".
+  //
+  // How a title is actually chosen (stx process.ts, the autoShell branch):
+  //
+  //   useHead({ title }) in <script server>   ← what every app page here uses
+  //     -> @head's <title>
+  //       -> @section('title')
+  //         -> this value
+  //           -> stx's own "stx App" default
+  //
+  // Two traps this replaced, both of which shipped a wrong <title> to prod:
+  //
+  // 1. `const meta = { title }` in a server script does nothing on an app page.
+  //    injectSeoTags reads it, but it runs BEFORE the document shell exists and
+  //    returns early on a fragment with no <head>. Four pages carried a dead
+  //    `meta` const this way. useHead is the one that survives, because it
+  //    writes context.__stx_runtime_head, which the shell reads.
+  //
+  // 2. site.config.ts cannot supply a <title> either. Its injectSeo skips any
+  //    tag already declared in the head, and by then the shell has written its
+  //    default — which is why prod served <title>stx App</title> next to a
+  //    correct <meta property="og:title">. site.config still owns og/twitter/
+  //    canonical; the page owns <title>.
+  //
+  // Setting the title here also fixes SPA navigation for free: the dev server
+  // reads the rendered <title> into the X-STX-Title response header and the
+  // router applies it on fragment swaps.
+  app: {
+    head: {
+      title: 'bughq',
+    },
+  },
 } satisfies UiOptions

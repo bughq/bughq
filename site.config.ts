@@ -1,6 +1,14 @@
-// Site metadata + SEO. `buddy serve` loads this and injects accurate
-// <title>, canonical, Open Graph, and Twitter card tags per page (replacing
-// stx's "stx App" scaffold defaults). Per-path overrides live in `pages`.
+// Site metadata + SEO. `buddy serve` loads this and injects canonical, Open
+// Graph, and Twitter card tags per page. Per-path overrides live in `pages`.
+//
+// It does NOT set <title>, despite the `title` keys below — injectSeo skips any
+// tag the head already declares, and by the time it runs every page has one.
+// `title` here only feeds og:title / twitter:title. The page owns <title>, via
+// useHead() in a <script server> block; see the note in config/ui.ts.
+//
+// So keep a `pages` title in step with the page's own useHead title. A route
+// missing from `pages` still renders its correct <title>; it just falls back to
+// the generic site-wide og:title when shared.
 const description = 'Error tracking for people who ship. Capture, group, and triage production errors with automatic fingerprinting. Built on Stacks and Postgres.'
 
 export default {

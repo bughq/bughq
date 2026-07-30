@@ -3,7 +3,7 @@
 // (mirrored from localStorage by login/register), loads THEIR projects
 // owner-scoped, and renders the active one (from ?project=, else the first).
 // Users with no projects are sent to the create-app screen. Reads via db.unsafe.
-const meta = { title: 'bughq - Issues', description: 'Error tracking' }
+useHead({ title: 'Issues - bughq' })
 
 const { db } = await import('@stacksjs/database')
 

@@ -1,3 +1,7 @@
+<script server>
+useHead({ title: 'Pricing - bughq' })
+</script>
+
 <script client>
 // Pricing / upgrade via stx client directives. Interval + state are signals; the
 // Upgrade button starts a Stripe Checkout (external redirect via location).

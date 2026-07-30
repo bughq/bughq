@@ -5,7 +5,7 @@
 // preference the dashboard uses), scoped to projects the user OWNS — members can
 // view/triage issues but only an owner administers a project. Reads happen here
 // server-side; mutations go client-side to the owner-scoped /api endpoints.
-const meta = { title: 'bughq - Settings', description: 'Error tracking' }
+useHead({ title: 'Settings - bughq' })
 
 const { db } = await import('@stacksjs/database')
 const { appUrl, ingestUrl } = await import('../../app/Support/urls')

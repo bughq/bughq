@@ -6,6 +6,8 @@ const services = (await import('../../config/services')).default
 const githubEnabled = !!services.github?.clientId
 const googleEnabled = !!services.google?.clientId
 const anyOauth = githubEnabled || googleEnabled
+
+useHead({ title: 'Create your account - bughq' })
 </script>
 
 <script client>
