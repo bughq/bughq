@@ -124,6 +124,9 @@ const guideCodeJson = JSON.stringify(guide.code || '')
 const keyFullJson = JSON.stringify(keyFull)
 const keyMaskJson = JSON.stringify(keyMask)
 const projectIdJson = JSON.stringify(projectId || '')
+// Each channel's on/off state, seeded into a signal so the toggle renders from
+// state rather than from a data-on attribute it also has to write back to.
+const channelEnabledJson = JSON.stringify(Object.fromEntries(channelView.map(c => [c.id, c.enabled])))
 </script>
 
 <script client>
@@ -222,11 +225,12 @@ function rotateKey() {
   })
 }
 
-// ---- Members -------------------------------------------------------------
-// The list stays server-rendered. Each row already carries its own id, so
-// removing someone only has to hide one row — there is nothing to re-render,
-// and no delegated listener walking up from the click target to work out which
+// ---- Members and alert channels ------------------------------------------
+// Both lists stay server-rendered. Each row already carries its own id, so
+// removing one only has to hide that row — there is nothing to re-render, and
+// no delegated listener walking up from the click target to work out which
 // button was hit. `gone` holds the ids that have left; each row's @if reads it.
+// Members and channels share it safely: ids are prefixed `mem_` and `ch_`.
 const gone = state([])
 const removing = state('')
 const inviting = state(false)
@@ -291,6 +295,140 @@ function inviteMember(e) {
     .catch(() => {
       inviting.set(false)
       inviteNote.set({ text: 'Network error.', ok: false })
+    })
+}
+
+// ---- Alerts --------------------------------------------------------------
+// The provider picker is one signal. Everything that used to be pushed into the
+// DOM when it changed — both buttons' data-sel, the URL placeholder, the help
+// text — is now read back out of it.
+const HINTS = {
+  slack: 'https://hooks.slack.com/services/…',
+  discord: 'https://discord.com/api/webhooks/…',
+}
+const chType = state('slack')
+const adding = state(false)
+const whNote = state(null)
+
+// Toggle state lives here rather than on a data-on attribute the handler both
+// reads and writes, so a failed PATCH reverts by restoring a value instead of
+// re-deriving the old one from the attribute it just overwrote.
+const chEnabled = state({!! channelEnabledJson !!})
+const testing = state('')
+const tested = state(null)
+
+function channelApi(path) {
+  return `/api/projects/${encodeURIComponent(projectId)}/channels${path || ''}`
+}
+
+function urlPlaceholder() {
+  return HINTS[chType()]
+}
+
+function isOn(id) {
+  return !!chEnabled()[id]
+}
+
+// Every channel id the server rendered is a key here, so the empty state can be
+// reactive: removing the last row now shows it instead of leaving a blank gap.
+function noChannels() {
+  const ids = Object.keys(chEnabled())
+  return ids.length === 0 || ids.every(id => gone().includes(id))
+}
+
+function toggleChannel(id) {
+  const next = !isOn(id)
+  chEnabled.set({ ...chEnabled(), [id]: next })
+  fetch(channelApi(`/${encodeURIComponent(id)}`), {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ enabled: next }),
+  })
+    .then((r) => {
+      if (!r.ok)
+        chEnabled.set({ ...chEnabled(), [id]: !next })
+    })
+    .catch(() => chEnabled.set({ ...chEnabled(), [id]: !next }))
+}
+
+function testLabel(id) {
+  if (testing() === id)
+    return 'Sending…'
+  const t = tested()
+  return t && t.id === id ? t.text : 'Test'
+}
+
+function testChannel(id) {
+  if (testing())
+    return
+  testing.set(id)
+  tested.set(null)
+  fetch(channelApi(`/${encodeURIComponent(id)}/test`), { method: 'POST', headers: authHeaders() })
+    .then((r) => {
+      testing.set('')
+      tested.set({ id, text: r.ok ? 'Sent ✓' : 'Failed' })
+      setTimeout(() => {
+        const t = tested()
+        if (t && t.id === id)
+          tested.set(null)
+      }, 2400)
+    })
+    .catch(() => {
+      testing.set('')
+      tested.set({ id, text: 'Failed' })
+    })
+}
+
+function removeChannel(id) {
+  if (removing())
+    return
+  removing.set(id)
+  whNote.set(null)
+  fetch(channelApi(`/${encodeURIComponent(id)}`), { method: 'DELETE', headers: authHeaders() })
+    .then((r) => {
+      removing.set('')
+      if (r.ok)
+        gone.set([...gone(), id])
+      else
+        whNote.set({ text: 'Could not remove that channel.', ok: false })
+    })
+    .catch(() => {
+      removing.set('')
+      whNote.set({ text: 'Network error.', ok: false })
+    })
+}
+
+function addChannel(e) {
+  e.preventDefault()
+  if (adding())
+    return
+  const form = e.target
+  const url = (form.elements.webhook_url.value || '').trim()
+  if (!url) {
+    whNote.set({ text: 'Paste a webhook URL first.', ok: false })
+    return
+  }
+  adding.set(true)
+  whNote.set(null)
+  fetch(channelApi(), {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ type: chType(), webhook_url: url, label: (form.elements.label.value || '').trim() }),
+  })
+    .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
+    .then((res) => {
+      if (!res.ok) {
+        adding.set(false)
+        whNote.set({ text: res.b.error || 'Could not add that channel.', ok: false })
+        return
+      }
+      // Same reason as an invite: the row has to come back from the server, which
+      // is what masks the webhook URL. The response never echoes the secret.
+      window.location.reload()
+    })
+    .catch(() => {
+      adding.set(false)
+      whNote.set({ text: 'Network error. Try again.', ok: false })
     })
 }
 </script>
@@ -552,40 +690,60 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
         <p class="text-sm mb-4 text-subtle">
           Get pinged in Slack or Discord on a new issue or a regression. The project owner is always emailed too.
         </p>
-        <div id="channel-list" class="flex flex-col gap-2.5 mb-4">
-          @forelse (channelView as c)
-            <div class="panel flex items-center gap-3.5 px-4 py-3.5" data-id="{{ c.id }}">
+        {{-- The toggle carries both `:data-on` and a plain `data-on`, and that is
+             not redundant: stx leaves `:attr` for the client runtime to apply, so
+             the static value is what the switch renders with until then. Same
+             pairing on the URL input's placeholder below. --}}
+        <div class="flex flex-col gap-2.5 mb-4">
+          @foreach (channelView as c)
+            <div class="panel flex items-center gap-3.5 px-4 py-3.5" @if="!gone().includes('{{ c.id }}')">
               <span class="badge badge-{{ c.type }}">{{ c.type === 'slack' ? 'Slack' : 'Discord' }}</span>
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium truncate">{{ c.label }}</div>
                 <div class="text-xs mono truncate mt-0.5 text-subtle">{{ c.mask }}</div>
               </div>
-              <button class="js-test btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Send a test message">Test</button>
-              <div class="js-toggle tgl" data-on="{{ c.enabled ? '1' : '0' }}" role="switch" aria-checked="{{ c.enabled ? 'true' : 'false' }}" title="Enable / disable"></div>
-              <button class="js-delete btn-danger px-2.5 py-1.5 text-xs font-medium" title="Remove">Remove</button>
+              <button @click="testChannel('{{ c.id }}')" :disabled="testing() === '{{ c.id }}'" :text="testLabel('{{ c.id }}')" class="btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Send a test message">Test</button>
+              <div class="tgl" @click="toggleChannel('{{ c.id }}')" :data-on="isOn('{{ c.id }}') ? '1' : '0'" :aria-checked="isOn('{{ c.id }}') ? 'true' : 'false'" data-on="{{ c.enabled ? '1' : '0' }}" role="switch" aria-checked="{{ c.enabled ? 'true' : 'false' }}" title="Enable / disable"></div>
+              <button @click="removeChannel('{{ c.id }}')" :disabled="removing() === '{{ c.id }}'" :text="removeLabel('{{ c.id }}')" class="btn-danger px-2.5 py-1.5 text-xs font-medium" title="Remove">Remove</button>
             </div>
-          @empty
-            <div class="panel px-5 py-8 text-center">
-              <div class="text-sm font-medium mb-1">No chat alerts yet</div>
-              <div class="text-xs text-subtle">Add a Slack or Discord webhook below to start getting pinged.</div>
-            </div>
-          @endforelse
+          @endforeach
+          <div class="panel px-5 py-8 text-center" @if="noChannels()">
+            <div class="text-sm font-medium mb-1">No chat alerts yet</div>
+            <div class="text-xs text-subtle">Add a Slack or Discord webhook below to start getting pinged.</div>
+          </div>
         </div>
         <div class="panel px-5 py-5">
           <div class="text-sm font-semibold mb-3.5">Add a channel</div>
-          <div class="grid grid-cols-2 gap-2 mb-3">
-            <button type="button" id="pick-slack" class="seg seg-slack px-3 py-2.5 text-sm font-medium" data-sel="1">Slack</button>
-            <button type="button" id="pick-discord" class="seg seg-discord px-3 py-2.5 text-sm font-medium" data-sel="0">Discord</button>
-          </div>
-          <input id="wh-url" type="url" class="field w-full px-3.5 py-2.5 text-sm mono mb-2" placeholder="https://hooks.slack.com/services/…" autocomplete="off" spellcheck="false">
-          <input id="wh-label" type="text" class="field w-full px-3.5 py-2.5 text-sm mb-3" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
-          <div class="flex items-center gap-3">
-            <button id="wh-add" class="btn px-4 py-2.5 text-sm font-semibold">Add channel</button>
-            <span id="wh-note" class="note text-xs"></span>
-          </div>
-          <p id="wh-help" class="text-xs mt-3.5 leading-relaxed text-subtle">
-            In Slack: <span class="text-muted">Apps → Incoming Webhooks → Add to a channel</span>, then paste the <span class="mono">hooks.slack.com/services/…</span> URL.
-          </p>
+          <form @submit="addChannel">
+            <div class="grid grid-cols-2 gap-2 mb-3">
+              <button type="button" @click="chType.set('slack')" :data-sel="chType() === 'slack' ? '1' : '0'" class="seg seg-slack px-3 py-2.5 text-sm font-medium" data-sel="1">Slack</button>
+              <button type="button" @click="chType.set('discord')" :data-sel="chType() === 'discord' ? '1' : '0'" class="seg seg-discord px-3 py-2.5 text-sm font-medium" data-sel="0">Discord</button>
+            </div>
+            <input name="webhook_url" type="url" class="field w-full px-3.5 py-2.5 text-sm mono mb-2" :placeholder="urlPlaceholder()" placeholder="https://hooks.slack.com/services/…" autocomplete="off" spellcheck="false">
+            <input name="label" type="text" class="field w-full px-3.5 py-2.5 text-sm mb-3" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
+            <div class="flex items-center gap-3">
+              <button type="submit" :disabled="adding()" :text="adding() ? 'Adding…' : 'Add channel'" class="btn px-4 py-2.5 text-sm font-semibold">Add channel</button>
+              @if (whNote() && whNote().ok)
+                <span class="note show note-ok text-xs" :text="whNote().text"></span>
+              @endif
+              @if (whNote() && !whNote().ok)
+                <span class="note show note-err text-xs" :text="whNote().text"></span>
+              @endif
+            </div>
+          </form>
+          {{-- Both provider hints are markup rather than one element whose
+               textContent gets swapped, so Discord keeps the same styling Slack
+               has instead of degrading to plain text on the first switch. --}}
+          @if (chType() === 'slack')
+            <p class="text-xs mt-3.5 leading-relaxed text-subtle">
+              In Slack: <span class="text-muted">Apps → Incoming Webhooks → Add to a channel</span>, then paste the <span class="mono">hooks.slack.com/services/…</span> URL.
+            </p>
+          @endif
+          @if (chType() === 'discord')
+            <p class="text-xs mt-3.5 leading-relaxed text-subtle">
+              In Discord: <span class="text-muted">Server Settings → Integrations → Webhooks → New Webhook</span>, then copy the <span class="mono">discord.com/api/webhooks/…</span> URL.
+            </p>
+          @endif
         </div>
       </section>
 
@@ -651,78 +809,12 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
   if (!projectId) return
   var auth = { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' }
   var proj = '/api/projects/' + encodeURIComponent(projectId)
-  var chBase = proj + '/channels'
 
   function flash(el, msg, ok) {
     el.textContent = msg
     el.style.color = ok ? 'var(--ok)' : 'var(--accent)'
     el.classList.add('show')
   }
-
-  // ---- Alerts: provider picker + add + row actions (test/toggle/delete) ----
-  var type = 'slack'
-  var slackBtn = document.getElementById('pick-slack')
-  var discordBtn = document.getElementById('pick-discord')
-  var urlInput = document.getElementById('wh-url')
-  var help = document.getElementById('wh-help')
-  var placeholders = { slack: 'https://hooks.slack.com/services/…', discord: 'https://discord.com/api/webhooks/…' }
-  var helps = {
-    slack: 'In Slack: Apps → Incoming Webhooks → Add to a channel, then paste the hooks.slack.com/services/… URL.',
-    discord: 'In Discord: Server Settings → Integrations → Webhooks → New Webhook → Copy Webhook URL.',
-  }
-  function pick(next) {
-    type = next
-    slackBtn.setAttribute('data-sel', next === 'slack' ? '1' : '0')
-    discordBtn.setAttribute('data-sel', next === 'discord' ? '1' : '0')
-    urlInput.setAttribute('placeholder', placeholders[next])
-    help.textContent = helps[next]
-  }
-  slackBtn.addEventListener('click', function () { pick('slack') })
-  discordBtn.addEventListener('click', function () { pick('discord') })
-
-  var whNote = document.getElementById('wh-note')
-  var addBtn = document.getElementById('wh-add')
-  var labelInput = document.getElementById('wh-label')
-  addBtn.addEventListener('click', function () {
-    var url = (urlInput.value || '').trim()
-    if (!url) { flash(whNote, 'Paste a webhook URL first.', false); return }
-    addBtn.disabled = true
-    flash(whNote, 'Adding…', true)
-    fetch(chBase, { method: 'POST', headers: auth, body: JSON.stringify({ type: type, webhook_url: url, label: (labelInput.value || '').trim() }) })
-      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b } }) })
-      .then(function (res) {
-        if (!res.ok) { addBtn.disabled = false; flash(whNote, res.b.error || 'Could not add that channel.', false); return }
-        window.location.reload()
-      })
-      .catch(function () { addBtn.disabled = false; flash(whNote, 'Network error. Try again.', false) })
-  })
-  document.getElementById('channel-list').addEventListener('click', function (e) {
-    var row = e.target.closest('[data-id]')
-    if (!row) return
-    var one = chBase + '/' + encodeURIComponent(row.getAttribute('data-id'))
-    if (e.target.classList.contains('js-test')) {
-      var b1 = e.target; b1.disabled = true; b1.textContent = 'Sending…'
-      fetch(one + '/test', { method: 'POST', headers: auth })
-        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b } }) })
-        .then(function (res) { b1.textContent = res.ok ? 'Sent ✓' : 'Failed'; setTimeout(function () { b1.disabled = false; b1.textContent = 'Test' }, 2400) })
-        .catch(function () { b1.disabled = false; b1.textContent = 'Test' })
-      return
-    }
-    if (e.target.classList.contains('js-toggle')) {
-      var tgl = e.target
-      var next = tgl.getAttribute('data-on') === '1' ? 0 : 1
-      tgl.setAttribute('data-on', String(next)); tgl.setAttribute('aria-checked', next ? 'true' : 'false')
-      fetch(one, { method: 'PATCH', headers: auth, body: JSON.stringify({ enabled: !!next }) })
-        .catch(function () { tgl.setAttribute('data-on', next ? '0' : '1') })
-      return
-    }
-    if (e.target.classList.contains('js-delete')) {
-      var b2 = e.target; b2.disabled = true; b2.textContent = 'Removing…'
-      fetch(one, { method: 'DELETE', headers: auth })
-        .then(function (r) { if (r.ok) row.remove(); else { b2.disabled = false; b2.textContent = 'Remove' } })
-        .catch(function () { b2.disabled = false; b2.textContent = 'Remove' })
-    }
-  })
 
   // ---- Danger zone: archive / delete behind a type-to-confirm modal ----
   var dzPanel = document.querySelector('.danger-panel')
