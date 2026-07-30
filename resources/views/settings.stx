@@ -115,6 +115,112 @@ function installGuide(platform, key) {
   return { label: 'HTML', install: '', code: scriptTag }
 }
 const guide = activeProject ? installGuide(activeProject.platform, keyFull) : { label: '', install: '', code: '' }
+
+// Handed to the client block as JS literals. The copy buttons and the key
+// controls used to read these back out of data-attributes and sibling
+// textContent; passing them directly means no DOM round-trip.
+const guideInstallJson = JSON.stringify(guide.install || '')
+const guideCodeJson = JSON.stringify(guide.code || '')
+const keyFullJson = JSON.stringify(keyFull)
+const keyMaskJson = JSON.stringify(keyMask)
+const projectIdJson = JSON.stringify(projectId || '')
+</script>
+
+<script client>
+// The theme is not owned by this page: it lives on the root html element (which
+// the SPA router never swaps) and in localStorage. The signal mirrors it so the
+// button can render the right icon; it is not the source of truth.
+function effectiveTheme() {
+  return document.documentElement.getAttribute('data-theme')
+    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+}
+
+const theme = state(effectiveTheme())
+
+function toggleTheme() {
+  const next = theme() === 'dark' ? 'light' : 'dark'
+  document.documentElement.setAttribute('data-theme', next)
+  try { localStorage.setItem('bughq_theme', next) }
+  catch { /* Safari private mode */ }
+  theme.set(next)
+}
+
+const installText = {!! guideInstallJson !!}
+const codeText = {!! guideCodeJson !!}
+const projectId = {!! projectIdJson !!}
+
+// One signal names whichever button most recently copied, so every Copy button
+// on the page shares the same "Copied" affordance without any of them holding
+// its own restore timer.
+const copied = state('')
+
+function copyLabel(which, done) {
+  return copied() === which ? (done || 'Copied') : 'Copy'
+}
+
+function copyText(which, text) {
+  const mark = () => {
+    copied.set(which)
+    setTimeout(() => {
+      if (copied() === which)
+        copied.set('')
+    }, 1400)
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText && text)
+    navigator.clipboard.writeText(text).then(mark, mark)
+  else
+    mark()
+}
+
+function switchProject(e) {
+  document.cookie = `bughq_project=${encodeURIComponent(e.target.value)}; path=/; max-age=31536000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`
+  window.location.href = '/settings'
+}
+
+// ---- API key -------------------------------------------------------------
+const currentKey = state({!! keyFullJson !!})
+const maskedKey = state({!! keyMaskJson !!})
+const revealed = state(false)
+const rotating = state(false)
+const keyNote = state(null)
+
+function keyDisplay() {
+  return revealed() ? currentKey() : maskedKey()
+}
+
+function toggleReveal() {
+  revealed.set(!revealed())
+}
+
+function rotateKey() {
+  const ask = window.stxConfirm
+    ? window.stxConfirm('The current key stops working immediately — any SDK still sending it will get 401 until you update its config. Continue?', { title: 'Rotate API key?', confirmText: 'Rotate key', cancelText: 'Cancel', type: 'warning' })
+    : Promise.resolve(window.confirm('Rotate the API key? The current key stops working immediately.'))
+  Promise.resolve(ask).then((ok) => {
+    if (!ok)
+      return
+    rotating.set(true)
+    fetch(`/api/projects/${encodeURIComponent(projectId)}/rotate-key`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+    })
+      .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
+      .then((res) => {
+        rotating.set(false)
+        if (!res.ok) {
+          keyNote.set({ text: res.b.error || 'Rotate failed.', ok: false })
+          return
+        }
+        currentKey.set(res.b.ingest_key)
+        revealed.set(true)
+        keyNote.set({ text: 'New key generated. Update your SDK config with it.', ok: true })
+      })
+      .catch(() => {
+        rotating.set(false)
+        keyNote.set({ text: 'Network error.', ok: false })
+      })
+  })
+}
 </script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -171,6 +277,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 .seg-discord[data-sel="1"] { background: var(--discord); }
 .note { display: none; }
 .note.show { display: block; }
+/* Colour variants for notes rendered from signals, so the state is a class
+   rather than an inline style assignment. */
+.note-ok { color: var(--ok); }
+.note-err { color: var(--accent); }
 .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 9px; color: var(--text-2); background: var(--panel); cursor: pointer; transition: color .15s ease, border-color .15s ease; }
 .icon-btn:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .icon-btn svg { width: 17px; height: 17px; }
@@ -219,7 +329,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     <header class="flex items-center justify-between gap-4 mb-7">
       <StxLink to="/projects" class="wordmark-link"><h1 class="wordmark text-2xl leading-none">bughq</h1></StxLink>
       <div class="flex items-center gap-2">
-        <button id="theme-toggle" class="icon-btn theme-btn" title="Toggle theme" aria-label="Toggle theme">
+        <button class="icon-btn theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
@@ -240,7 +350,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
         <div class="flex items-center gap-3 flex-wrap">
           <h2 class="text-xl font-semibold" style="letter-spacing:-0.02em">Settings</h2>
           @if (projects.length > 1)
-            <select id="proj-switch" class="panel mono px-3 py-1.5 text-sm text-muted">
+            <select @change="switchProject" class="panel mono px-3 py-1.5 text-sm text-muted">
               @foreach (projects as p)
                 <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}</option>
               @endforeach
@@ -271,12 +381,12 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
           @if (guide.install)
             <div class="relative mb-2">
               <div class="code-block">{{ guide.install }}</div>
-              <button type="button" class="copy-btn" data-copy>Copy</button>
+              <button type="button" class="copy-btn" @click="copyText('install', installText)" :text="copyLabel('install')">Copy</button>
             </div>
           @endif
           <div class="relative">
             <div class="code-block" style="white-space: pre">{{ guide.code }}</div>
-            <button type="button" class="copy-btn" data-copy>Copy</button>
+            <button type="button" class="copy-btn" @click="copyText('code', codeText)" :text="copyLabel('code')">Copy</button>
           </div>
         </div>
       </section>
@@ -290,15 +400,20 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
             It's a public identifier (safe to ship in client code), not a secret — it says <em>which</em> project a report belongs to.
           </p>
           <div class="flex items-center gap-2 flex-wrap">
-            <code id="key-view" data-full="{{ keyFull }}" data-mask="{{ keyMask }}" class="field mono px-3.5 py-2.5 text-sm flex-1 min-w-[220px] truncate" style="letter-spacing:0.01em">{{ keyMask }}</code>
-            <button id="key-reveal" class="btn-ghost px-3 py-2 text-sm font-medium">Reveal</button>
-            <button id="key-copy" class="btn-ghost px-3 py-2 text-sm font-medium">Copy</button>
-            <button id="key-rotate" class="btn-danger px-3 py-2 text-sm font-medium">Rotate</button>
+            <code :text="keyDisplay()" class="field mono px-3.5 py-2.5 text-sm flex-1 min-w-[220px] truncate" style="letter-spacing:0.01em">{{ keyMask }}</code>
+            <button @click="toggleReveal" :text="revealed() ? 'Hide' : 'Reveal'" class="btn-ghost px-3 py-2 text-sm font-medium">Reveal</button>
+            <button @click="copyText('key', currentKey())" :text="copyLabel('key')" class="btn-ghost px-3 py-2 text-sm font-medium">Copy</button>
+            <button @click="rotateKey" :disabled="rotating()" class="btn-danger px-3 py-2 text-sm font-medium">Rotate</button>
           </div>
           <p class="text-xs mt-3.5 leading-relaxed text-subtle">
             Rotating generates a new key and <span style="color: var(--warn)">invalidates the current one immediately</span> — any SDK still sending the old key will get 401 until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
           </p>
-          <span id="key-note" class="note text-xs mt-2"></span>
+          @if (keyNote() && keyNote().ok)
+            <span class="note show note-ok text-xs mt-2" :text="keyNote().text"></span>
+          @endif
+          @if (keyNote() && !keyNote().ok)
+            <span class="note show note-err text-xs mt-2" :text="keyNote().text"></span>
+          @endif
         </div>
       </section>
 
@@ -453,21 +568,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     return
   }
 
-  // Theme toggle (light/dark, persisted per device).
-  var themeBtn = document.getElementById('theme-toggle')
-  if (themeBtn) {
-    var mq = window.matchMedia('(prefers-color-scheme: dark)')
-    var effTheme = function () { return document.documentElement.getAttribute('data-theme') || (mq.matches ? 'dark' : 'light') }
-    var paintTheme = function () { themeBtn.setAttribute('data-t', effTheme()) }
-    paintTheme()
-    themeBtn.addEventListener('click', function () {
-      var next = effTheme() === 'dark' ? 'light' : 'dark'
-      document.documentElement.setAttribute('data-theme', next)
-      try { localStorage.setItem('bughq_theme', next) } catch (e) {}
-      paintTheme()
-    })
-  }
-
   var projectId = {{ projectId ? `'${projectId}'` : 'null' }}
   if (!projectId) return
   var auth = { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' }
@@ -479,70 +579,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     el.style.color = ok ? 'var(--ok)' : 'var(--accent)'
     el.classList.add('show')
   }
-
-  // ---- Install: copy buttons ----
-  document.querySelectorAll('.copy-btn').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var code = b.previousElementSibling ? b.previousElementSibling.textContent : ''
-      if (navigator.clipboard && code) {
-        navigator.clipboard.writeText(code).then(function () {
-          var prev = b.textContent
-          b.textContent = 'Copied'
-          setTimeout(function () { b.textContent = prev }, 1200)
-        })
-      }
-    })
-  })
-
-  // ---- Project switcher (owner's own projects) ----
-  var sw = document.getElementById('proj-switch')
-  if (sw) sw.addEventListener('change', function () {
-    document.cookie = 'bughq_project=' + encodeURIComponent(this.value) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
-    window.location.href = '/settings'
-  })
-
-  // ---- Keys: reveal / copy / rotate ----
-  var keyView = document.getElementById('key-view')
-  var keyReveal = document.getElementById('key-reveal')
-  var keyCopy = document.getElementById('key-copy')
-  var keyRotate = document.getElementById('key-rotate')
-  var keyNote = document.getElementById('key-note')
-  // Read the key from data-attributes (HTML-escaped, not JS-quoted like a
-  // {{ }} inside <script>, which stx JSON-encodes and would double-quote).
-  var fullKey = keyView ? keyView.getAttribute('data-full') : ''
-  var maskVal = keyView ? keyView.getAttribute('data-mask') : ''
-  var revealed = false
-  keyReveal.addEventListener('click', function () {
-    revealed = !revealed
-    keyView.textContent = revealed ? fullKey : maskVal
-    keyReveal.textContent = revealed ? 'Hide' : 'Reveal'
-  })
-  keyCopy.addEventListener('click', function () {
-    var done = function () { var o = keyCopy.textContent; keyCopy.textContent = 'Copied'; setTimeout(function () { keyCopy.textContent = o }, 1400) }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(fullKey).then(done, done)
-    else done()
-  })
-  keyRotate.addEventListener('click', function () {
-    var ask = window.stxConfirm
-      ? window.stxConfirm('The current key stops working immediately — any SDK still sending it will get 401 until you update its config. Continue?', { title: 'Rotate API key?', confirmText: 'Rotate key', cancelText: 'Cancel', type: 'warning' })
-      : Promise.resolve(window.confirm('Rotate the API key? The current key stops working immediately.'))
-    Promise.resolve(ask).then(function (ok) {
-      if (!ok) return
-      keyRotate.disabled = true
-      fetch(proj + '/rotate-key', { method: 'POST', headers: auth })
-        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b } }) })
-        .then(function (res) {
-          keyRotate.disabled = false
-          if (!res.ok) { flash(keyNote, res.b.error || 'Rotate failed.', false); return }
-          fullKey = res.b.ingest_key
-          revealed = true
-          keyView.textContent = fullKey
-          keyReveal.textContent = 'Hide'
-          flash(keyNote, 'New key generated. Update your SDK config with it.', true)
-        })
-        .catch(function () { keyRotate.disabled = false; flash(keyNote, 'Network error.', false) })
-    })
-  })
 
   // ---- Members: invite / remove ----
   var inviteEmail = document.getElementById('invite-email')
