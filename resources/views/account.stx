@@ -1,3 +1,57 @@
+<script client>
+// The account view is entirely client-rendered: /api/me is the only source, so
+// the page ships a skeleton and fills in from these signals. Nothing here
+// touches the DOM - the template binds to user() and pro().
+const user = state(null)
+const pro = state(false)
+
+function initial(s) {
+  return (s || '?').trim().charAt(0).toUpperCase()
+}
+
+function fmtDate(v) {
+  if (!v)
+    return '--'
+  const d = new Date(v)
+  return Number.isNaN(d.getTime())
+    ? '--'
+    : d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+function logout() {
+  const token = localStorage.getItem('token')
+  try {
+    fetch('/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+  }
+  catch { /* best effort: the local session is cleared either way */ }
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  document.cookie = 'bughq_token=; path=/; max-age=0'
+  window.location.assign('/login')
+}
+
+// Runs on hydration, including after a fragment swap onto this page.
+const token = localStorage.getItem('token')
+if (token) {
+  fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } })
+    .then((r) => {
+      if (r.status === 401) {
+        localStorage.removeItem('token')
+        window.location.replace('/login')
+        return null
+      }
+      return r.json()
+    })
+    .then((d) => {
+      if (!d || !d.user)
+        return
+      user.set(d.user)
+      pro.set(d.pro === true)
+    })
+    .catch(() => { /* leave the skeleton in place */ })
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -61,7 +115,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     <a href="/" data-no-router class="wordmark text-lg">bughq</a>
     <div class="flex items-center gap-2.5">
       <StxLink to="/dashboard" class="btn btn-ghost px-3.5 py-2 text-sm">Dashboard</StxLink>
-      <button id="logout" class="btn btn-ghost px-3.5 py-2 text-sm">Log out</button>
+      <button @click="logout" class="btn btn-ghost px-3.5 py-2 text-sm">Log out</button>
     </div>
   </header>
 
@@ -73,13 +127,24 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 
     <section class="card p-6 mb-5">
       <div class="flex items-center gap-4">
-        <img id="avatar" class="avatar w-14 h-14" alt="" width="56" height="56" style="display:none">
-        <div id="avatar-fallback" class="avatar w-14 h-14 grid place-items-center text-accent" style="font-weight: 700; font-size: 1.25rem"></div>
+        @if (user() && user().avatar)
+          <img class="avatar w-14 h-14" :src="user().avatar" alt="" width="56" height="56">
+        @endif
+        @if (!user() || !user().avatar)
+          <div class="avatar w-14 h-14 grid place-items-center text-accent" style="font-weight: 700; font-size: 1.25rem">{{ user() ? initial(user().name || user().email) : '' }}</div>
+        @endif
         <div class="min-w-0">
-          <div id="name" class="skeleton" style="width: 160px; height: 20px"></div>
-          <div id="email" class="text-sm mt-1.5 text-muted"></div>
+          @if (!user())
+            <div class="skeleton" style="width: 160px; height: 20px"></div>
+          @endif
+          @if (user())
+            <div class="text-lg font-semibold">{{ user().name || 'Your account' }}</div>
+          @endif
+          <div class="text-sm mt-1.5 text-muted">{{ user() ? (user().email || '') : '' }}</div>
         </div>
-        <span id="provider" class="badge px-2.5 py-1 ml-auto" style="display:none"></span>
+        @if (user() && user().provider)
+          <span class="badge px-2.5 py-1 ml-auto">{{ user().provider }}</span>
+        @endif
       </div>
     </section>
 
@@ -87,14 +152,24 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       <div class="flex items-center justify-between px-6 py-4">
         <div>
           <div class="text-xs uppercase tracking-wide text-subtle" style="font-family: var(--mono)">Plan</div>
-          <div id="plan" class="text-base font-semibold mt-1">Free</div>
+          <div class="text-base font-semibold mt-1">
+            {{ pro() ? 'Pro' : 'Free' }}
+            @if (pro())
+              <span class="badge badge-pro px-2 py-0.5 ml-1">active</span>
+            @endif
+          </div>
         </div>
-        <StxLink id="plan-cta" to="/pricing" class="btn btn-primary px-4 py-2 text-sm">Upgrade to Pro</StxLink>
+        @if (pro())
+          <StxLink to="/pricing" class="btn btn-ghost px-4 py-2 text-sm">Manage plan</StxLink>
+        @endif
+        @if (!pro())
+          <StxLink to="/pricing" class="btn btn-primary px-4 py-2 text-sm">Upgrade to Pro</StxLink>
+        @endif
       </div>
       <div class="row flex items-center justify-between px-6 py-4">
         <div>
           <div class="text-xs uppercase tracking-wide text-subtle" style="font-family: var(--mono)">Member since</div>
-          <div id="since" class="text-base mt-1 text-muted">--</div>
+          <div class="text-base mt-1 text-muted">{{ user() ? fmtDate(user().created_at) : '--' }}</div>
         </div>
         <StxLink to="/dashboard" class="btn btn-ghost px-4 py-2 text-sm">Open dashboard</StxLink>
       </div>
@@ -106,68 +181,12 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
   </div>
 </div>
 
+<!-- Guard only: bounce to /login before paint if there is no token. Everything
+     the account view renders is driven by the signals in the client script
+     block at the top of this file. -->
 <script>
 (function () {
-  var token = localStorage.getItem('token')
-  if (!token) { window.location.replace('/login'); return }
-
-  document.getElementById('logout').addEventListener('click', function () {
-    try {
-      fetch('/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } })
-    } catch (e) {}
-    localStorage.removeItem('token'); localStorage.removeItem('user')
-    document.cookie = 'bughq_token=; path=/; max-age=0'
-    window.location.assign('/login')
-  })
-
-  function initial(s) { return (s || '?').trim().charAt(0).toUpperCase() }
-  function fmtDate(v) {
-    if (!v) return '--'
-    var d = new Date(v)
-    if (isNaN(d.getTime())) return '--'
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
-  }
-
-  fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } })
-    .then(function (r) {
-      if (r.status === 401) { localStorage.removeItem('token'); window.location.replace('/login'); return null }
-      return r.json()
-    })
-    .then(function (d) {
-      if (!d || !d.user) return
-      var u = d.user
-      var nameEl = document.getElementById('name')
-      nameEl.className = 'text-lg font-semibold'
-      nameEl.style.width = 'auto'; nameEl.style.height = 'auto'
-      nameEl.textContent = u.name || 'Your account'
-      document.getElementById('email').textContent = u.email || ''
-      document.getElementById('since').textContent = fmtDate(u.created_at)
-
-      if (u.avatar) {
-        var img = document.getElementById('avatar')
-        img.src = u.avatar; img.style.display = 'block'
-        document.getElementById('avatar-fallback').style.display = 'none'
-      } else {
-        document.getElementById('avatar-fallback').textContent = initial(u.name || u.email)
-      }
-
-      if (u.provider) {
-        var p = document.getElementById('provider')
-        p.textContent = u.provider
-        p.style.display = 'inline-block'
-      }
-
-      var isPro = d.pro === true
-      var plan = document.getElementById('plan')
-      plan.textContent = isPro ? 'Pro' : 'Free'
-      var cta = document.getElementById('plan-cta')
-      if (isPro) {
-        plan.className = 'text-base font-semibold mt-1'
-        plan.insertAdjacentHTML('beforeend', ' <span class="badge badge-pro px-2 py-0.5 ml-1">active</span>')
-        cta.textContent = 'Manage plan'
-        cta.className = 'btn btn-ghost px-4 py-2 text-sm'
-      }
-    })
-    .catch(function () {})
+  if (!localStorage.getItem('token'))
+    window.location.replace('/login')
 })()
 </script>
