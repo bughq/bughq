@@ -154,8 +154,8 @@ const projectId = {!! projectIdJson !!}
 // its own restore timer.
 const copied = state('')
 
-function copyLabel(which, done) {
-  return copied() === which ? (done || 'Copied') : 'Copy'
+function copyLabel(which, done, idle) {
+  return copied() === which ? (done || 'Copied') : (idle || 'Copy')
 }
 
 function copyText(which, text) {
@@ -220,6 +220,78 @@ function rotateKey() {
         keyNote.set({ text: 'Network error.', ok: false })
       })
   })
+}
+
+// ---- Members -------------------------------------------------------------
+// The list stays server-rendered. Each row already carries its own id, so
+// removing someone only has to hide one row — there is nothing to re-render,
+// and no delegated listener walking up from the click target to work out which
+// button was hit. `gone` holds the ids that have left; each row's @if reads it.
+const gone = state([])
+const removing = state('')
+const inviting = state(false)
+const inviteNote = state(null)
+
+function memberApi(path) {
+  return `/api/projects/${encodeURIComponent(projectId)}/members${path || ''}`
+}
+
+function authHeaders() {
+  return { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' }
+}
+
+function removeLabel(id) {
+  return removing() === id ? 'Removing…' : 'Remove'
+}
+
+function removeMember(id) {
+  if (removing())
+    return
+  removing.set(id)
+  inviteNote.set(null)
+  fetch(memberApi(`/${encodeURIComponent(id)}`), { method: 'DELETE', headers: authHeaders() })
+    .then((r) => {
+      removing.set('')
+      if (r.ok)
+        gone.set([...gone(), id])
+      else
+        inviteNote.set({ text: 'Could not remove that person.', ok: false })
+    })
+    .catch(() => {
+      removing.set('')
+      inviteNote.set({ text: 'Network error.', ok: false })
+    })
+}
+
+function inviteMember(e) {
+  e.preventDefault()
+  if (inviting())
+    return
+  const email = (e.target.elements.email.value || '').trim()
+  if (!email) {
+    inviteNote.set({ text: 'Enter an email address.', ok: false })
+    return
+  }
+  inviting.set(true)
+  inviteNote.set(null)
+  fetch(memberApi(), { method: 'POST', headers: authHeaders(), body: JSON.stringify({ email }) })
+    .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
+    .then((res) => {
+      inviting.set(false)
+      if (!res.ok) {
+        inviteNote.set({ text: res.b.error || 'Could not invite.', ok: false })
+        return
+      }
+      // The new row has to come back from the server. POST /members answers with
+      // the email and join URL but no invite id, and without an id the row would
+      // have no handle for a later Remove. Reloading is cheaper than inventing a
+      // second round-trip to go find it.
+      window.location.reload()
+    })
+    .catch(() => {
+      inviting.set(false)
+      inviteNote.set({ text: 'Network error.', ok: false })
+    })
 }
 </script>
 
@@ -420,7 +492,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       <!-- ============================ MEMBERS ============================ -->
       <section id="members" class="sec mb-10">
         <div class="sec-title mb-3">Members</div>
-        <div id="member-list" class="flex flex-col gap-2.5 mb-4">
+        <div class="flex flex-col gap-2.5 mb-4">
           <!-- Owner (always first, not removable) -->
           <div class="panel flex items-center gap-3.5 px-4 py-3.5">
             <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold badge-owner">{{ (ownerEmail || '?').charAt(0).toUpperCase() }}</span>
@@ -431,36 +503,43 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
             <span class="badge badge-owner">Owner</span>
           </div>
           @foreach (memberView as m)
-            <div class="panel flex items-center gap-3.5 px-4 py-3.5" data-member="{{ m.id }}">
+            <div class="panel flex items-center gap-3.5 px-4 py-3.5" @if="!gone().includes('{{ m.id }}')">
               <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold text-muted" style="background: color-mix(in srgb, var(--text-3) 16%, var(--panel))">{{ (m.email || '?').charAt(0).toUpperCase() }}</span>
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium truncate">{{ m.email }}</div>
                 <div class="text-xs mt-0.5 text-subtle">Can view &amp; triage issues</div>
               </div>
               <span class="badge badge-soft">Member</span>
-              <button class="js-member-remove btn-danger px-2.5 py-1.5 text-xs font-medium" title="Remove">Remove</button>
+              <button @click="removeMember('{{ m.id }}')" :disabled="removing() === '{{ m.id }}'" :text="removeLabel('{{ m.id }}')" class="btn-danger px-2.5 py-1.5 text-xs font-medium" title="Remove">Remove</button>
             </div>
           @endforeach
           @foreach (inviteView as i)
-            <div class="panel flex items-center gap-3.5 px-4 py-3.5" data-member="{{ i.id }}" data-join="{{ i.join }}">
+            <div class="panel flex items-center gap-3.5 px-4 py-3.5" @if="!gone().includes('{{ i.id }}')">
               <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold text-subtle" style="background: color-mix(in srgb, var(--text-3) 12%, var(--panel))">{{ (i.email || '?').charAt(0).toUpperCase() }}</span>
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium truncate">{{ i.email }}</div>
                 <div class="text-xs mt-0.5 text-subtle">{{ i.registered ? 'Has an account — pending accept' : 'Invite sent — awaiting sign-up' }}</div>
               </div>
               <span class="badge badge-pending" title="Pending — becomes a member once they accept">Invited</span>
-              <button class="js-copy-join btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Copy join link">Copy link</button>
-              <button class="js-member-remove btn-danger px-2.5 py-1.5 text-xs font-medium" title="Revoke invite">Remove</button>
+              <button @click="copyText('join-{{ i.id }}', '{{ i.join }}')" :text="copyLabel('join-{{ i.id }}', 'Copied ✓', 'Copy link')" class="btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Copy join link">Copy link</button>
+              <button @click="removeMember('{{ i.id }}')" :disabled="removing() === '{{ i.id }}'" :text="removeLabel('{{ i.id }}')" class="btn-danger px-2.5 py-1.5 text-xs font-medium" title="Revoke invite">Remove</button>
             </div>
           @endforeach
         </div>
         <div class="panel px-5 py-5">
           <div class="text-sm font-semibold mb-3">Invite a teammate</div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <input id="invite-email" type="email" class="field flex-1 min-w-[220px] px-3.5 py-2.5 text-sm" placeholder="teammate@company.com" autocomplete="off">
-            <button id="invite-add" class="btn px-4 py-2.5 text-sm font-semibold">Invite</button>
-          </div>
-          <span id="invite-note" class="note text-xs mt-2.5"></span>
+          <form @submit="inviteMember">
+            <div class="flex items-center gap-2 flex-wrap">
+              <input name="email" type="email" class="field flex-1 min-w-[220px] px-3.5 py-2.5 text-sm" placeholder="teammate@company.com" autocomplete="off">
+              <button type="submit" :disabled="inviting()" :text="inviting() ? 'Inviting…' : 'Invite'" class="btn px-4 py-2.5 text-sm font-semibold">Invite</button>
+            </div>
+          </form>
+          @if (inviteNote() && inviteNote().ok)
+            <span class="note show note-ok text-xs mt-2.5" :text="inviteNote().text"></span>
+          @endif
+          @if (inviteNote() && !inviteNote().ok)
+            <span class="note show note-err text-xs mt-2.5" :text="inviteNote().text"></span>
+          @endif
           <p class="text-xs mt-3.5 leading-relaxed text-subtle">
             We email them a join link. They sign up (or log in) with that email, then accept from a banner in the app. Members can view and triage issues; only you can manage keys, members, and deletion.
           </p>
@@ -579,45 +658,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     el.style.color = ok ? 'var(--ok)' : 'var(--accent)'
     el.classList.add('show')
   }
-
-  // ---- Members: invite / remove ----
-  var inviteEmail = document.getElementById('invite-email')
-  var inviteAdd = document.getElementById('invite-add')
-  var inviteNote = document.getElementById('invite-note')
-  inviteAdd.addEventListener('click', function () {
-    var email = (inviteEmail.value || '').trim()
-    if (!email) { flash(inviteNote, 'Enter an email address.', false); return }
-    inviteAdd.disabled = true
-    fetch(proj + '/members', { method: 'POST', headers: auth, body: JSON.stringify({ email: email }) })
-      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b } }) })
-      .then(function (res) {
-        inviteAdd.disabled = false
-        if (!res.ok) { flash(inviteNote, res.b.error || 'Could not invite.', false); return }
-        window.location.reload()
-      })
-      .catch(function () { inviteAdd.disabled = false; flash(inviteNote, 'Network error.', false) })
-  })
-  document.getElementById('member-list').addEventListener('click', function (e) {
-    var row = e.target.closest('[data-member]')
-    if (!row) return
-
-    // Copy the join link for a pending invite (handy when email isn't delivered).
-    if (e.target.classList.contains('js-copy-join')) {
-      var cbtn = e.target, link = row.getAttribute('data-join') || ''
-      var done = function () { var o = cbtn.textContent; cbtn.textContent = 'Copied ✓'; setTimeout(function () { cbtn.textContent = o }, 1600) }
-      if (navigator.clipboard && link) navigator.clipboard.writeText(link).then(done, done)
-      else done()
-      return
-    }
-
-    if (e.target.classList.contains('js-member-remove')) {
-      var btn = e.target
-      btn.disabled = true; btn.textContent = 'Removing…'
-      fetch(proj + '/members/' + encodeURIComponent(row.getAttribute('data-member')), { method: 'DELETE', headers: auth })
-        .then(function (r) { if (r.ok) row.remove(); else { btn.disabled = false; btn.textContent = 'Remove' } })
-        .catch(function () { btn.disabled = false; btn.textContent = 'Remove' })
-    }
-  })
 
   // ---- Alerts: provider picker + add + row actions (test/toggle/delete) ----
   var type = 'slack'
