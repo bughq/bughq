@@ -207,6 +207,54 @@ const stats = [
 ]
 </script>
 
+<script client>
+// The theme is not owned by this page: it lives on the root html element (which
+// the SPA router never swaps) and in localStorage. The signal mirrors it so the
+// button can render the right icon; it is not the source of truth.
+function effectiveTheme() {
+  return document.documentElement.getAttribute('data-theme')
+    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+}
+
+const theme = state(effectiveTheme())
+
+function toggleTheme() {
+  const next = theme() === 'dark' ? 'light' : 'dark'
+  document.documentElement.setAttribute('data-theme', next)
+  try { localStorage.setItem('bughq_theme', next) }
+  catch { /* Safari private mode */ }
+  theme.set(next)
+}
+
+function signOut() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  document.cookie = 'bughq_token=; path=/; max-age=0'
+  window.location.assign('/login')
+}
+
+// Drives the Upgrade/Pro chrome. Only the plan is client-resolved; everything
+// else on this page is already rendered by the server block above.
+const pro = state(false)
+
+const authToken = localStorage.getItem('token')
+if (authToken) {
+  fetch('/api/me', { headers: { Authorization: `Bearer ${authToken}` } })
+    .then((r) => {
+      if (r.status === 401) {
+        signOut()
+        return null
+      }
+      return r.ok ? r.json() : null
+    })
+    .then((d) => {
+      if (d && d.pro)
+        pro.set(true)
+    })
+    .catch(() => { /* leave the Upgrade button as-is */ })
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
@@ -256,13 +304,21 @@ select.panel {
 :root[data-theme="dark"] select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
 :root[data-theme="light"] select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2397a1b2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
 select.panel:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
-/* JS-injected chrome (Log out / Upgrade): inline styles cannot hover, so the
-   colors live here and the script only sets position/typography inline. */
-.chrome-logout { border: 1px solid var(--border); background: var(--panel); color: var(--text-2); transition: color 0.15s ease, border-color 0.15s ease; }
+/* Fixed chrome (Log out / Upgrade). These used to be built with createElement
+   and positioned with an inline cssText string, which is why the position and
+   typography were split from the colors. They are ordinary markup now, so the
+   whole rule lives here. */
+.chrome-btn { position: fixed; top: 16px; z-index: 60; padding: 8px 13px; border-radius: 9px;
+  font-family: var(--sans, ui-sans-serif); font-size: 13px; line-height: 1; }
+.chrome-logout { right: 18px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); background: var(--panel); color: var(--text-2); transition: color 0.15s ease, border-color 0.15s ease; }
 .chrome-logout:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
-.chrome-upgrade { background: var(--accent); color: #fff; transition: filter 0.15s ease, transform 0.12s ease; }
+.chrome-upgrade { right: 112px; font-weight: 600; text-decoration: none;
+  background: var(--accent); color: #fff; transition: filter 0.15s ease, transform 0.12s ease; }
 .chrome-upgrade:hover { filter: brightness(1.12); }
 .chrome-upgrade:active { transform: translateY(1px); }
+.chrome-pro { right: 112px; font-weight: 600; text-decoration: none;
+  background: transparent; color: var(--accent); border: 1px solid var(--accent); cursor: default; }
 .reveal { opacity: 0; transform: translateY(10px); animation: reveal 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
 @keyframes reveal { to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .reveal { animation: none; opacity: 1; transform: none; } }
@@ -342,7 +398,7 @@ summary::-webkit-details-marker { display: none; }
         @endif
         <StxLink to="/projects" class="pill px-3 py-1.5 text-sm font-medium border text-muted border-line">All apps</StxLink>
         <StxLink to="/projects/new" class="pill px-3 py-1.5 text-sm font-medium border text-muted border-line">+ New app</StxLink>
-        <button id="theme-toggle" class="icon-btn theme-btn" title="Toggle theme" aria-label="Toggle theme">
+        <button class="icon-btn theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
@@ -440,6 +496,18 @@ summary::-webkit-details-marker { display: none; }
         <p class="text-sm text-subtle">Accept an invitation above to get started, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
       </div>
     @endif
+
+    {{-- Fixed chrome. Markup rather than createElement, which means it belongs
+         to the fragment and leaves with it on a swap - no stale-node cleanup,
+         no re-appending on every visit. Both are position:fixed, so sitting
+         here in the tree does not affect where they paint. --}}
+    @if (pro())
+      <span class="chrome-btn chrome-pro">Pro</span>
+    @endif
+    @if (!pro())
+      <StxLink to="/pricing" class="chrome-btn chrome-upgrade">Upgrade</StxLink>
+    @endif
+    <button @click="signOut" class="chrome-btn chrome-logout">Log out</button>
     @endif
 
     <footer class="mt-12 text-center text-xs text-subtle">
@@ -474,13 +542,6 @@ summary::-webkit-details-marker { display: none; }
     return
   }
 
-  function signOut() {
-    localStorage.removeItem('token'); localStorage.removeItem('user')
-    document.cookie = 'bughq_token=; path=/; max-age=0'
-    window.location.assign('/login')
-  }
-  var auth = { headers: { Authorization: 'Bearer ' + t } }
-
   // Deep links may carry ?project= (create-app redirect, All apps cards,
   // alert emails). The server already rendered that project; persist the
   // choice into the cookie and scrub the param so the address bar stays a
@@ -513,52 +574,5 @@ summary::-webkit-details-marker { display: none; }
       .catch(function () { jbtn.disabled = false; jbtn.textContent = 'Join' })
   })
 
-  // Theme toggle (light/dark, persisted per device). Defaults to the system
-  // preference until the user picks one, then that choice sticks.
-  var themeBtn = document.getElementById('theme-toggle')
-  if (themeBtn) {
-    var mq = window.matchMedia('(prefers-color-scheme: dark)')
-    var effTheme = function () { return document.documentElement.getAttribute('data-theme') || (mq.matches ? 'dark' : 'light') }
-    var paintTheme = function () { themeBtn.setAttribute('data-t', effTheme()) }
-    paintTheme()
-    themeBtn.addEventListener('click', function () {
-      var next = effTheme() === 'dark' ? 'light' : 'dark'
-      document.documentElement.setAttribute('data-theme', next)
-      try { localStorage.setItem('bughq_theme', next) } catch (e) {}
-      paintTheme()
-    })
-  }
-
-  // Chrome: logout + upgrade/plan badge.
-  var btn = document.createElement('button')
-  btn.textContent = 'Log out'
-  btn.className = 'chrome-logout'
-  btn.style.cssText = 'position:fixed;top:16px;right:18px;font:500 13px/1 var(--sans,ui-sans-serif);padding:8px 13px;border-radius:9px;cursor:pointer;z-index:60'
-  btn.addEventListener('click', signOut)
-  var up = document.createElement('a')
-  up.textContent = 'Upgrade'; up.href = '/pricing'
-  up.className = 'chrome-upgrade'
-  up.style.cssText = 'position:fixed;top:16px;right:112px;font:600 13px/1 var(--sans,ui-sans-serif);padding:8px 13px;border-radius:9px;text-decoration:none;z-index:60'
-  // Mount inside <main>, NOT document.body: <main> is the container the SPA
-  // router swaps, so this chrome leaves with the page. Appended to body it
-  // survived the swap and painted stale, unstyled "Upgrade"/"Log out" over
-  // /settings and /issue (its .chrome-* CSS lives in this page's <style>, which
-  // does get swapped). Both are position:fixed, so the parent doesn't move them.
-  // The guard keeps repeat SPA visits from stacking duplicate pairs.
-  var chromeHost = document.querySelector('main') || document.body
-  var stale = chromeHost.querySelectorAll('.chrome-logout, .chrome-upgrade')
-  for (var s = 0; s < stale.length; s++) stale[s].remove()
-  chromeHost.appendChild(up); chromeHost.appendChild(btn)
-
-  fetch('/api/me', auth)
-    .then(function (r) { if (r.status === 401) { signOut(); return null } return r.ok ? r.json() : null })
-    .then(function (d) {
-      if (d && d.pro) {
-        up.textContent = 'Pro'; up.removeAttribute('href')
-        up.style.background = 'transparent'; up.style.color = 'var(--accent)'
-        up.style.border = '1px solid var(--accent)'; up.style.cursor = 'default'
-      }
-    })
-    .catch(function () {})
 })()
 </script>
