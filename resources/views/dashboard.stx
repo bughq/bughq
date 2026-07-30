@@ -329,7 +329,7 @@ summary::-webkit-details-marker { display: none; }
     @if (projectId)
     <header class="flex flex-wrap items-end justify-between gap-5 mb-10">
       <div class="flex items-center gap-3">
-        <a href="/projects" class="wordmark-link"><h1 class="wordmark text-2xl md:text-[28px] leading-none">bughq</h1></a>
+        <StxLink to="/projects" class="wordmark-link"><h1 class="wordmark text-2xl md:text-[28px] leading-none">bughq</h1></StxLink>
         @if (projects.length > 1)
           <select onchange="document.cookie = 'bughq_project=' + encodeURIComponent(this.value) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : ''); location.href = '{{ pageUrl({ page: 1 }) }}'"
                   class="panel mono px-3 py-1.5 text-sm text-muted">
@@ -340,15 +340,15 @@ summary::-webkit-details-marker { display: none; }
         @else
           <span class="mono text-sm text-muted">{{ activeProject.name }}{{ activeProject.is_active === false ? ' (archived)' : '' }}</span>
         @endif
-        <a href="/projects" class="pill px-3 py-1.5 text-sm font-medium border text-muted border-line">All apps</a>
-        <a href="/projects/new" class="pill px-3 py-1.5 text-sm font-medium border text-muted border-line">+ New app</a>
+        <StxLink to="/projects" class="pill px-3 py-1.5 text-sm font-medium border text-muted border-line">All apps</StxLink>
+        <StxLink to="/projects/new" class="pill px-3 py-1.5 text-sm font-medium border text-muted border-line">+ New app</StxLink>
         <button id="theme-toggle" class="icon-btn theme-btn" title="Toggle theme" aria-label="Toggle theme">
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <a href="/settings" class="icon-btn" title="Settings" aria-label="Settings">
+        <StxLink to="/settings" class="icon-btn" title="Settings" aria-label="Settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </a>
+        </StxLink>
       </div>
       <nav class="flex flex-wrap items-center gap-1.5">
         @foreach (statusTabs as f)
@@ -388,7 +388,7 @@ summary::-webkit-details-marker { display: none; }
       </div>
 
       @forelse (issues as issue)
-        <a href="/issue/{{ issue.id }}" class="row-link flex items-center gap-4 px-5 py-4 border-b border-line">
+        <StxLink to="/issue/{{ issue.id }}" class="row-link flex items-center gap-4 px-5 py-4 border-b border-line">
           <span class="w-1 h-11 rounded-full shrink-0" style="background: {{ levelColor(issue.level) }}"></span>
           <div class="min-w-0 flex-1">
             <div class="font-medium truncate" style="letter-spacing: -0.01em">{{ issue.title }}</div>
@@ -407,7 +407,7 @@ summary::-webkit-details-marker { display: none; }
           <div class="hidden sm:block text-right shrink-0 w-20">
             <div class="text-xs text-subtle">{{ fromNow(issue.last_seen) }}</div>
           </div>
-        </a>
+        </StxLink>
       @empty
         <div class="px-5 py-16 text-center">
           <div class="text-base font-medium mb-1">No {{ statusFilter === 'all' ? '' : statusFilter }} issues{{ activeRange.interval ? ` in the last ${activeRange.interval}` : '' }}</div>
@@ -436,8 +436,8 @@ summary::-webkit-details-marker { display: none; }
     </section>
     @else
       <div class="text-center py-20">
-        <a href="/projects" class="wordmark-link"><h1 class="wordmark text-2xl mb-3">bughq</h1></a>
-        <p class="text-sm text-subtle">Accept an invitation above to get started, or <a href="/projects/new" class="text-accent">create your own app</a>.</p>
+        <StxLink to="/projects" class="wordmark-link"><h1 class="wordmark text-2xl mb-3">bughq</h1></StxLink>
+        <p class="text-sm text-subtle">Accept an invitation above to get started, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
       </div>
     @endif
     @endif

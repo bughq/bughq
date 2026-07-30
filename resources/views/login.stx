@@ -124,7 +124,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       <div>
         <div class="flex items-center justify-between mb-1.5">
           <label class="block text-xs font-medium text-muted">Password</label>
-          <a href="/forgot-password" class="text-xs font-medium text-accent">Forgot password?</a>
+          <StxLink to="/forgot-password" class="text-xs font-medium text-accent">Forgot password?</StxLink>
         </div>
         <input name="password" type="password" required autocomplete="current-password" placeholder="••••••••" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
@@ -157,7 +157,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 
     <p class="text-center text-sm mt-6 text-subtle">
       No account?
-      <a href="/register" class="font-medium text-accent">Create one</a>
+      <StxLink to="/register" class="font-medium text-accent">Create one</StxLink>
     </p>
   </div>
 </div>

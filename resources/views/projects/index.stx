@@ -105,7 +105,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <a href="/projects/new" class="btn px-4 py-2 text-sm font-semibold">+ New app</a>
+        <StxLink to="/projects/new" class="btn px-4 py-2 text-sm font-semibold">+ New app</StxLink>
         <button id="logout" class="btn-ghost px-3.5 py-2 text-sm font-medium bg-panel">Log out</button>
       </div>
     </header>
@@ -116,7 +116,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 
     @if (user)
       @forelse (projects as p)
-        <a href="/dashboard?project={{ p.id }}" class="panel card flex items-center gap-4 px-5 py-4 mb-3">
+        <StxLink to="/dashboard?project={{ p.id }}" class="panel card flex items-center gap-4 px-5 py-4 mb-3">
           <span class="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center font-semibold" style="background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--accent)">{{ (p.name || '?').charAt(0).toUpperCase() }}</span>
           <div class="min-w-0 flex-1">
             <div class="font-semibold truncate">{{ p.name }}</div>
@@ -127,12 +127,12 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
             </div>
           </div>
           <span class="text-xs shrink-0 text-subtle">{{ fromNow(p.created_at) }}</span>
-        </a>
+        </StxLink>
       @empty
         <div class="panel px-5 py-16 text-center">
           <div class="text-base font-medium mb-1">No apps yet</div>
           <div class="text-sm mb-5 text-subtle">Create your first app to start capturing errors.</div>
-          <a href="/projects/new" class="btn inline-block px-4 py-2.5 text-sm font-semibold">Create an app</a>
+          <StxLink to="/projects/new" class="btn inline-block px-4 py-2.5 text-sm font-semibold">Create an app</StxLink>
         </div>
       @endforelse
     @endif

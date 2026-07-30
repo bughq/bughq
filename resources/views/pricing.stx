@@ -101,7 +101,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
           <li class="flex items-center gap-2"><span class="check">✓</span> 30-day retention</li>
           <li class="flex items-center gap-2"><span class="check">✓</span> Community support</li>
         </ul>
-        <a href="/register" class="btn btn-ghost w-full block text-center py-2.5 text-sm mt-7">Get started</a>
+        <StxLink to="/register" class="btn btn-ghost w-full block text-center py-2.5 text-sm mt-7">Get started</StxLink>
       </div>
 
       <div class="card card-pro p-7">
