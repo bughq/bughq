@@ -237,6 +237,42 @@ function signOut() {
 // else on this page is already rendered by the server block above.
 const pro = state(false)
 
+// Invite banner. The rows are server-rendered, so each one's token is baked
+// into its own directives; these signals only track which rows are hidden and
+// which is mid-request. Dismiss hides for this view only - it does not decline.
+const dismissed = state([])
+const joining = state('')
+
+function dismissInvite(token) {
+  dismissed.set([...dismissed(), token])
+}
+
+function joinLabel(token) {
+  return joining() === token ? 'Joining…' : 'Join'
+}
+
+function joinInvite(token) {
+  if (joining())
+    return
+  joining.set(token)
+  fetch('/api/invites/accept', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+    .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
+    .then((res) => {
+      if (!res.ok) {
+        joining.set('')
+        return
+      }
+      // Joining switches the active project, which the server reads on render.
+      document.cookie = `bughq_project=${encodeURIComponent(res.b.project)}; path=/; max-age=31536000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`
+      window.location.assign('/dashboard')
+    })
+    .catch(() => joining.set(''))
+}
+
 const authToken = localStorage.getItem('token')
 if (authToken) {
   fetch('/api/me', { headers: { Authorization: `Bearer ${authToken}` } })
@@ -369,13 +405,16 @@ summary::-webkit-details-marker { display: none; }
     @if (user && !needsOnboarding)
 
     @if (pendingInvites.length)
-      <div id="invite-banner" class="mb-7">
+      {{-- Each row's token is interpolated into its own directives, so there is
+           no delegated listener walking up from the click target and no
+           classList sniffing to work out which button was hit. --}}
+      <div class="mb-7">
         @foreach (pendingInvites as inv)
-          <div class="panel flex flex-wrap items-center gap-3 px-5 py-3.5 mb-2.5" style="border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, var(--panel))" data-token="{{ inv.token }}">
+          <div class="panel flex flex-wrap items-center gap-3 px-5 py-3.5 mb-2.5" style="border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, var(--panel))" @if="!dismissed().includes('{{ inv.token }}')">
             <span class="text-sm">🎉 You've been invited to <span class="font-semibold">{{ inv.project_name }}</span>.</span>
             <div class="ml-auto flex items-center gap-2">
-              <button class="js-invite-join pill px-4 py-1.5 text-sm font-semibold border bg-accent border-accent" style="color:#fff">Join</button>
-              <button class="js-invite-dismiss pill px-3 py-1.5 text-sm border text-subtle border-line" title="Hide for now">Dismiss</button>
+              <button @click="joinInvite('{{ inv.token }}')" :disabled="joining() === '{{ inv.token }}'" :text="joinLabel('{{ inv.token }}')" class="pill px-4 py-1.5 text-sm font-semibold border bg-accent border-accent" style="color:#fff">Join</button>
+              <button @click="dismissInvite('{{ inv.token }}')" class="pill px-3 py-1.5 text-sm border text-subtle border-line" title="Hide for now">Dismiss</button>
             </div>
           </div>
         @endforeach
@@ -554,25 +593,6 @@ summary::-webkit-details-marker { display: none; }
     window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''))
   }
 
-  // Invite banner: Join accepts the invite (owner-scoped server-side), then
-  // switches to that project. Dismiss just hides it for this view.
-  var inviteBanner = document.getElementById('invite-banner')
-  if (inviteBanner) inviteBanner.addEventListener('click', function (e) {
-    var row = e.target.closest('[data-token]')
-    if (!row) return
-    if (e.target.classList.contains('js-invite-dismiss')) { row.remove(); return }
-    if (!e.target.classList.contains('js-invite-join')) return
-    var jbtn = e.target
-    jbtn.disabled = true; jbtn.textContent = 'Joining…'
-    fetch('/api/invites/accept', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ token: row.getAttribute('data-token') }) })
-      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b } }) })
-      .then(function (res) {
-        if (!res.ok) { jbtn.disabled = false; jbtn.textContent = 'Join'; return }
-        document.cookie = 'bughq_project=' + encodeURIComponent(res.b.project) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
-        window.location.assign('/dashboard')
-      })
-      .catch(function () { jbtn.disabled = false; jbtn.textContent = 'Join' })
-  })
 
 })()
 </script>
