@@ -6,14 +6,51 @@ import type { StxOptions as UiOptions } from '@stacksjs/stx'
  */
 
 export default {
-  // Components directory - for user-defined components
-  componentsDir: 'resources/components',
+  // Where the app lives. Pinned rather than inferred, and that matters:
+  // resolveStxRoot (config.js:363-373) only returns root 'resources' because
+  // BOTH resources/views and resources/layouts exist on disk. The second is an
+  // empty directory that exists for no other reason, so the whole app's root
+  // resolution rested on a folder nobody could see the purpose of — delete it
+  // without pinning this and root silently becomes '.' with pagesDir 'pages'.
+  root: 'resources',
+  pagesDir: 'views',
 
-  // Layouts directory - for layout templates
-  layoutsDir: 'resources/layouts',
+  // The three below are joined onto `root` (config.js:411-418), so they are
+  // relative to it. They previously repeated the `resources/` prefix and
+  // therefore resolved to resources/resources/* — three directories that have
+  // never existed. Nothing broke visibly because the dev and production serve
+  // paths both pass their own values (dev/views.js:71-73,
+  // production-server.js:121-123), so these were dead config being silently
+  // overridden. If a future caller stops passing them, these must be right.
+  componentsDir: 'components',
+  layoutsDir: 'views/layouts',
+  partialsDir: 'partials',
 
-  // Partials directory - for partial templates
-  partialsDir: 'resources/partials',
+  // NOT root-prefixed by the block above — store-loader.js:11 resolves it
+  // against `root` itself, so this is resources/stores.
+  storesDir: 'stores',
+
+  // Unlocks the 45 UI component groups in @stacksjs/components. Without this
+  // the package is installed but every tag is unresolvable, which is why the
+  // app hand-rolls its own dialog, switch, badge, button and breadcrumb.
+  // Reaches the renderer via config.js:420-468 -> _pluginComponentDirs.
+  plugins: ['@stacksjs/components/stx-plugin'],
+
+  // Enforces "no vanilla DOM" mechanically instead of by documentation.
+  // AGENTS.md has said it in prose the whole time and 68 violations shipped
+  // anyway. failOnViolation stays FALSE deliberately: those 68 exist today, so
+  // failing the build now would block all work. The warnings are the migration
+  // queue; flip this to true once the queue is empty.
+  strict: {
+    enabled: true,
+    failOnViolation: false,
+    // Pre-paint auth and theme guards legitimately need these — they must run
+    // before render and their whole job is to leave the page.
+    allowPatterns: [
+      'location.replace',
+      'location.reload',
+    ],
+  },
 
   // SPA router. Both values are load-bearing and deliberately explicit.
   //
