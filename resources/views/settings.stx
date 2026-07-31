@@ -116,17 +116,45 @@ function installGuide(platform, key) {
 }
 const guide = activeProject ? installGuide(activeProject.platform, keyFull) : { label: '', install: '', code: '' }
 
-// Handed to the client block as JS literals. The copy buttons and the key
-// controls used to read these back out of data-attributes and sibling
-// textContent; passing them directly means no DOM round-trip.
-const guideInstallJson = JSON.stringify(guide.install || '')
-const guideCodeJson = JSON.stringify(guide.code || '')
-const keyFullJson = JSON.stringify(keyFull)
-const keyMaskJson = JSON.stringify(keyMask)
-const projectIdJson = JSON.stringify(projectId || '')
+// Handed to the client block instead of being read back out of data-attributes
+// and sibling textContent, so the copy buttons, key controls and danger zone
+// need no DOM round-trip.
+//
+// Every one of them travels base64-encoded, and that is load-bearing. An HTML
+// parser ends a script element at the first closing tag in its text, wherever
+// that appears — it has no idea one is sitting inside a JS string. Two values
+// here can contain such a tag:
+//
+//   - the JavaScript install snippet, which IS an sdk.js tag. On any project
+//     whose platform is `javascript`, `browser` or the HTML default, this
+//     truncated the whole client block at the assignment below, so every
+//     control defined after it — reveal, rotate, members, alerts, archive,
+//     delete — silently did not exist. Verified against a real project.
+//   - the project name and channel labels, which users type. A project named
+//     with a closing tag would do the same thing, and an opening one could
+//     inject script into the page.
+//
+// Escaping the slash is NOT enough: stx re-serializes these values on its way
+// into the client block and drops the escape. Base64 has no `<` in its
+// alphabet, so nothing in it survives as markup no matter how it is re-encoded.
+// The JSON goes inside the encoding so objects travel too.
+//
+// The same trap applies to this comment, which is why it never spells the tag
+// out — doing so truncates the server block instead.
+function b64(value) {
+  return JSON.stringify(Buffer.from(JSON.stringify(value ?? ''), 'utf8').toString('base64'))
+}
+const guideInstallB64 = b64(guide.install || '')
+const guideCodeB64 = b64(guide.code || '')
+const keyFullB64 = b64(keyFull)
+const keyMaskB64 = b64(keyMask)
+const projectIdB64 = b64(projectId || '')
 // Each channel's on/off state, seeded into a signal so the toggle renders from
 // state rather than from a data-on attribute it also has to write back to.
-const channelEnabledJson = JSON.stringify(Object.fromEntries(channelView.map(c => [c.id, c.enabled])))
+const channelEnabledB64 = b64(Object.fromEntries(channelView.map(c => [c.id, c.enabled])))
+// The danger zone used to read these back out of data-project-name / data-active
+// on the panel. Passing them as values keeps the DOM out of it.
+const projectNameB64 = b64(activeProject?.name || '')
 </script>
 
 <script client>
@@ -148,9 +176,17 @@ function toggleTheme() {
   theme.set(next)
 }
 
-const installText = {!! guideInstallJson !!}
-const codeText = {!! guideCodeJson !!}
-const projectId = {!! projectIdJson !!}
+// Decoded from base64 — see the note in the server block above for why these
+// cannot travel as plain literals.
+function fromB64(encoded) {
+  const binary = atob(encoded)
+  const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0))
+  return JSON.parse(new TextDecoder().decode(bytes))
+}
+
+const installText = fromB64({!! guideInstallB64 !!})
+const codeText = fromB64({!! guideCodeB64 !!})
+const projectId = fromB64({!! projectIdB64 !!})
 
 // One signal names whichever button most recently copied, so every Copy button
 // on the page shares the same "Copied" affordance without any of them holding
@@ -181,8 +217,8 @@ function switchProject(e) {
 }
 
 // ---- API key -------------------------------------------------------------
-const currentKey = state({!! keyFullJson !!})
-const maskedKey = state({!! keyMaskJson !!})
+const currentKey = state(fromB64({!! keyFullB64 !!}))
+const maskedKey = state(fromB64({!! keyMaskB64 !!}))
 const revealed = state(false)
 const rotating = state(false)
 const keyNote = state(null)
@@ -313,7 +349,7 @@ const whNote = state(null)
 // Toggle state lives here rather than on a data-on attribute the handler both
 // reads and writes, so a failed PATCH reverts by restoring a value instead of
 // re-deriving the old one from the attribute it just overwrote.
-const chEnabled = state({!! channelEnabledJson !!})
+const chEnabled = state(fromB64({!! channelEnabledB64 !!}))
 const testing = state('')
 const tested = state(null)
 
@@ -430,6 +466,157 @@ function addChannel(e) {
       adding.set(false)
       whNote.set({ text: 'Network error. Try again.', ok: false })
     })
+}
+
+// ---- Danger zone ---------------------------------------------------------
+// One dialog serves both archive and delete. Which one is armed is a VALUE —
+// 'archive' | 'delete' | null — not a callback stashed in a shared variable.
+// That distinction is the point: previously the confirm button ran whatever
+// mAction was last assigned, so the two destructive paths were separated only
+// by assignment order. Now the button reads the same signal the title and copy
+// read, and a stale one is unrepresentable.
+const dzProjectName = fromB64({!! projectNameB64 !!})
+const dzAction = state(null)
+const dzTyped = state('')
+const dzBusy = state(false)
+const dzNote = state(null)
+const unarchiving = state(false)
+
+const DZ = {
+  archive: {
+    title: `Archive ${dzProjectName}?`,
+    desc: 'bughq will stop capturing new errors and pause alerts for this project. Existing issues and events are kept, and you can unarchive anytime.',
+    confirm: 'Archive project',
+    busy: 'Archiving…',
+  },
+  delete: {
+    title: `Delete ${dzProjectName}?`,
+    desc: 'This permanently deletes the project and all of its issues, events, alert channels, and members. This cannot be undone.',
+    confirm: 'Delete project',
+    busy: 'Deleting…',
+  },
+}
+
+function dzCopy() {
+  return DZ[dzAction()] || { title: '', desc: '', confirm: '', busy: '' }
+}
+
+function dzOpen(which) {
+  dzAction.set(which)
+  dzTyped.set('')
+  dzNote.set(null)
+  dzBusy.set(false)
+  // Focus is an imperative browser action with no declarative form here, and the
+  // field has to be reachable before the dialog is any use. The delay lets the
+  // signal render first, exactly as the previous implementation did.
+  setTimeout(() => {
+    const field = document.getElementById('dz-input')
+    if (field) {
+      field.value = ''
+      field.focus()
+    }
+  }, 20)
+}
+
+function dzClose() {
+  dzAction.set(null)
+  dzTyped.set('')
+  dzNote.set(null)
+  dzBusy.set(false)
+}
+
+function dzType(e) {
+  dzTyped.set(e.target.value)
+}
+
+// Escape is handled on the dialog, not on document. A document listener would
+// outlive the fragment swap when you navigate away from /settings and stack up
+// one dead handler per visit — the same leak class as the .shell bug.
+function dzKey(e) {
+  if (e.key === 'Escape')
+    dzClose()
+}
+
+function dzBackdrop(e) {
+  if (e.target === e.currentTarget)
+    dzClose()
+}
+
+function dzMatches() {
+  return dzTyped().trim() === dzProjectName
+}
+
+function dzConfirmLabel() {
+  return dzBusy() ? dzCopy().busy : dzCopy().confirm
+}
+
+function dzConfirm() {
+  // Re-checked here and not only through :disabled, because this is the last
+  // gate before a project is destroyed.
+  if (dzBusy() || !dzMatches())
+    return
+  const which = dzAction()
+  dzBusy.set(true)
+  dzNote.set(null)
+
+  if (which === 'archive') {
+    fetch(`/api/projects/${encodeURIComponent(projectId)}/archive`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ archived: true }),
+    })
+      .then((r) => {
+        if (r.ok) {
+          window.location.reload()
+          return
+        }
+        dzBusy.set(false)
+        dzNote.set({ text: 'Archive failed.', ok: false })
+      })
+      .catch(() => {
+        dzBusy.set(false)
+        dzNote.set({ text: 'Network error.', ok: false })
+      })
+    return
+  }
+
+  if (which === 'delete') {
+    fetch(`/api/projects/${encodeURIComponent(projectId)}`, { method: 'DELETE', headers: authHeaders() })
+      .then((r) => {
+        if (!r.ok) {
+          dzBusy.set(false)
+          dzNote.set({ text: 'Delete failed.', ok: false })
+          return
+        }
+        // The project this page is scoped to no longer exists, so the cookie
+        // pointing at it has to go before the next page tries to resolve it.
+        document.cookie = 'bughq_project=; path=/; max-age=0'
+        window.location.assign('/projects')
+      })
+      .catch(() => {
+        dzBusy.set(false)
+        dzNote.set({ text: 'Network error.', ok: false })
+      })
+  }
+}
+
+// Unarchiving is not destructive, so it stays outside the confirm dialog.
+function unarchive() {
+  if (unarchiving())
+    return
+  unarchiving.set(true)
+  fetch(`/api/projects/${encodeURIComponent(projectId)}/archive`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ archived: false }),
+  })
+    .then((r) => {
+      if (r.ok)
+        window.location.reload()
+      else
+        unarchiving.set(false)
+    })
+    .catch(() => unarchiving.set(false))
 }
 </script>
 
@@ -750,7 +937,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       <!-- ============================ DANGER ============================ -->
       <section id="danger" class="sec mb-6">
         <div class="sec-title mb-3" style="color: var(--warn)">Danger zone</div>
-        <div class="panel danger-panel" data-project-name="{{ activeProject.name }}" data-active="{{ activeProject.is_active === false ? '0' : '1' }}">
+        <div class="panel danger-panel">
           <!-- Archive / Unarchive -->
           <div class="flex items-center justify-between gap-4 px-5 py-4">
             <div class="min-w-0">
@@ -762,7 +949,11 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
                 <p class="text-sm text-subtle">Stops capturing new errors and pauses alerts for <span class="mono text-muted">{{ activeProject.name }}</span>. Existing issues and events are kept — you can unarchive anytime.</p>
               @endif
             </div>
-            <button id="archive-btn" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">{{ activeProject.is_active === false ? 'Unarchive' : 'Archive' }}</button>
+            @if (activeProject.is_active === false)
+              <button @click="unarchive" :disabled="unarchiving()" :text="unarchiving() ? 'Unarchiving…' : 'Unarchive'" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">Unarchive</button>
+            @else
+              <button @click="dzOpen('archive')" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">Archive</button>
+            @endif
           </div>
           <div class="dz-div"></div>
           <!-- Delete -->
@@ -771,23 +962,29 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
               <div class="text-sm font-semibold mb-0.5">Delete this project</div>
               <p class="text-sm text-subtle">Permanently deletes <span class="mono text-muted">{{ activeProject.name }}</span> and all of its issues, events, alert channels, and members. This cannot be undone.</p>
             </div>
-            <button id="delete-btn" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">Delete</button>
+            <button @click="dzOpen('delete')" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">Delete</button>
           </div>
         </div>
       </section>
 
       <!-- Confirm modal (archive / delete): type the project name to confirm -->
-      <div id="dz-modal" class="dz-overlay" hidden>
+      {{-- `:hidden` rather than `@if`: the SSR pass renders the plain `hidden`
+           attribute so the overlay is closed on arrival with no cloak flash, and
+           the runtime keeps it in step from there. Keeping the dialog mounted is
+           also what lets dzOpen focus the field. --}}
+      <div class="dz-overlay" :hidden="dzAction() === null" hidden @click="dzBackdrop" @keydown="dzKey">
         <div class="dz-card panel" role="dialog" aria-modal="true" aria-labelledby="dz-title">
-          <div id="dz-title" class="text-base font-semibold mb-1"></div>
-          <p id="dz-desc" class="text-sm mb-4 text-muted"></p>
-          <label class="block text-xs mb-1.5 text-subtle">Type <span class="mono text-muted" id="dz-name"></span> to confirm</label>
-          <input id="dz-input" type="text" class="field w-full px-3.5 py-2.5 text-sm mono mb-4" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div id="dz-title" class="text-base font-semibold mb-1" :text="dzCopy().title"></div>
+          <p class="text-sm mb-4 text-muted" :text="dzCopy().desc"></p>
+          <label class="block text-xs mb-1.5 text-subtle">Type <span class="mono text-muted">{{ activeProject.name }}</span> to confirm</label>
+          <input id="dz-input" type="text" class="field w-full px-3.5 py-2.5 text-sm mono mb-4" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
           <div class="flex items-center justify-end gap-2">
-            <button id="dz-cancel" type="button" class="btn-ghost px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button id="dz-confirm" type="button" class="btn-danger px-4 py-2.5 text-sm font-semibold" disabled></button>
+            <button @click="dzClose" type="button" class="btn-ghost px-4 py-2.5 text-sm font-medium">Cancel</button>
+            <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :text="dzConfirmLabel()" type="button" class="btn-danger px-4 py-2.5 text-sm font-semibold" disabled></button>
           </div>
-          <span id="dz-note" class="note text-xs mt-2.5"></span>
+          @if (dzNote())
+            <span class="note show note-err text-xs mt-2.5" :text="dzNote().text"></span>
+          @endif
         </div>
       </div>
     @endif
@@ -796,114 +993,16 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 </div>
 
 <script>
+// Auth guard. Stays a plain blocking script rather than a client block: it has
+// to run before the page is worth rendering, and its whole job is to leave —
+// either to /login or through a reload once the cookie mirrors localStorage,
+// which server-rendered pages authenticate from.
 (function () {
   var t = localStorage.getItem('token')
   if (!t) { window.location.replace('/login'); return }
   if (!/(^|;)\s*bughq_token=/.test(document.cookie)) {
     document.cookie = 'bughq_token=' + t + '; path=/; max-age=2592000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
     window.location.reload()
-    return
-  }
-
-  var projectId = {{ projectId ? `'${projectId}'` : 'null' }}
-  if (!projectId) return
-  var auth = { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' }
-  var proj = '/api/projects/' + encodeURIComponent(projectId)
-
-  function flash(el, msg, ok) {
-    el.textContent = msg
-    el.style.color = ok ? 'var(--ok)' : 'var(--accent)'
-    el.classList.add('show')
-  }
-
-  // ---- Danger zone: archive / delete behind a type-to-confirm modal ----
-  var dzPanel = document.querySelector('.danger-panel')
-  if (dzPanel) {
-    var projectName = dzPanel.getAttribute('data-project-name') || ''
-    var isActive = dzPanel.getAttribute('data-active') !== '0'
-    var modal = document.getElementById('dz-modal')
-    var mTitle = document.getElementById('dz-title')
-    var mDesc = document.getElementById('dz-desc')
-    var mName = document.getElementById('dz-name')
-    var mInput = document.getElementById('dz-input')
-    var mConfirm = document.getElementById('dz-confirm')
-    var mCancel = document.getElementById('dz-cancel')
-    var mNote = document.getElementById('dz-note')
-    var mAction = null
-
-    function closeModal() {
-      modal.setAttribute('hidden', '')
-      mInput.value = ''; mConfirm.disabled = true
-      mNote.classList.remove('show'); mAction = null
-    }
-    function openModal(opts) {
-      mTitle.textContent = opts.title
-      mDesc.textContent = opts.desc
-      mName.textContent = projectName
-      mConfirm.textContent = opts.confirmText
-      mConfirm.setAttribute('data-label', opts.confirmText)
-      mInput.value = ''; mConfirm.disabled = true
-      mNote.classList.remove('show')
-      mAction = opts.onConfirm
-      modal.removeAttribute('hidden')
-      setTimeout(function () { mInput.focus() }, 20)
-    }
-    mInput.addEventListener('input', function () { mConfirm.disabled = (this.value.trim() !== projectName) })
-    mCancel.addEventListener('click', closeModal)
-    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal() })
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hasAttribute('hidden')) closeModal() })
-    mConfirm.addEventListener('click', function () {
-      if (mInput.value.trim() !== projectName || !mAction) return
-      mConfirm.disabled = true
-      mAction()
-    })
-    function failConfirm(msg) {
-      mConfirm.disabled = false
-      mConfirm.textContent = mConfirm.getAttribute('data-label')
-      flash(mNote, msg, false)
-    }
-
-    var archiveBtn = document.getElementById('archive-btn')
-    archiveBtn.addEventListener('click', function () {
-      if (isActive) {
-        openModal({
-          title: 'Archive ' + projectName + '?',
-          desc: 'bughq will stop capturing new errors and pause alerts for this project. Existing issues and events are kept, and you can unarchive anytime.',
-          confirmText: 'Archive project',
-          onConfirm: function () {
-            mConfirm.textContent = 'Archiving…'
-            fetch(proj + '/archive', { method: 'POST', headers: auth, body: JSON.stringify({ archived: true }) })
-              .then(function (r) { if (r.ok) window.location.reload(); else failConfirm('Archive failed.') })
-              .catch(function () { failConfirm('Network error.') })
-          },
-        })
-      } else {
-        // Unarchive is non-destructive — no confirmation needed.
-        archiveBtn.disabled = true; archiveBtn.textContent = 'Unarchiving…'
-        fetch(proj + '/archive', { method: 'POST', headers: auth, body: JSON.stringify({ archived: false }) })
-          .then(function (r) { if (r.ok) window.location.reload(); else { archiveBtn.disabled = false; archiveBtn.textContent = 'Unarchive' } })
-          .catch(function () { archiveBtn.disabled = false; archiveBtn.textContent = 'Unarchive' })
-      }
-    })
-
-    document.getElementById('delete-btn').addEventListener('click', function () {
-      openModal({
-        title: 'Delete ' + projectName + '?',
-        desc: 'This permanently deletes the project and all of its issues, events, alert channels, and members. This cannot be undone.',
-        confirmText: 'Delete project',
-        onConfirm: function () {
-          mConfirm.textContent = 'Deleting…'
-          fetch(proj, { method: 'DELETE', headers: auth })
-            .then(function (r) {
-              if (r.ok) {
-                document.cookie = 'bughq_project=; path=/; max-age=0'
-                window.location.assign('/projects')
-              } else { failConfirm('Delete failed.') }
-            })
-            .catch(function () { failConfirm('Network error.') })
-        },
-      })
-    })
   }
 })()
 </script>
