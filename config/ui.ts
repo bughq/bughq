@@ -111,6 +111,51 @@ export default {
   app: {
     head: {
       title: 'bughq',
+
+      // Everything below was copy-pasted into individual pages: the font links
+      // into 34 of them, the theme guard into 11. injectConfigHeadTags dedupes
+      // on href and on inline script content (document-shell.js:74-92), so
+      // declaring them here is safe while the inline copies still exist — they
+      // can be removed a page at a time rather than in one commit.
+      //
+      // NOT here: charset and viewport. generateDocumentShell hardcodes both
+      // ahead of any config meta (document-shell.js:26-29), so declaring them
+      // would emit a second copy on every fragment page. Measured: /dashboard
+      // rendered `<meta charset="UTF-8">` and `<meta charset="utf-8">` back to
+      // back. The doctype pages carry their own until Stage 2 moves them into
+      // the layout.
+      link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        // The weight sets had drifted across pages: 26 asked for JetBrains Mono
+        // 400;500;600, 7 for 400;500, and one page for Mono alone. This is the
+        // superset, so no page loses a weight it was using.
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap',
+        },
+      ],
+
+      // Pre-paint theme guard. Must be inline and in <head> — it runs before
+      // first paint so the saved theme is applied without a flash, which is
+      // exactly why it cannot be an @include (see the note in pricing.stx).
+      // app.head.script was the option that comment never considered.
+      //
+      // Landing it here also extends it to the 23 marketing pages, which have
+      // no guard today even though marketing.css already ships
+      // :root[data-theme="light"] and [data-theme="dark"] tokens. They were
+      // built for theming and never given the one line that switches it on.
+      script: [
+        {
+          content: `(function(){try{var t=localStorage.getItem('bughq_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`,
+        },
+      ],
+
+      // NOT here: /marketing.css. The remediation plan called for it, but it
+      // defines :root, html, body, * and a — and four classes the app pages
+      // also use: .btn (24 uses), .panel (17), .mono, .reveal. Globalising it
+      // would restyle the authenticated app. It stays per-page until Stage 2
+      // gives marketing its own layout, which is its correct home.
     },
   },
 } satisfies UiOptions

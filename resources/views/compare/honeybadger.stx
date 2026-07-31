@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>bughq vs Honeybadger - bughq</title>
     <meta name="description" content="How bughq, an open-source error tracker you self-host on Postgres, compares to Honeybadger’s hosted monitoring.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="/marketing.css">
     <style>
       /* Highlight the bughq column (2nd of every 3 grid cells) so the table reads
