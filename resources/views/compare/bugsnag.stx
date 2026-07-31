@@ -20,8 +20,8 @@ useSeoMeta({
 @section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="sep">/</span>
-        <a href="/compare">Compare</a><span class="sep">/</span>
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
+        <StxLink to="/compare">Compare</StxLink><span class="sep">/</span>
         <span>Bugsnag</span>
       </nav>
 
@@ -30,8 +30,8 @@ useSeoMeta({
         <h1>bughq vs Bugsnag</h1>
         <p>Bugsnag, now part of SmartBear, is polished stability monitoring with release health and stability targets baked into the product. It is closed source and primarily delivered as SaaS. If you want to own the data and run error tracking yourself on plain Postgres, bughq is the open alternative that covers the same capture-and-triage loop.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register">Get started</a>
-          <a class="btn ghost" href="/compare">All alternatives</a>
+          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <StxLink class="btn ghost" to="/compare">All alternatives</StxLink>
         </div>
       </section>
 
@@ -121,18 +121,18 @@ useSeoMeta({
           <h2 id="related-heading" class="section-title">More comparisons</h2>
         </div>
         <div class="related">
-          <a href="/compare/sentry">
+          <StxLink to="/compare/sentry">
             <div class="r-name">bughq vs Sentry</div>
             <div class="r-desc">The incumbent error platform, compared.</div>
-          </a>
-          <a href="/compare/rollbar">
+          </StxLink>
+          <StxLink to="/compare/rollbar">
             <div class="r-name">bughq vs Rollbar</div>
             <div class="r-desc">Another closed-source SaaS error tracker.</div>
-          </a>
-          <a href="/compare/raygun">
+          </StxLink>
+          <StxLink to="/compare/raygun">
             <div class="r-name">bughq vs Raygun</div>
             <div class="r-desc">Crash reporting bundled with APM.</div>
-          </a>
+          </StxLink>
         </div>
       </section>
 
@@ -140,8 +140,8 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Own your error tracking.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register">Get started</a>
-            <a class="btn ghost" href="/features/self-host">Read about self-hosting</a>
+            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <StxLink class="btn ghost" to="/features/self-host">Read about self-hosting</StxLink>
           </div>
         </div>
       </section>

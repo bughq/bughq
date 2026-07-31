@@ -8,52 +8,52 @@
   <div class="footer-cols">
     <div class="footer-col">
       <h4>Product</h4>
-      <a href="/features/capture">Automatic capture</a>
-      <a href="/features/grouping">Fingerprint grouping</a>
-      <a href="/features/stack-traces">Readable stack traces</a>
-      <a href="/features/releases">Releases and environments</a>
-      <a href="/features/alerts">Alerts and triage</a>
-      <a href="/features/self-host">Self-hosting</a>
+      <StxLink to="/features/capture">Automatic capture</StxLink>
+      <StxLink to="/features/grouping">Fingerprint grouping</StxLink>
+      <StxLink to="/features/stack-traces">Readable stack traces</StxLink>
+      <StxLink to="/features/releases">Releases and environments</StxLink>
+      <StxLink to="/features/alerts">Alerts and triage</StxLink>
+      <StxLink to="/features/self-host">Self-hosting</StxLink>
     </div>
 
     <div class="footer-col">
       <h4>Use cases</h4>
-      <a href="/use-cases">All use cases</a>
-      <a href="/use-cases/frontend">Frontend</a>
-      <a href="/use-cases/backend">Backend</a>
-      <a href="/use-cases/mobile">Mobile</a>
-      <a href="/use-cases/on-call">On-call and SRE</a>
-      <a href="/use-cases/agencies">Agencies</a>
+      <StxLink to="/use-cases">All use cases</StxLink>
+      <StxLink to="/use-cases/frontend">Frontend</StxLink>
+      <StxLink to="/use-cases/backend">Backend</StxLink>
+      <StxLink to="/use-cases/mobile">Mobile</StxLink>
+      <StxLink to="/use-cases/on-call">On-call and SRE</StxLink>
+      <StxLink to="/use-cases/agencies">Agencies</StxLink>
     </div>
 
     <div class="footer-col">
       <h4>Compare</h4>
-      <a href="/compare">All alternatives compared</a>
-      <a href="/compare/sentry">bughq vs Sentry</a>
-      <a href="/compare/bugsnag">bughq vs Bugsnag</a>
-      <a href="/compare/rollbar">bughq vs Rollbar</a>
-      <a href="/compare/raygun">bughq vs Raygun</a>
-      <a href="/compare/honeybadger">bughq vs Honeybadger</a>
-      <a href="/compare/airbrake">bughq vs Airbrake</a>
-      <a href="/compare/glitchtip">bughq vs GlitchTip</a>
-      <a href="/compare/datadog">bughq vs Datadog</a>
+      <StxLink to="/compare">All alternatives compared</StxLink>
+      <StxLink to="/compare/sentry">bughq vs Sentry</StxLink>
+      <StxLink to="/compare/bugsnag">bughq vs Bugsnag</StxLink>
+      <StxLink to="/compare/rollbar">bughq vs Rollbar</StxLink>
+      <StxLink to="/compare/raygun">bughq vs Raygun</StxLink>
+      <StxLink to="/compare/honeybadger">bughq vs Honeybadger</StxLink>
+      <StxLink to="/compare/airbrake">bughq vs Airbrake</StxLink>
+      <StxLink to="/compare/glitchtip">bughq vs GlitchTip</StxLink>
+      <StxLink to="/compare/datadog">bughq vs Datadog</StxLink>
     </div>
 
     <div class="footer-col">
       <h4>Resources</h4>
-      <a href="/docs">Docs</a>
-      <a href="/pricing">Pricing</a>
+      <StxLink to="/docs">Docs</StxLink>
+      <StxLink to="/pricing">Pricing</StxLink>
       <a href="https://github.com/stacksjs/bughq">GitHub</a>
-      <a data-auth-login href="/login">Log in</a>
-      <a data-auth-signup href="/register">Get started</a>
+      <a data-auth-login href="/login" data-no-router>Log in</a>
+      <a data-auth-signup href="/register" data-no-router>Get started</a>
     </div>
   </div>
 
   <div class="footer-bottom">
-    <a class="brand" href="/" aria-label="bughq home">
+    <StxLink class="brand" to="/" aria-label="bughq home">
       <span class="brand-mark">b</span>
       <span class="brand-name">bughq</span>
-    </a>
+    </StxLink>
     <span>Open source error tracking, built on Stacks and Postgres.</span>
   </div>
 </footer>

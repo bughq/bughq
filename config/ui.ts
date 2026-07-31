@@ -54,30 +54,34 @@ export default {
 
   // SPA router. Both values are load-bearing and deliberately explicit.
   //
-  // `container: 'main'` is the single element the router swaps. Every app page
-  // is a bare fragment rendered into the <main> in layouts/default.stx.
+  // `container: 'main'` is the single element the router swaps. Every page is a
+  // fragment rendered into the <main> of its layout.
   //
-  // `interceptAllLinks: true` makes the router treat any same-origin <a> as an
-  // SPA navigation. App pages don't need it — they declare intent with
-  // <StxLink>, which the router matches first via [data-stx-link]. The 24
-  // marketing pages do: their nav and footer (resources/partials/SiteNav.stx,
-  // SiteFooter.stx) are ~64 plain anchors, and turning this off drops every
-  // marketing navigation back to a full page load. Verified, not assumed:
-  // spa-probe reports 8/8 marketing navigations SPA with this true.
+  // `interceptAllLinks: false` — SPA navigation is now opted INTO, by writing
+  // <StxLink>, rather than applied to every anchor and opted out of. 263 links
+  // were converted to reach this point; the only plain <a href="/…"> left are
+  // the four /api/auth/*/redirect ones.
   //
-  // Pinned here rather than inherited because the defaults disagree —
-  // stx-router's own default is `false` and bun-plugin-stx's serve path
-  // hardcodes `true` on top of it. Relying on that would put bughq's whole
-  // marketing SPA at the mercy of a dependency's internal default.
+  // This was previously `true` and documented as impossible to turn off,
+  // because the marketing site's nav and footer were plain anchors and the flag
+  // was the only thing making them navigate. Converting them removed that
+  // dependency. The `data-no-router` escape hatches on the app -> marketing
+  // links went with it: those pages now report `stx-layout-group`, and the
+  // router already full-reloads on a group change of its own accord
+  // (stx-router/dist/client.js:255-257), so the boundary is handled by the
+  // framework instead of by an attribute on every link.
   //
-  // The cost of `true` is that links which must NOT be intercepted have to say
-  // so with `data-no-router`: the app -> marketing boundary links (marketing
-  // CSS lives in a <head> the swap never brings, so the page arrives unstyled)
-  // and the /api/auth/*/redirect OAuth links (server redirects — a fragment
-  // fetch would swallow them instead of navigating).
+  // The OAuth links keep `data-no-router` permanently. They are server
+  // redirects, not a layout change, so the group check does not catch them and
+  // a fragment fetch would swallow the redirect instead of following it.
+  //
+  // Pinned rather than inherited because the defaults disagree — stx-router's
+  // own default is `false` and bun-plugin-stx's serve path hardcodes `true` on
+  // top of it. Leaving it implicit would mean a dependency's internal default
+  // decides whether this app is an SPA.
   router: {
     container: 'main',
-    interceptAllLinks: true,
+    interceptAllLinks: false,
   },
 
   // Last-resort <title>. Only reached by a page that declares none of its own —

@@ -11,8 +11,8 @@ useSeoMeta({
 @section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="sep">/</span>
-        <a href="/use-cases">Use cases</a><span class="sep">/</span>
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
+        <StxLink to="/use-cases">Use cases</StxLink><span class="sep">/</span>
         <span>Mobile</span>
       </nav>
 
@@ -21,8 +21,8 @@ useSeoMeta({
         <h1>Know which build crashed, before the review does.</h1>
         <p>A mobile release reaches thousands of devices at once and you cannot attach a debugger to any of them. bughq collects the crash, groups it by build and release, and tells you how many users a version affected.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register">Get started</a>
-          <a class="btn ghost" href="/features/releases">Releases</a>
+          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <StxLink class="btn ghost" to="/features/releases">Releases</StxLink>
         </div>
       </section>
 
@@ -103,18 +103,18 @@ useSeoMeta({
           <h2 id="related-heading" class="section-title">Features that do the work</h2>
         </div>
         <div class="related">
-          <a href="/features/releases">
+          <StxLink to="/features/releases">
             <div class="r-name">Releases and environments</div>
             <div class="r-desc">Break crashes down by build and staged rollout.</div>
-          </a>
-          <a href="/features/grouping">
+          </StxLink>
+          <StxLink to="/features/grouping">
             <div class="r-name">Fingerprint grouping</div>
             <div class="r-desc">One issue per crash, with an affected-user tally.</div>
-          </a>
-          <a href="/features/alerts">
+          </StxLink>
+          <StxLink to="/features/alerts">
             <div class="r-name">Alerts and triage</div>
             <div class="r-desc">Get told the moment crash-free sessions drop.</div>
-          </a>
+          </StxLink>
         </div>
       </section>
 
@@ -122,8 +122,8 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Ship the app with a net under you.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register">Get started</a>
-            <a class="btn ghost" href="/docs">Read the docs</a>
+            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
           </div>
         </div>
       </section>

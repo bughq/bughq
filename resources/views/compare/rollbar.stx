@@ -20,8 +20,8 @@ useSeoMeta({
 @section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="sep">/</span>
-        <a href="/compare">Compare</a><span class="sep">/</span>
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
+        <StxLink to="/compare">Compare</StxLink><span class="sep">/</span>
         <span>Rollbar</span>
       </nav>
 
@@ -30,8 +30,8 @@ useSeoMeta({
         <h1>bughq vs Rollbar</h1>
         <p>Rollbar is a mature, closed-source SaaS error tracker with fine-grained grouping controls and a query language for shaping how issues fold together. bughq covers the same core loop, capture, group, source-map, and alert, as open source you can self-host, so sensitive stack data never leaves your own servers.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register">Get started</a>
-          <a class="btn ghost" href="/compare">All alternatives</a>
+          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <StxLink class="btn ghost" to="/compare">All alternatives</StxLink>
         </div>
       </section>
 
@@ -121,18 +121,18 @@ useSeoMeta({
           <h2 id="related-heading" class="section-title">More comparisons</h2>
         </div>
         <div class="related">
-          <a href="/compare/sentry">
+          <StxLink to="/compare/sentry">
             <div class="r-name">bughq vs Sentry</div>
             <div class="r-desc">The incumbent error platform, compared.</div>
-          </a>
-          <a href="/compare/airbrake">
+          </StxLink>
+          <StxLink to="/compare/airbrake">
             <div class="r-name">bughq vs Airbrake</div>
             <div class="r-desc">One of the original error trackers.</div>
-          </a>
-          <a href="/compare/honeybadger">
+          </StxLink>
+          <StxLink to="/compare/honeybadger">
             <div class="r-name">bughq vs Honeybadger</div>
             <div class="r-desc">Errors plus uptime and cron monitoring.</div>
-          </a>
+          </StxLink>
         </div>
       </section>
 
@@ -140,8 +140,8 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Own your error tracking.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register">Get started</a>
-            <a class="btn ghost" href="/features/self-host">Read about self-hosting</a>
+            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <StxLink class="btn ghost" to="/features/self-host">Read about self-hosting</StxLink>
           </div>
         </div>
       </section>

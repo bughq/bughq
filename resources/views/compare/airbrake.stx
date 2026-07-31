@@ -20,8 +20,8 @@ useSeoMeta({
 @section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="sep">/</span>
-        <a href="/compare">Compare</a><span class="sep">/</span>
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
+        <StxLink to="/compare">Compare</StxLink><span class="sep">/</span>
         <span>Airbrake</span>
       </nav>
 
@@ -30,8 +30,8 @@ useSeoMeta({
         <h1>bughq vs Airbrake</h1>
         <p>Airbrake is one of the original error trackers, now a closed-source SaaS with error monitoring and light performance features. The capture-and-triage loop it made familiar is exactly what bughq provides, as an open project you can run on your own Postgres instead of a hosted-only account.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register">Get started</a>
-          <a class="btn ghost" href="/compare">All alternatives</a>
+          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <StxLink class="btn ghost" to="/compare">All alternatives</StxLink>
         </div>
       </section>
 
@@ -121,18 +121,18 @@ useSeoMeta({
           <h2 id="related-heading" class="section-title">More comparisons</h2>
         </div>
         <div class="related">
-          <a href="/compare/rollbar">
+          <StxLink to="/compare/rollbar">
             <div class="r-name">bughq vs Rollbar</div>
             <div class="r-desc">A closed-source SaaS error tracker.</div>
-          </a>
-          <a href="/compare/honeybadger">
+          </StxLink>
+          <StxLink to="/compare/honeybadger">
             <div class="r-name">bughq vs Honeybadger</div>
             <div class="r-desc">Errors plus uptime and cron monitoring.</div>
-          </a>
-          <a href="/compare/sentry">
+          </StxLink>
+          <StxLink to="/compare/sentry">
             <div class="r-name">bughq vs Sentry</div>
             <div class="r-desc">The incumbent error platform, compared.</div>
-          </a>
+          </StxLink>
         </div>
       </section>
 
@@ -140,8 +140,8 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Own your error tracking.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register">Get started</a>
-            <a class="btn ghost" href="/features/self-host">Read about self-hosting</a>
+            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <StxLink class="btn ghost" to="/features/self-host">Read about self-hosting</StxLink>
           </div>
         </div>
       </section>

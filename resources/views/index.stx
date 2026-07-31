@@ -59,7 +59,7 @@ useSeoMeta({
           <h1 class="hero-title">Error tracking for people who ship.</h1>
           <p class="hero-sub">Capture every production error, fold the duplicates into one issue, and see what is actually breaking. Signal, not a wall of noise.</p>
           <div class="hero-actions">
-            <a class="btn primary" data-auth-cta href="/register">Get started</a>
+            <a class="btn primary" data-auth-cta href="/register" data-no-router>Get started</a>
             <a class="btn ghost" href="https://github.com/stacksjs/bughq">View source</a>
           </div>
         </div>
@@ -79,11 +79,11 @@ useSeoMeta({
         </div>
         <div class="bento">
           @foreach (featureCells as cell)
-            <a class="{{ cell.cls }}" href="/features/{{ cell.slug }}">
+            <StxLink class="{{ cell.cls }}" to="/features/{{ cell.slug }}">
               <h3>{{ cell.title }}</h3>
               <p>{{ cell.body }}</p>
               <span class="cell-more">View feature</span>
-            </a>
+            </StxLink>
           @endforeach
         </div>
       </section>
@@ -108,7 +108,7 @@ useSeoMeta({
       <section class="section shell reveal" aria-label="Open source and self-hosting">
         <div class="open-band">
           <p><strong>Open source, and yours to run.</strong> Host bughq on your own Postgres so sensitive stack data never leaves your infrastructure, or start on the hosted tier in a minute.</p>
-          <a class="btn ghost" href="/features/self-host">Read about self-hosting</a>
+          <StxLink class="btn ghost" to="/features/self-host">Read about self-hosting</StxLink>
         </div>
       </section>
 
@@ -116,8 +116,8 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Ship with a net under you.</h2>
           <div class="cta-actions">
-            <a class="btn primary" data-auth-cta href="/register">Get started</a>
-            <a class="btn ghost" href="/use-cases">See use cases</a>
+            <a class="btn primary" data-auth-cta href="/register" data-no-router>Get started</a>
+            <StxLink class="btn ghost" to="/use-cases">See use cases</StxLink>
           </div>
         </div>
       </section>

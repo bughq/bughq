@@ -6,69 +6,69 @@
      and reuse bughq's existing design tokens so the nav matches the whole site. -->
 <nav class="nav">
   <div class="nav-inner shell">
-    <a class="brand" href="/" aria-label="bughq home">
+    <StxLink class="brand" to="/" aria-label="bughq home">
       <span class="brand-mark">b</span>
       <span class="brand-name">bughq</span>
-    </a>
+    </StxLink>
 
     <div class="nav-links" aria-label="Primary navigation">
       <div class="mega">
-        <a class="mega-trigger" href="/#features" aria-haspopup="true">Features</a>
+        <StxLink class="mega-trigger" to="/#features" aria-haspopup="true">Features</StxLink>
         <div class="mega-panel" role="menu" aria-label="Features">
-          <a role="menuitem" href="/features/capture"><span class="mega-t">Automatic capture</span><span class="mega-d">One init call captures every uncaught error with full context.</span></a>
-          <a role="menuitem" href="/features/stack-traces"><span class="mega-t">Readable stack traces</span><span class="mega-d">Source maps turn minified frames back into your code.</span></a>
-          <a role="menuitem" href="/features/grouping"><span class="mega-t">Fingerprint grouping</span><span class="mega-d">Identical errors fold into one issue with a live count.</span></a>
-          <a role="menuitem" href="/features/alerts"><span class="mega-t">Alerts and triage</span><span class="mega-d">Told when an issue is new or spiking, quiet for the rest.</span></a>
-          <a role="menuitem" href="/features/releases"><span class="mega-t">Releases and environments</span><span class="mega-d">Tag every event so a regression names its own deploy.</span></a>
-          <a role="menuitem" href="/features/self-host"><span class="mega-t">Self-hosting</span><span class="mega-d">Open source, on your own Postgres. Data stays with you.</span></a>
+          <StxLink role="menuitem" to="/features/capture"><span class="mega-t">Automatic capture</span><span class="mega-d">One init call captures every uncaught error with full context.</span></StxLink>
+          <StxLink role="menuitem" to="/features/stack-traces"><span class="mega-t">Readable stack traces</span><span class="mega-d">Source maps turn minified frames back into your code.</span></StxLink>
+          <StxLink role="menuitem" to="/features/grouping"><span class="mega-t">Fingerprint grouping</span><span class="mega-d">Identical errors fold into one issue with a live count.</span></StxLink>
+          <StxLink role="menuitem" to="/features/alerts"><span class="mega-t">Alerts and triage</span><span class="mega-d">Told when an issue is new or spiking, quiet for the rest.</span></StxLink>
+          <StxLink role="menuitem" to="/features/releases"><span class="mega-t">Releases and environments</span><span class="mega-d">Tag every event so a regression names its own deploy.</span></StxLink>
+          <StxLink role="menuitem" to="/features/self-host"><span class="mega-t">Self-hosting</span><span class="mega-d">Open source, on your own Postgres. Data stays with you.</span></StxLink>
         </div>
       </div>
 
       <div class="mega">
-        <a class="mega-trigger" href="/use-cases" aria-haspopup="true">Use cases</a>
+        <StxLink class="mega-trigger" to="/use-cases" aria-haspopup="true">Use cases</StxLink>
         <div class="mega-panel" role="menu" aria-label="Use cases">
-          <a role="menuitem" href="/use-cases"><span class="mega-t">All use cases</span><span class="mega-d">How different teams put bughq to work in production.</span></a>
-          <a role="menuitem" href="/use-cases/frontend"><span class="mega-t">Frontend</span><span class="mega-d">Catch browser errors with source-mapped traces.</span></a>
-          <a role="menuitem" href="/use-cases/backend"><span class="mega-t">Backend</span><span class="mega-d">Server, edge, and job errors tied to the request.</span></a>
-          <a role="menuitem" href="/use-cases/mobile"><span class="mega-t">Mobile</span><span class="mega-d">Native crashes grouped by build and release.</span></a>
-          <a role="menuitem" href="/use-cases/on-call"><span class="mega-t">On-call and SRE</span><span class="mega-d">Alert on new and spiking issues, not known noise.</span></a>
-          <a role="menuitem" href="/use-cases/agencies"><span class="mega-t">Agencies</span><span class="mega-d">Every client site as its own isolated project.</span></a>
+          <StxLink role="menuitem" to="/use-cases"><span class="mega-t">All use cases</span><span class="mega-d">How different teams put bughq to work in production.</span></StxLink>
+          <StxLink role="menuitem" to="/use-cases/frontend"><span class="mega-t">Frontend</span><span class="mega-d">Catch browser errors with source-mapped traces.</span></StxLink>
+          <StxLink role="menuitem" to="/use-cases/backend"><span class="mega-t">Backend</span><span class="mega-d">Server, edge, and job errors tied to the request.</span></StxLink>
+          <StxLink role="menuitem" to="/use-cases/mobile"><span class="mega-t">Mobile</span><span class="mega-d">Native crashes grouped by build and release.</span></StxLink>
+          <StxLink role="menuitem" to="/use-cases/on-call"><span class="mega-t">On-call and SRE</span><span class="mega-d">Alert on new and spiking issues, not known noise.</span></StxLink>
+          <StxLink role="menuitem" to="/use-cases/agencies"><span class="mega-t">Agencies</span><span class="mega-d">Every client site as its own isolated project.</span></StxLink>
         </div>
       </div>
 
-      <a href="/pricing">Pricing</a>
-      <a href="/docs">Docs</a>
+      <StxLink to="/pricing">Pricing</StxLink>
+      <StxLink to="/docs">Docs</StxLink>
       <a href="https://github.com/stacksjs/bughq">GitHub</a>
     </div>
 
-    <a class="nav-login" data-auth-login href="/login">Log in</a>
-    <a class="btn nav-cta primary sm" data-auth-signup href="/register">Sign up</a>
+    <a class="nav-login" data-auth-login href="/login" data-no-router>Log in</a>
+    <a class="btn nav-cta primary sm" data-auth-signup href="/register" data-no-router>Sign up</a>
 
     <details class="nav-menu">
       <summary aria-label="Open menu"><span class="burger" aria-hidden="true"></span></summary>
       <div class="nav-menu-panel">
         <span class="nav-menu-group">Features</span>
-        <a href="/features/capture">Automatic capture</a>
-        <a href="/features/stack-traces">Readable stack traces</a>
-        <a href="/features/grouping">Fingerprint grouping</a>
-        <a href="/features/alerts">Alerts and triage</a>
-        <a href="/features/releases">Releases and environments</a>
-        <a href="/features/self-host">Self-hosting</a>
+        <StxLink to="/features/capture">Automatic capture</StxLink>
+        <StxLink to="/features/stack-traces">Readable stack traces</StxLink>
+        <StxLink to="/features/grouping">Fingerprint grouping</StxLink>
+        <StxLink to="/features/alerts">Alerts and triage</StxLink>
+        <StxLink to="/features/releases">Releases and environments</StxLink>
+        <StxLink to="/features/self-host">Self-hosting</StxLink>
 
         <span class="nav-menu-group">Use cases</span>
-        <a href="/use-cases">All use cases</a>
-        <a href="/use-cases/frontend">Frontend</a>
-        <a href="/use-cases/backend">Backend</a>
-        <a href="/use-cases/mobile">Mobile</a>
-        <a href="/use-cases/on-call">On-call and SRE</a>
-        <a href="/use-cases/agencies">Agencies</a>
+        <StxLink to="/use-cases">All use cases</StxLink>
+        <StxLink to="/use-cases/frontend">Frontend</StxLink>
+        <StxLink to="/use-cases/backend">Backend</StxLink>
+        <StxLink to="/use-cases/mobile">Mobile</StxLink>
+        <StxLink to="/use-cases/on-call">On-call and SRE</StxLink>
+        <StxLink to="/use-cases/agencies">Agencies</StxLink>
 
         <span class="nav-menu-group">More</span>
-        <a href="/pricing">Pricing</a>
-        <a href="/docs">Docs</a>
+        <StxLink to="/pricing">Pricing</StxLink>
+        <StxLink to="/docs">Docs</StxLink>
         <a href="https://github.com/stacksjs/bughq">GitHub</a>
-        <a data-auth-login href="/login">Log in</a>
-        <a class="btn primary sm" data-auth-signup href="/register">Sign up</a>
+        <a data-auth-login href="/login" data-no-router>Log in</a>
+        <a class="btn primary sm" data-auth-signup href="/register" data-no-router>Sign up</a>
       </div>
     </details>
   </div>

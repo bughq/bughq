@@ -11,8 +11,8 @@ useSeoMeta({
 @section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="sep">/</span>
-        <a href="/#features">Features</a><span class="sep">/</span>
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
+        <StxLink to="/#features">Features</StxLink><span class="sep">/</span>
         <span>Automatic capture</span>
       </nav>
 
@@ -21,8 +21,8 @@ useSeoMeta({
         <h1>Every uncaught error, captured on throw.</h1>
         <p>Initialize the SDK once and every unhandled exception is collected with its stack trace, release, and environment. No try/catch scattered through your code.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register">Get started</a>
-          <a class="btn ghost" href="/docs">Read the docs</a>
+          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
         </div>
       </section>
 
@@ -93,18 +93,18 @@ bughq.init({
           <h2 id="related-heading" class="section-title">Pairs well with</h2>
         </div>
         <div class="related">
-          <a href="/features/grouping">
+          <StxLink to="/features/grouping">
             <div class="r-name">Fingerprint grouping</div>
             <div class="r-desc">See captured errors fold into single issues.</div>
-          </a>
-          <a href="/features/stack-traces">
+          </StxLink>
+          <StxLink to="/features/stack-traces">
             <div class="r-name">Readable stack traces</div>
             <div class="r-desc">Turn minified frames back into your source.</div>
-          </a>
-          <a href="/features/releases">
+          </StxLink>
+          <StxLink to="/features/releases">
             <div class="r-name">Releases and environments</div>
             <div class="r-desc">Tag each captured error with its deploy.</div>
-          </a>
+          </StxLink>
         </div>
       </section>
 
@@ -112,8 +112,8 @@ bughq.init({
         <div class="cta-band">
           <h2>Ship with a net under you.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register">Get started</a>
-            <a class="btn ghost" href="/docs">Read the docs</a>
+            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
           </div>
         </div>
       </section>

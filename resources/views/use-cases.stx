@@ -11,7 +11,7 @@ useSeoMeta({
 @section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="sep">/</span>
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
         <span>Use cases</span>
       </nav>
 
@@ -20,8 +20,8 @@ useSeoMeta({
         <h1>A net under every team that ships to production.</h1>
         <p>The same SDK and the same triage fit a browser bundle, a background worker, or a native app. Here is how different teams lean on bughq, and which features do the work.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register">Get started</a>
-          <a class="btn ghost" href="/docs">Read the docs</a>
+          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
         </div>
       </section>
 
@@ -33,7 +33,7 @@ useSeoMeta({
             <div class="usecase-body">
               <h3>Frontend</h3>
               <p>Catch the errors your users actually hit in the browser. Upload a source map and every minified frame resolves back to the component and line that threw.</p>
-              <a class="textlink" href="/use-cases/frontend">How teams use bughq for frontend</a>
+              <StxLink class="textlink" to="/use-cases/frontend">How teams use bughq for frontend</StxLink>
             </div>
           </article>
 
@@ -42,7 +42,7 @@ useSeoMeta({
             <div class="usecase-body">
               <h3>Backend</h3>
               <p>Server, edge, and job failures arrive with the request, release, and environment attached, so a 500 names the route and the deploy that broke it.</p>
-              <a class="textlink" href="/use-cases/backend">How teams use bughq for backend</a>
+              <StxLink class="textlink" to="/use-cases/backend">How teams use bughq for backend</StxLink>
             </div>
           </article>
 
@@ -51,7 +51,7 @@ useSeoMeta({
             <div class="usecase-body">
               <h3>Mobile</h3>
               <p>Native crashes and JavaScript errors fold into one issue per build, so you see which release regressed and how many devices it reached.</p>
-              <a class="textlink" href="/use-cases/mobile">How teams use bughq for mobile</a>
+              <StxLink class="textlink" to="/use-cases/mobile">How teams use bughq for mobile</StxLink>
             </div>
           </article>
 
@@ -60,7 +60,7 @@ useSeoMeta({
             <div class="usecase-body">
               <h3>On-call and SRE</h3>
               <p>Alerts fire for new and spiking issues, not for every known warning. Triage by release and affected-user count instead of scrolling a raw log.</p>
-              <a class="textlink" href="/use-cases/on-call">How on-call teams use bughq</a>
+              <StxLink class="textlink" to="/use-cases/on-call">How on-call teams use bughq</StxLink>
             </div>
           </article>
 
@@ -69,7 +69,7 @@ useSeoMeta({
             <div class="usecase-body">
               <h3>Agencies</h3>
               <p>Keep each client site as its own project with its own issues, releases, and members, so you know exactly which build on which site started erroring.</p>
-              <a class="textlink" href="/use-cases/agencies">How agencies use bughq</a>
+              <StxLink class="textlink" to="/use-cases/agencies">How agencies use bughq</StxLink>
             </div>
           </article>
 
@@ -80,8 +80,8 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Ship with a net under you.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register">Get started</a>
-            <a class="btn ghost" href="/docs">Read the docs</a>
+            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
           </div>
         </div>
       </section>

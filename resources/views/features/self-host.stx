@@ -11,8 +11,8 @@ useSeoMeta({
 @section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="sep">/</span>
-        <a href="/#features">Features</a><span class="sep">/</span>
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
+        <StxLink to="/#features">Features</StxLink><span class="sep">/</span>
         <span>Self-hosting</span>
       </nav>
 
@@ -21,8 +21,8 @@ useSeoMeta({
         <h1>Run it on your own infrastructure.</h1>
         <p>bughq is open source and runs on your own Postgres. Your error data, including anything sensitive that lands in a stack trace, never leaves servers you control.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register">Get started</a>
-          <a class="btn ghost" href="/docs">Read the docs</a>
+          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
         </div>
       </section>
 
@@ -90,18 +90,18 @@ buddy serve   # your instance, your data</code></pre>
           <h2 id="related-heading" class="section-title">Pairs well with</h2>
         </div>
         <div class="related">
-          <a href="/features/capture">
+          <StxLink to="/features/capture">
             <div class="r-name">Automatic capture</div>
             <div class="r-desc">The SDK points at your own ingest URL.</div>
-          </a>
-          <a href="/features/grouping">
+          </StxLink>
+          <StxLink to="/features/grouping">
             <div class="r-name">Fingerprint grouping</div>
             <div class="r-desc">Same triage, on your own instance.</div>
-          </a>
-          <a href="/features/alerts">
+          </StxLink>
+          <StxLink to="/features/alerts">
             <div class="r-name">Alerts and triage</div>
             <div class="r-desc">Wire alerts to your own channels.</div>
-          </a>
+          </StxLink>
         </div>
       </section>
 
@@ -109,8 +109,8 @@ buddy serve   # your instance, your data</code></pre>
         <div class="cta-band">
           <h2>Ship with a net under you.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register">Get started</a>
-            <a class="btn ghost" href="/docs">Read the docs</a>
+            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
           </div>
         </div>
       </section>

@@ -11,7 +11,7 @@ useSeoMeta({
 @section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="sep">/</span>
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
         <span>Docs</span>
       </nav>
 
@@ -20,7 +20,7 @@ useSeoMeta({
         <h1>From install to first grouped issue in minutes.</h1>
         <p>bughq is one SDK and one init call. Drop it into your app, point it at your project's DSN, and every uncaught error is captured, fingerprinted, and grouped. Start here, then dive into the topic you need.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register">Create a project</a>
+          <a class="btn primary" href="/register" data-no-router>Create a project</a>
           <a class="btn ghost" href="https://github.com/stacksjs/bughq">View on GitHub</a>
         </div>
       </section>
@@ -77,36 +77,36 @@ bughq.init({
           <h2 id="topics-heading" class="section-title">Read up by topic</h2>
         </div>
         <div class="bento">
-          <a class="cell" href="/features/capture">
+          <StxLink class="cell" to="/features/capture">
             <h3>Capturing errors</h3>
             <p>How the global handler collects uncaught exceptions and unhandled rejections across every runtime.</p>
             <span class="cell-more">Read more</span>
-          </a>
-          <a class="cell tint" href="/features/stack-traces">
+          </StxLink>
+          <StxLink class="cell tint" to="/features/stack-traces">
             <h3>Source maps and traces</h3>
             <p>Upload a source map so every minified frame resolves back to your original file and line.</p>
             <span class="cell-more">Read more</span>
-          </a>
-          <a class="cell" href="/features/grouping">
+          </StxLink>
+          <StxLink class="cell" to="/features/grouping">
             <h3>Grouping and fingerprints</h3>
             <p>How identical errors fold into one issue, and how to tune the fingerprint when they should not.</p>
             <span class="cell-more">Read more</span>
-          </a>
-          <a class="cell" href="/features/releases">
+          </StxLink>
+          <StxLink class="cell" to="/features/releases">
             <h3>Releases and environments</h3>
             <p>Tag every event with a release and environment so a regression names its own deploy.</p>
             <span class="cell-more">Read more</span>
-          </a>
-          <a class="cell tint" href="/features/alerts">
+          </StxLink>
+          <StxLink class="cell tint" to="/features/alerts">
             <h3>Alerts and triage</h3>
             <p>Route new and spiking issues to your channel or pager, and stay quiet for the known and handled.</p>
             <span class="cell-more">Read more</span>
-          </a>
-          <a class="cell" href="/features/self-host">
+          </StxLink>
+          <StxLink class="cell" to="/features/self-host">
             <h3>Self-hosting</h3>
             <p>Run bughq on your own Postgres so sensitive stack data never leaves your infrastructure.</p>
             <span class="cell-more">Read more</span>
-          </a>
+          </StxLink>
         </div>
       </section>
 
@@ -114,8 +114,8 @@ bughq.init({
         <div class="cta-band">
           <h2>Ready to catch your first issue?</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register">Create a project</a>
-            <a class="btn ghost" href="/use-cases">See use cases</a>
+            <a class="btn primary" href="/register" data-no-router>Create a project</a>
+            <StxLink class="btn ghost" to="/use-cases">See use cases</StxLink>
           </div>
         </div>
       </section>

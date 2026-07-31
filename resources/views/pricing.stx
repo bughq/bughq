@@ -60,7 +60,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 <div class="min-h-[100dvh] px-5 py-14 md:px-10">
   <div class="max-w-3xl mx-auto">
     <header class="text-center mb-10">
-      <a href="/" data-no-router class="wordmark text-2xl">bughq</a>
+      <a href="/" class="wordmark text-2xl" data-no-router>bughq</a>
       <h1 class="wordmark text-3xl md:text-4xl mt-6" style="letter-spacing:-0.035em">Simple, honest pricing</h1>
       <p class="text-base mt-3 text-subtle">Start free. Upgrade when you outgrow it. Self-host free forever.</p>
       <div class="seg inline-flex items-center gap-1 p-1 mt-6 text-sm">

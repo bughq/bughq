@@ -20,8 +20,8 @@ useSeoMeta({
 @section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="sep">/</span>
-        <a href="/compare">Compare</a><span class="sep">/</span>
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
+        <StxLink to="/compare">Compare</StxLink><span class="sep">/</span>
         <span>Sentry</span>
       </nav>
 
@@ -30,8 +30,8 @@ useSeoMeta({
         <h1>bughq vs Sentry</h1>
         <p>Sentry is the incumbent and the most feature-complete option here, spanning error tracking, tracing, session replay, and profiling. That breadth is real. It also comes with event-quota pricing that climbs quickly at scale and a self-hosted stack of many moving parts. bughq does one thing, error and crash tracking, and self-hosts as a single app on your own Postgres.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register">Get started</a>
-          <a class="btn ghost" href="/compare">All alternatives</a>
+          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <StxLink class="btn ghost" to="/compare">All alternatives</StxLink>
         </div>
       </section>
 
@@ -121,18 +121,18 @@ useSeoMeta({
           <h2 id="related-heading" class="section-title">More comparisons</h2>
         </div>
         <div class="related">
-          <a href="/compare/glitchtip">
+          <StxLink to="/compare/glitchtip">
             <div class="r-name">bughq vs GlitchTip</div>
             <div class="r-desc">The other open-source, Sentry-adjacent option.</div>
-          </a>
-          <a href="/compare/datadog">
+          </StxLink>
+          <StxLink to="/compare/datadog">
             <div class="r-name">bughq vs Datadog</div>
             <div class="r-desc">Focused errors versus a full observability suite.</div>
-          </a>
-          <a href="/compare/bugsnag">
+          </StxLink>
+          <StxLink to="/compare/bugsnag">
             <div class="r-name">bughq vs Bugsnag</div>
             <div class="r-desc">Open and self-hosted versus closed stability monitoring.</div>
-          </a>
+          </StxLink>
         </div>
       </section>
 
@@ -140,8 +140,8 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Own your error tracking.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register">Get started</a>
-            <a class="btn ghost" href="/features/self-host">Read about self-hosting</a>
+            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <StxLink class="btn ghost" to="/features/self-host">Read about self-hosting</StxLink>
           </div>
         </div>
       </section>

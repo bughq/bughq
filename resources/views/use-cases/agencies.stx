@@ -11,8 +11,8 @@ useSeoMeta({
 @section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="sep">/</span>
-        <a href="/use-cases">Use cases</a><span class="sep">/</span>
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
+        <StxLink to="/use-cases">Use cases</StxLink><span class="sep">/</span>
         <span>Agencies</span>
       </nav>
 
@@ -21,8 +21,8 @@ useSeoMeta({
         <h1>One project per client, one place to watch them all.</h1>
         <p>You maintain a dozen sites on a dozen stacks. bughq keeps each client as its own isolated project with its own issues, releases, and members, so you always know which build on which site started erroring.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register">Get started</a>
-          <a class="btn ghost" href="/features/self-host">Self-hosting</a>
+          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <StxLink class="btn ghost" to="/features/self-host">Self-hosting</StxLink>
         </div>
       </section>
 
@@ -72,18 +72,18 @@ useSeoMeta({
           <h2 id="related-heading" class="section-title">Features that do the work</h2>
         </div>
         <div class="related">
-          <a href="/features/self-host">
+          <StxLink to="/features/self-host">
             <div class="r-name">Self-hosting</div>
             <div class="r-desc">Keep every client's stack data inside your own boundary.</div>
-          </a>
-          <a href="/features/grouping">
+          </StxLink>
+          <StxLink to="/features/grouping">
             <div class="r-name">Fingerprint grouping</div>
             <div class="r-desc">One issue per bug, isolated to the client it belongs to.</div>
-          </a>
-          <a href="/features/releases">
+          </StxLink>
+          <StxLink to="/features/releases">
             <div class="r-name">Releases and environments</div>
             <div class="r-desc">Name the exact build on the exact site that regressed.</div>
-          </a>
+          </StxLink>
         </div>
       </section>
 
@@ -91,8 +91,8 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Give every client site a net under it.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register">Get started</a>
-            <a class="btn ghost" href="/docs">Read the docs</a>
+            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
           </div>
         </div>
       </section>
