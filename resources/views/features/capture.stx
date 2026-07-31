@@ -1,14 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Automatic error capture - bughq</title>
-    <link rel="stylesheet" href="/marketing.css">
-  </head>
-  <body>
-    @include('SiteNav')
+@extends('marketing')
 
+@section('title')Automatic error capture - bughq@endsection
+
+@section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
         <a href="/">Home</a><span class="sep">/</span>
@@ -119,6 +113,5 @@ bughq.init({
       </section>
     </main>
 
-    @include('SiteFooter')
-  </body>
-</html>
+  
+@endsection

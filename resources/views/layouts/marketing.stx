@@ -5,11 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="@yield('description')">
     <title>@yield('title')</title>
+    {{-- The font links and the pre-paint theme guard are deliberately NOT here.
+         They live in config/ui.ts `app.head` (Stage 1), and injectConfigHeadTags
+         adds them to this head, deduped on href and on inline script content.
+         Re-adding them would emit a second copy on every marketing page.
+
+         /marketing.css does stay here rather than in the global head: it defines
+         :root, html, body, * and a, plus .btn / .panel / .mono / .reveal, which
+         the authenticated app pages also use. Globalising it would restyle the
+         app. Scoping it to this layout is what makes it safe. --}}
+    <link rel="stylesheet" href="/marketing.css">
+    @stack('styles')
   </head>
   <body>
     @include('SiteNav')
     @yield('content')
-    @yield('footer')
+    @include('SiteFooter')
     @stack('scripts')
   </body>
 </html>

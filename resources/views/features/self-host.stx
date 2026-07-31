@@ -1,14 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Self-hosting - bughq</title>
-    <link rel="stylesheet" href="/marketing.css">
-  </head>
-  <body>
-    @include('SiteNav')
+@extends('marketing')
 
+@section('title')Self-hosting - bughq@endsection
+
+@section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
         <a href="/">Home</a><span class="sep">/</span>
@@ -116,6 +110,5 @@ buddy serve   # your instance, your data</code></pre>
       </section>
     </main>
 
-    @include('SiteFooter')
-  </body>
-</html>
+  
+@endsection

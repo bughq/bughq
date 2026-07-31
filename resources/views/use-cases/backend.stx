@@ -1,15 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Backend error tracking - bughq</title>
-    <meta name="description" content="Capture server, edge, and background-job failures with the request, release, and environment attached, so every 500 names the route and deploy that broke it.">
-    <link rel="stylesheet" href="/marketing.css">
-  </head>
-  <body>
-    @include('SiteNav')
+@extends('marketing')
 
+@section('title')Backend error tracking - bughq@endsection
+
+@section('description')Capture server, edge, and background-job failures with the request, release, and environment attached, so every 500 names the route and deploy that broke it.@endsection
+
+@section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
         <a href="/">Home</a><span class="sep">/</span>
@@ -115,6 +110,5 @@ bughq.init({
       </section>
     </main>
 
-    @include('SiteFooter')
-  </body>
-</html>
+  
+@endsection

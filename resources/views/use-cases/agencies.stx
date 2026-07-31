@@ -1,15 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Error tracking for agencies - bughq</title>
-    <meta name="description" content="Keep every client site as its own project with isolated issues, releases, and members, and self-host so client data stays on infrastructure you control.">
-    <link rel="stylesheet" href="/marketing.css">
-  </head>
-  <body>
-    @include('SiteNav')
+@extends('marketing')
 
+@section('title')Error tracking for agencies - bughq@endsection
+
+@section('description')Keep every client site as its own project with isolated issues, releases, and members, and self-host so client data stays on infrastructure you control.@endsection
+
+@section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
         <a href="/">Home</a><span class="sep">/</span>
@@ -99,6 +94,5 @@
       </section>
     </main>
 
-    @include('SiteFooter')
-  </body>
-</html>
+  
+@endsection

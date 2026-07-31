@@ -1,21 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>bughq vs Datadog - bughq</title>
-    <meta name="description" content="How bughq, a focused open-source error tracker you self-host, compares to Datadog’s full observability suite.">
-    <link rel="stylesheet" href="/marketing.css">
-    <style>
+@extends('marketing')
+
+@section('title')bughq vs Datadog - bughq@endsection
+
+@section('description')How bughq, a focused open-source error tracker you self-host, compares to Datadog’s full observability suite.@endsection
+
+@push('styles')
+<style>
       /* Highlight the bughq column (2nd of every 3 grid cells) so the table reads
          at a glance. Uses the same accent-soft token as the rest of the site. */
       .cmp-hl .cmp-cell:nth-child(3n+2) { background: var(--accent-soft); }
       .cmp-note { margin-top: 1rem; color: var(--text-3); font-size: 0.86rem; line-height: 1.55; max-width: 68ch; }
     </style>
-  </head>
-  <body>
-    @include('SiteNav')
+@endpush
 
+@section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
         <a href="/">Home</a><span class="sep">/</span>
@@ -145,6 +143,5 @@
       </section>
     </main>
 
-    @include('SiteFooter')
-  </body>
-</html>
+  
+@endsection

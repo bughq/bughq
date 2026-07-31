@@ -1,15 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Docs - bughq</title>
-    <meta name="description" content="Get bughq capturing production errors in a few minutes: install the SDK, initialize once, and read up on capture, grouping, releases, alerts, and self-hosting.">
-    <link rel="stylesheet" href="/marketing.css">
-  </head>
-  <body>
-    @include('SiteNav')
+@extends('marketing')
 
+@section('title')Docs - bughq@endsection
+
+@section('description')Get bughq capturing production errors in a few minutes: install the SDK, initialize once, and read up on capture, grouping, releases, alerts, and self-hosting.@endsection
+
+@section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
         <a href="/">Home</a><span class="sep">/</span>
@@ -122,6 +117,5 @@ bughq.init({
       </section>
     </main>
 
-    @include('SiteFooter')
-  </body>
-</html>
+  
+@endsection

@@ -27,15 +27,12 @@ const steps = [
   { num: '03', verb: 'Triage', body: 'Identical errors fold into one issue with a live count and affected-user tally, sorted by impact.' },
 ]
 </script>
+@extends('marketing')
 
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>bughq - Error tracking for people who ship</title>
-    <link rel="stylesheet" href="/marketing.css">
-    <style>
+@section('title')bughq - Error tracking for people who ship@endsection
+
+@push('styles')
+<style>
       .hero-code { border: 1px solid var(--border); border-radius: var(--r); background: var(--code-bg); overflow: hidden; }
       .hero-code .code-bar { display: flex; align-items: center; gap: 0.55rem; padding: 0.8rem 1rem; border-bottom: 1px solid rgba(148,163,184,0.14); }
       .hero-code .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--accent); }
@@ -43,10 +40,9 @@ const steps = [
       .open-band p { margin: 0; max-width: 52ch; color: var(--text-2); font-size: 1rem; line-height: 1.55; }
       .open-band strong { color: var(--text); font-weight: 600; }
     </style>
-  </head>
-  <body>
-    @include('SiteNav')
+@endpush
 
+@section('content')
     <!-- Bare <main>, .shell on each section below: the SPA router keeps this
          outer element across a fragment swap, so a class here would leak into
          the next marketing page and nest .shell inside .shell (48px narrower). -->
@@ -122,7 +118,6 @@ const steps = [
 
     </main>
 
-    @include('SiteFooter')
 
     <!-- Reflect auth state: a logged-in visitor (token in localStorage) sees
          "Dashboard" instead of Log in / Sign up. -->
@@ -142,5 +137,5 @@ const steps = [
         })
       })()
     </script>
-  </body>
-</html>
+  
+@endsection

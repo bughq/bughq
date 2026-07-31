@@ -1,15 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Frontend error tracking - bughq</title>
-    <meta name="description" content="Catch the JavaScript errors your users actually hit in the browser, with source-mapped stack traces, release tagging, and one issue per bug.">
-    <link rel="stylesheet" href="/marketing.css">
-  </head>
-  <body>
-    @include('SiteNav')
+@extends('marketing')
 
+@section('title')Frontend error tracking - bughq@endsection
+
+@section('description')Catch the JavaScript errors your users actually hit in the browser, with source-mapped stack traces, release tagging, and one issue per bug.@endsection
+
+@section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
         <a href="/">Home</a><span class="sep">/</span>
@@ -120,6 +115,5 @@ bughq.init({
       </section>
     </main>
 
-    @include('SiteFooter')
-  </body>
-</html>
+  
+@endsection

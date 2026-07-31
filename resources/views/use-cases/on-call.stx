@@ -1,15 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>On-call and SRE error tracking - bughq</title>
-    <meta name="description" content="Alert on new and spiking issues, not on known noise. Triage by release and affected-user count so on-call time goes to what is actually breaking.">
-    <link rel="stylesheet" href="/marketing.css">
-  </head>
-  <body>
-    @include('SiteNav')
+@extends('marketing')
 
+@section('title')On-call and SRE error tracking - bughq@endsection
+
+@section('description')Alert on new and spiking issues, not on known noise. Triage by release and affected-user count so on-call time goes to what is actually breaking.@endsection
+
+@section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
         <a href="/">Home</a><span class="sep">/</span>
@@ -130,6 +125,5 @@
       </section>
     </main>
 
-    @include('SiteFooter')
-  </body>
-</html>
+  
+@endsection

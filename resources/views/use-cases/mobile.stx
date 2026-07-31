@@ -1,15 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mobile crash reporting - bughq</title>
-    <meta name="description" content="Group native crashes and JavaScript errors by build and release, so you see which version regressed and how many devices it reached.">
-    <link rel="stylesheet" href="/marketing.css">
-  </head>
-  <body>
-    @include('SiteNav')
+@extends('marketing')
 
+@section('title')Mobile crash reporting - bughq@endsection
+
+@section('description')Group native crashes and JavaScript errors by build and release, so you see which version regressed and how many devices it reached.@endsection
+
+@section('content')
     <main>
       <nav class="subnav shell" aria-label="Breadcrumb">
         <a href="/">Home</a><span class="sep">/</span>
@@ -130,6 +125,5 @@
       </section>
     </main>
 
-    @include('SiteFooter')
-  </body>
-</html>
+  
+@endsection
