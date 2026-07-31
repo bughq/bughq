@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "Frontend error tracking - bughq",
+  description: "Catch the JavaScript errors your users actually hit in the browser, with source-mapped stack traces, release tagging, and one issue per bug.",
+  canonical: "https://bughq.org/use-cases/frontend",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')Frontend error tracking - bughq@endsection
-
-@section('description')Catch the JavaScript errors your users actually hit in the browser, with source-mapped stack traces, release tagging, and one issue per bug.@endsection
 
 @section('content')
     <main>

@@ -1,6 +1,12 @@
-@extends('marketing')
+<script server>
+useSeoMeta({
+  title: "Releases and environments - bughq",
+  description: "Tag every event with a release and environment so a regression points straight at the deploy that caused it.",
+  canonical: "https://bughq.org/features/releases",
+})
+</script>
 
-@section('title')Releases and environments - bughq@endsection
+@extends('marketing')
 
 @section('content')
     <main>

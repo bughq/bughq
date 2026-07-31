@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "On-call and SRE error tracking - bughq",
+  description: "Alert on new and spiking issues, not on known noise. Triage by release and affected-user count so on-call time goes to what is actually breaking.",
+  canonical: "https://bughq.org/use-cases/on-call",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')On-call and SRE error tracking - bughq@endsection
-
-@section('description')Alert on new and spiking issues, not on known noise. Triage by release and affected-user count so on-call time goes to what is actually breaking.@endsection
 
 @section('content')
     <main>

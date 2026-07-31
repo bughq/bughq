@@ -5,7 +5,13 @@
 // preference the dashboard uses), scoped to projects the user OWNS — members can
 // view/triage issues but only an owner administers a project. Reads happen here
 // server-side; mutations go client-side to the owner-scoped /api endpoints.
-useHead({ title: 'Settings - bughq' })
+useSeoMeta({
+  title: 'Settings - bughq',
+  // Auth-walled. Keeps it out of the index and, with the site.config
+  // entry removed, stops a canonical being minted for a URL nobody
+  // signed out can load.
+  robots: 'noindex, nofollow',
+})
 
 const { db } = await import('@stacksjs/database')
 const { appUrl, ingestUrl } = await import('../../app/Support/urls')

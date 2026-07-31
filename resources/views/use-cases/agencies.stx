@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "Error tracking for agencies - bughq",
+  description: "Keep every client site as its own project with isolated issues, releases, and members, and self-host so client data stays on infrastructure you control.",
+  canonical: "https://bughq.org/use-cases/agencies",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')Error tracking for agencies - bughq@endsection
-
-@section('description')Keep every client site as its own project with isolated issues, releases, and members, and self-host so client data stays on infrastructure you control.@endsection
 
 @section('content')
     <main>

@@ -1,0 +1,12 @@
+# bughq — the authenticated app is not for indexing. Those routes also send
+# `robots: noindex, nofollow` in the document head; this file stops the crawl
+# before the request.
+User-agent: *
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /account
+Disallow: /projects
+Disallow: /issue
+Disallow: /api/
+
+Sitemap: https://bughq.org/sitemap.xml

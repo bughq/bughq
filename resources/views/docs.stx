@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "Docs - bughq",
+  description: "Get bughq capturing production errors in a few minutes: install the SDK, initialize once, and read up on capture, grouping, releases, alerts, and self-hosting.",
+  canonical: "https://bughq.org/docs",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')Docs - bughq@endsection
-
-@section('description')Get bughq capturing production errors in a few minutes: install the SDK, initialize once, and read up on capture, grouping, releases, alerts, and self-hosting.@endsection
 
 @section('content')
     <main>

@@ -1,6 +1,12 @@
-@extends('marketing')
+<script server>
+useSeoMeta({
+  title: "Self-hosting - bughq",
+  description: "bughq is open source and runs on your own Postgres, so sensitive stack data never leaves servers you control.",
+  canonical: "https://bughq.org/features/self-host",
+})
+</script>
 
-@section('title')Self-hosting - bughq@endsection
+@extends('marketing')
 
 @section('content')
     <main>

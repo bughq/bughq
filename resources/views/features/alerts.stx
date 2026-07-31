@@ -1,6 +1,12 @@
-@extends('marketing')
+<script server>
+useSeoMeta({
+  title: "Alerts and triage - bughq",
+  description: "Get alerted when an issue is new or spiking, and stay quiet for the known and handled. Tune the threshold, not the noise.",
+  canonical: "https://bughq.org/features/alerts",
+})
+</script>
 
-@section('title')Alerts and triage - bughq@endsection
+@extends('marketing')
 
 @section('content')
     <main>

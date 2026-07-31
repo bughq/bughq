@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "bughq vs GlitchTip - bughq",
+  description: "How bughq compares to GlitchTip, the other open-source, Sentry-compatible error tracker you can self-host.",
+  canonical: "https://bughq.org/compare/glitchtip",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')bughq vs GlitchTip - bughq@endsection
-
-@section('description')How bughq compares to GlitchTip, the other open-source, Sentry-compatible error tracker you can self-host.@endsection
 
 @push('styles')
 <style>

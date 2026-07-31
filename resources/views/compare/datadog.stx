@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "bughq vs Datadog - bughq",
+  description: "How bughq, a focused open-source error tracker you self-host, compares to Datadog\u2019s full observability suite.",
+  canonical: "https://bughq.org/compare/datadog",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')bughq vs Datadog - bughq@endsection
-
-@section('description')How bughq, a focused open-source error tracker you self-host, compares to Datadog’s full observability suite.@endsection
 
 @push('styles')
 <style>

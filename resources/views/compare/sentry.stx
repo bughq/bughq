@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "bughq vs Sentry - bughq",
+  description: "How bughq, an open-source error tracker you self-host on Postgres, compares to Sentry, the incumbent error platform.",
+  canonical: "https://bughq.org/compare/sentry",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')bughq vs Sentry - bughq@endsection
-
-@section('description')How bughq, an open-source error tracker you self-host on Postgres, compares to Sentry, the incumbent error platform.@endsection
 
 @push('styles')
 <style>

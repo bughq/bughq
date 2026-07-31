@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "Backend error tracking - bughq",
+  description: "Capture server, edge, and background-job failures with the request, release, and environment attached, so every 500 names the route and deploy that broke it.",
+  canonical: "https://bughq.org/use-cases/backend",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')Backend error tracking - bughq@endsection
-
-@section('description')Capture server, edge, and background-job failures with the request, release, and environment attached, so every 500 names the route and deploy that broke it.@endsection
 
 @section('content')
     <main>

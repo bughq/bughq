@@ -1,5 +1,11 @@
 <script server>
-useHead({ title: 'Account - bughq' })
+useSeoMeta({
+  title: 'Account - bughq',
+  // Auth-walled. Keeps it out of the index and, with the site.config
+  // entry removed, stops a canonical being minted for a URL nobody
+  // signed out can load.
+  robots: 'noindex, nofollow',
+})
 </script>
 
 <script client>

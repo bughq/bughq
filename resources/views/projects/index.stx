@@ -2,7 +2,13 @@
 // Projects list. Server-authenticates from the token cookie and shows the
 // user's own apps; each links into its dashboard. New users (or logged-out
 // visitors) are handled by the client guard at the bottom.
-useHead({ title: 'Your apps - bughq' })
+useSeoMeta({
+  title: 'Your apps - bughq',
+  // Auth-walled. Keeps it out of the index and, with the site.config
+  // entry removed, stops a canonical being minted for a URL nobody
+  // signed out can load.
+  robots: 'noindex, nofollow',
+})
 
 const { db } = await import('@stacksjs/database')
 

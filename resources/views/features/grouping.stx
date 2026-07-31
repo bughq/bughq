@@ -1,6 +1,12 @@
-@extends('marketing')
+<script server>
+useSeoMeta({
+  title: "Fingerprint grouping - bughq",
+  description: "Identical errors fold into a single issue by fingerprint, with a live event count and an affected-user tally.",
+  canonical: "https://bughq.org/features/grouping",
+})
+</script>
 
-@section('title')Fingerprint grouping - bughq@endsection
+@extends('marketing')
 
 @section('content')
     <main>

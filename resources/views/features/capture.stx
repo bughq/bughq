@@ -1,6 +1,12 @@
-@extends('marketing')
+<script server>
+useSeoMeta({
+  title: 'Automatic error capture - bughq',
+  description: 'Initialize once and every uncaught error is captured with its stack trace, release, and environment. No scattered try/catch.',
+  canonical: 'https://bughq.org/features/capture',
+})
+</script>
 
-@section('title')Automatic error capture - bughq@endsection
+@extends('marketing')
 
 @section('content')
     <main>

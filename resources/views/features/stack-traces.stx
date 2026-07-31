@@ -1,6 +1,12 @@
-@extends('marketing')
+<script server>
+useSeoMeta({
+  title: "Readable stack traces - bughq",
+  description: "Upload a source map and every minified frame resolves back to your original file, function, and line.",
+  canonical: "https://bughq.org/features/stack-traces",
+})
+</script>
 
-@section('title')Readable stack traces - bughq@endsection
+@extends('marketing')
 
 @section('content')
     <main>

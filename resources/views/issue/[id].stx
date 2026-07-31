@@ -104,7 +104,12 @@ const latest = events[0] || null
 // fresh-vs-arrived divergence this app keeps getting bitten by. A tab title
 // loses nothing by dropping them.
 const issueHeadline = String((latest && latest.message) || issue?.title || '').replace(/[<>]/g, '').trim()
-useHead({ title: issueHeadline ? `${issueHeadline.length > 60 ? `${issueHeadline.slice(0, 60)}…` : issueHeadline} - bughq` : 'Issue - bughq' })
+useSeoMeta({
+  title: issueHeadline ? `${issueHeadline.length > 60 ? `${issueHeadline.slice(0, 60)}…` : issueHeadline} - bughq` : 'Issue - bughq',
+  // Auth-walled, and the title carries a customer's error text — this must
+  // never be indexed.
+  robots: 'noindex, nofollow',
+})
 const stack = latest?.stack || ''
 // Handed to the copy button as a JS literal. JSON.stringify does the escaping,
 // so the client script needs no hidden element to read the text back out of.

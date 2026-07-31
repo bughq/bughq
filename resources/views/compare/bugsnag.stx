@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "bughq vs Bugsnag - bughq",
+  description: "How bughq, an open-source error tracker you self-host, compares to Bugsnag, SmartBear\u2019s stability monitoring product.",
+  canonical: "https://bughq.org/compare/bugsnag",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')bughq vs Bugsnag - bughq@endsection
-
-@section('description')How bughq, an open-source error tracker you self-host, compares to Bugsnag, SmartBear’s stability monitoring product.@endsection
 
 @push('styles')
 <style>

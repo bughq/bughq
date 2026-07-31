@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "bughq vs Airbrake - bughq",
+  description: "How bughq, an open-source error tracker you self-host on Postgres, compares to Airbrake, one of the original error trackers.",
+  canonical: "https://bughq.org/compare/airbrake",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')bughq vs Airbrake - bughq@endsection
-
-@section('description')How bughq, an open-source error tracker you self-host on Postgres, compares to Airbrake, one of the original error trackers.@endsection
 
 @push('styles')
 <style>

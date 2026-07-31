@@ -3,7 +3,13 @@
 // (mirrored from localStorage by login/register), loads THEIR projects
 // owner-scoped, and renders the active one (from ?project=, else the first).
 // Users with no projects are sent to the create-app screen. Reads via db.unsafe.
-useHead({ title: 'Issues - bughq' })
+useSeoMeta({
+  title: 'Issues - bughq',
+  // Auth-walled. Keeps it out of the index and, with the site.config
+  // entry removed, stops a canonical being minted for a URL nobody
+  // signed out can load.
+  robots: 'noindex, nofollow',
+})
 
 const { db } = await import('@stacksjs/database')
 

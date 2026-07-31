@@ -27,9 +27,15 @@ const steps = [
   { num: '03', verb: 'Triage', body: 'Identical errors fold into one issue with a live count and affected-user tally, sorted by impact.' },
 ]
 </script>
-@extends('marketing')
+<script server>
+useSeoMeta({
+  title: "bughq - Error tracking for people who ship",
+  description: "Error tracking for people who ship. Capture, group, and triage production errors with automatic fingerprinting. Built on Stacks and Postgres.",
+  canonical: "https://bughq.org/",
+})
+</script>
 
-@section('title')bughq - Error tracking for people who ship@endsection
+@extends('marketing')
 
 @push('styles')
 <style>

@@ -11,11 +11,15 @@ const alternatives = [
   { slug: 'datadog', name: 'Datadog', desc: 'A full observability suite with error tracking as one module.' },
 ]
 </script>
+<script server>
+useSeoMeta({
+  title: "bughq alternatives compared - bughq",
+  description: "How bughq, an open-source error tracker you self-host on Postgres, compares to Sentry, Bugsnag, Rollbar, Raygun, Honeybadger, Airbrake, GlitchTip, and Datadog.",
+  canonical: "https://bughq.org/compare",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')bughq alternatives compared - bughq@endsection
-
-@section('description')How bughq, an open-source error tracker you self-host on Postgres, compares to Sentry, Bugsnag, Rollbar, Raygun, Honeybadger, Airbrake, GlitchTip, and Datadog.@endsection
 
 @section('content')
     <main>

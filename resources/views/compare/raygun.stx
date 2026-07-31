@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "bughq vs Raygun - bughq",
+  description: "How bughq, a focused open-source error tracker you self-host, compares to Raygun\u2019s crash reporting and APM suite.",
+  canonical: "https://bughq.org/compare/raygun",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')bughq vs Raygun - bughq@endsection
-
-@section('description')How bughq, a focused open-source error tracker you self-host, compares to Raygun’s crash reporting and APM suite.@endsection
 
 @push('styles')
 <style>

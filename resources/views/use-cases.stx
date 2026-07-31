@@ -1,8 +1,12 @@
+<script server>
+useSeoMeta({
+  title: "Use cases - bughq",
+  description: "How frontend, backend, mobile, on-call, and agency teams put bughq error tracking to work in production.",
+  canonical: "https://bughq.org/use-cases",
+})
+</script>
+
 @extends('marketing')
-
-@section('title')Use cases - bughq@endsection
-
-@section('description')How frontend, backend, mobile, on-call, and agency teams put bughq error tracking to work in production.@endsection
 
 @section('content')
     <main>

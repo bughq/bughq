@@ -3,8 +3,15 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="@yield('description')">
-    <title>@yield('title')</title>
+    {{-- No <title> or description here on purpose. Both are owned by each page's
+         useSeoMeta() call, which also derives og:* and twitter:* from the same
+         two strings so they cannot drift apart.
+
+         Hardcoding them here actively breaks that: @yield renders an EMPTY tag
+         when a page supplies no section, and injectSeo skips any tag already
+         declared — so `<meta name="description" content="">` shipped on every
+         page that had no @section('description'), suppressing the real one.
+         Emitting nothing lets useSeoMeta be the single source. --}}
     {{-- The font links and the pre-paint theme guard are deliberately NOT here.
          They live in config/ui.ts `app.head` (Stage 1), and injectConfigHeadTags
          adds them to this head, deduped on href and on inline script content.
