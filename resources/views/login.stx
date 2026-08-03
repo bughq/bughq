@@ -35,7 +35,6 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       return
     }
     const token = data.token || data.access_token || ''
-    localStorage.setItem('token', token)
     // The cookie is what server-rendered pages authenticate from. The store owns
     // its serialisation — path, max-age, samesite and the https-only `secure`.
     useStore('session').token.set(token)

@@ -34,7 +34,6 @@ function logout() {
     fetch('/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
   }
   catch { /* best effort: the local session is cleared either way */ }
-  localStorage.removeItem('token')
   localStorage.removeItem('user')
   // Setting a cookie signal to '' emits max-age=0, which is the delete.
   useStore('session').signOut()
@@ -47,7 +46,6 @@ if (token) {
   fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } })
     .then((r) => {
       if (r.status === 401) {
-        localStorage.removeItem('token')
         window.location.replace('/login')
         return null
       }

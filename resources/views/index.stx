@@ -129,7 +129,9 @@ useSeoMeta({
          "Dashboard" instead of Log in / Sign up. -->
     <script>
       (function () {
-        if (!localStorage.getItem('token')) return
+        // The cookie is the source of truth for signed-in state; localStorage no
+        // longer holds a token copy.
+        if (!/(^|;)\s*bughq_token=/.test(document.cookie)) return
         document.querySelectorAll('[data-auth-login]').forEach(function (a) {
           a.textContent = 'Dashboard'
           a.setAttribute('href', '/dashboard')

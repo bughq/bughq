@@ -60,7 +60,6 @@ function toggleTheme() {
 }
 
 function logout() {
-  localStorage.removeItem('token')
   localStorage.removeItem('user')
   useStore('session').signOut()
   window.location.assign('/login')
@@ -163,15 +162,14 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
      inside comments, so the words alone produce a SyntaxError mid-navigation. -->
 <script>
 (function () {
-  var t = localStorage.getItem('token')
-  if (!t) { window.location.replace('/login'); return }
-  // Raw document.cookie on purpose. This guard runs in a bare <script> before the
-  // signals runtime exists, so useStore('session') is not defined yet — its whole
-  // job is to mirror the token and leave before the page is worth rendering.
-  // Every other cookie access in this app goes through the session store.
-  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) {
-    document.cookie = 'bughq_token=' + t + '; path=/; max-age=2592000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
-    window.location.reload()
-  }
+  // The bughq_token cookie is the single source of truth: it is what every
+  // <script server> block authenticates from, and the store writes it at sign-in.
+  // This guard only has to notice its absence and leave. It used to read a
+  // localStorage copy, mirror it into the cookie and reload — a second source for
+  // the same fact, with nothing keeping the two in step.
+  //
+  // Raw document.cookie because this is a bare <script> that runs before the
+  // signals runtime exists, so useStore is not defined yet.
+  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) { window.location.replace('/login'); return }
 })()
 </script>

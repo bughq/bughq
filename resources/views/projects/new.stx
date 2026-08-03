@@ -21,14 +21,8 @@ function ensureAuthed() {
     window.location.replace('/login')
     return
   }
-  // Mirror the token into a cookie so the server-rendered dashboard can
-  // authenticate this user on plain navigation.
-  // Raw document.cookie on purpose. This guard runs in a bare <script> before the
-  // signals runtime exists, so useStore('session') is not defined yet — its whole
-  // job is to mirror the token and leave before the page is worth rendering.
-  // Every other cookie access in this app goes through the session store.
-  if (!/(^|;)\s*bughq_token=/.test(document.cookie))
-    document.cookie = `bughq_token=${t}; path=/; max-age=2592000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`
+  // Nothing to mirror: token() reads the cookie, so if it is non-empty the
+  // cookie already exists and the server will see it.
 }
 ensureAuthed()
 

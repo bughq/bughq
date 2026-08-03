@@ -43,7 +43,6 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       return
     }
     const token = data.token || data.access_token || ''
-    localStorage.setItem('token', token)
     // Mirror the token into a cookie so server-rendered pages (the dashboard)
     // can authenticate this user on plain navigation.
     // See login.stx — the store owns cookie serialisation.

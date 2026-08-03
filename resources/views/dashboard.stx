@@ -233,7 +233,6 @@ function toggleTheme() {
 }
 
 function signOut() {
-  localStorage.removeItem('token')
   localStorage.removeItem('user')
   useStore('session').signOut()
   window.location.assign('/login')
@@ -564,25 +563,21 @@ summary::-webkit-details-marker { display: none; }
      already resolved the user's projects and active project. -->
 <script>
 (function () {
-  var t = localStorage.getItem('token')
-  if (!t) { window.location.replace('/login'); return }
-  // Mirror the token into a cookie so the server can authenticate this user;
-  // reload once when it was missing so the first render is authenticated.
-  // Raw document.cookie on purpose. This guard runs in a bare <script> before the
-  // signals runtime exists, so useStore('session') is not defined yet — its whole
-  // job is to mirror the token and leave before the page is worth rendering.
-  // Every other cookie access in this app goes through the session store.
-  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) {
-    document.cookie = 'bughq_token=' + t + '; path=/; max-age=2592000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
-    window.location.reload()
-    return
-  }
+  // The bughq_token cookie is the single source of truth: it is what every
+  // <script server> block authenticates from, and the store writes it at sign-in.
+  // This guard only has to notice its absence and leave. It used to read a
+  // localStorage copy, mirror it into the cookie and reload — a second source for
+  // the same fact, with nothing keeping the two in step.
+  //
+  // Raw document.cookie because this is a bare <script> that runs before the
+  // signals runtime exists, so useStore is not defined yet. Every other cookie
+  // access in this app goes through the session store.
+  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) { window.location.replace('/login'); return }
   // The cookie WAS sent but the server still rendered the unauthenticated
   // state: the token is dead (expired, revoked, or replaced by a newer
   // login). Clear the stale credentials and go to login — without this the
   // page wedges on "Loading…" forever.
   if (document.getElementById('auth-pending')) {
-    localStorage.removeItem('token'); localStorage.removeItem('user')
     document.cookie = 'bughq_token=; path=/; max-age=0'
     window.location.replace('/login')
     return

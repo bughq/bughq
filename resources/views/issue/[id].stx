@@ -772,17 +772,16 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
      now @click handlers in the client script block at the top of this file. -->
 <script>
 (function () {
-  var t = localStorage.getItem('token')
-  if (!t) { window.location.replace('/login'); return }
-  // Raw document.cookie on purpose. This guard runs in a bare <script> before the
-  // signals runtime exists, so useStore('session') is not defined yet — its whole
-  // job is to mirror the token and leave before the page is worth rendering.
-  // Every other cookie access in this app goes through the session store.
-  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) {
-    document.cookie = 'bughq_token=' + t + '; path=/; max-age=2592000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
-    window.location.reload()
-    return
-  }
+  // The bughq_token cookie is the single source of truth: it is what every
+  // <script server> block authenticates from, and the store writes it at sign-in.
+  // This guard only has to notice its absence and leave. It used to read a
+  // localStorage copy, mirror it into the cookie and reload — a second source for
+  // the same fact, with nothing keeping the two in step.
+  //
+  // Raw document.cookie because this is a bare <script> that runs before the
+  // signals runtime exists, so useStore is not defined yet. Every other cookie
+  // access in this app goes through the session store.
+  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) { window.location.replace('/login'); return }
 
   // Viewing an issue makes its project the active one, so "Back to issues"
   // (a clean /dashboard) lands on the right project - e.g. arriving from an
