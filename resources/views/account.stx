@@ -36,7 +36,8 @@ function logout() {
   catch { /* best effort: the local session is cleared either way */ }
   localStorage.removeItem('token')
   localStorage.removeItem('user')
-  document.cookie = 'bughq_token=; path=/; max-age=0'
+  // Setting a cookie signal to '' emits max-age=0, which is the delete.
+  useStore('session').signOut()
   window.location.assign('/login')
 }
 

@@ -218,7 +218,7 @@ function copyText(which: string, text: string): void {
 }
 
 function switchProject(e: Event): void {
-  document.cookie = `bughq_project=${encodeURIComponent(e.target.value)}; path=/; max-age=31536000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`
+  useStore('session').project.set((e.target as HTMLSelectElement).value)
   window.location.href = '/settings'
 }
 
@@ -596,7 +596,7 @@ function dzConfirm(): void {
         }
         // The project this page is scoped to no longer exists, so the cookie
         // pointing at it has to go before the next page tries to resolve it.
-        document.cookie = 'bughq_project=; path=/; max-age=0'
+        useStore('session').project.set('')
         window.location.assign('/projects')
       })
       .catch(() => {
@@ -981,6 +981,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 (function () {
   var t = localStorage.getItem('token')
   if (!t) { window.location.replace('/login'); return }
+  // Raw document.cookie on purpose. This guard runs in a bare <script> before the
+  // signals runtime exists, so useStore('session') is not defined yet — its whole
+  // job is to mirror the token and leave before the page is worth rendering.
+  // Every other cookie access in this app goes through the session store.
   if (!/(^|;)\s*bughq_token=/.test(document.cookie)) {
     document.cookie = 'bughq_token=' + t + '; path=/; max-age=2592000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
     window.location.reload()

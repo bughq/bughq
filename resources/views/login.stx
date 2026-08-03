@@ -36,8 +36,9 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
     }
     const token = data.token || data.access_token || ''
     localStorage.setItem('token', token)
-    // Mirror the token into a cookie so server-rendered pages can authenticate.
-    document.cookie = `bughq_token=${token}; path=/; max-age=2592000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`
+    // The cookie is what server-rendered pages authenticate from. The store owns
+    // its serialisation — path, max-age, samesite and the https-only `secure`.
+    useStore('session').token.set(token)
     if (data.user)
       localStorage.setItem('user', JSON.stringify(data.user))
     navigate('/dashboard')

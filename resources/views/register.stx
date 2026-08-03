@@ -46,7 +46,8 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
     localStorage.setItem('token', token)
     // Mirror the token into a cookie so server-rendered pages (the dashboard)
     // can authenticate this user on plain navigation.
-    document.cookie = `bughq_token=${token}; path=/; max-age=2592000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`
+    // See login.stx — the store owns cookie serialisation.
+    useStore('session').token.set(token)
     if (data.user)
       localStorage.setItem('user', JSON.stringify(data.user))
     // New accounts have no apps yet: go to create-app — unless they arrived from

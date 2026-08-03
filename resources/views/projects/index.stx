@@ -62,7 +62,7 @@ function toggleTheme() {
 function logout() {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
-  document.cookie = 'bughq_token=; path=/; max-age=0'
+  useStore('session').signOut()
   window.location.assign('/login')
 }
 </script>
@@ -165,6 +165,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 (function () {
   var t = localStorage.getItem('token')
   if (!t) { window.location.replace('/login'); return }
+  // Raw document.cookie on purpose. This guard runs in a bare <script> before the
+  // signals runtime exists, so useStore('session') is not defined yet — its whole
+  // job is to mirror the token and leave before the page is worth rendering.
+  // Every other cookie access in this app goes through the session store.
   if (!/(^|;)\s*bughq_token=/.test(document.cookie)) {
     document.cookie = 'bughq_token=' + t + '; path=/; max-age=2592000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
     window.location.reload()

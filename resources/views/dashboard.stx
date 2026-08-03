@@ -235,7 +235,7 @@ function toggleTheme() {
 function signOut() {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
-  document.cookie = 'bughq_token=; path=/; max-age=0'
+  useStore('session').signOut()
   window.location.assign('/login')
 }
 
@@ -248,6 +248,17 @@ const pro = state(false)
 // which is mid-request. Dismiss hides for this view only - it does not decline.
 const dismissed = state([])
 const joining = state('')
+
+// Switching project writes the browsing-preference cookie and reloads onto the
+// same filters. The target URL is rendered server-side into data-target because
+// pageUrl() lives in the server block; navigate() is deliberately not used —
+// the router no-ops on a same-URL navigation (client.js:299) and this
+// intentionally re-renders the same URL with a different cookie.
+function switchProject(e: Event): void {
+  const el = e.target as HTMLSelectElement
+  useStore('session').project.set(el.value)
+  window.location.href = el.dataset.target || '/dashboard'
+}
 
 function dismissInvite(token: string): void {
   dismissed.set([...dismissed(), token])
@@ -273,7 +284,7 @@ function joinInvite(token: string): void {
         return
       }
       // Joining switches the active project, which the server reads on render.
-      document.cookie = `bughq_project=${encodeURIComponent(res.b.project)}; path=/; max-age=31536000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`
+      useStore('session').project.set(res.b.project)
       window.location.assign('/dashboard')
     })
     .catch(() => joining.set(''))
@@ -418,7 +429,7 @@ summary::-webkit-details-marker { display: none; }
       <div class="flex items-center gap-3">
         <StxLink to="/projects" class="wordmark-link"><h1 class="wordmark text-2xl md:text-[28px] leading-none">bughq</h1></StxLink>
         @if (projects.length > 1)
-          <select onchange="document.cookie = 'bughq_project=' + encodeURIComponent(this.value) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : ''); location.href = '{{ pageUrl({ page: 1 }) }}'"
+          <select @change="switchProject" data-target="{{ pageUrl({ page: 1 }) }}"
                   class="panel mono px-3 py-1.5 text-sm text-muted">
             @foreach (projects as p)
               <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}{{ p.is_active === false ? ' (archived)' : '' }}</option>
@@ -557,6 +568,10 @@ summary::-webkit-details-marker { display: none; }
   if (!t) { window.location.replace('/login'); return }
   // Mirror the token into a cookie so the server can authenticate this user;
   // reload once when it was missing so the first render is authenticated.
+  // Raw document.cookie on purpose. This guard runs in a bare <script> before the
+  // signals runtime exists, so useStore('session') is not defined yet — its whole
+  // job is to mirror the token and leave before the page is worth rendering.
+  // Every other cookie access in this app goes through the session store.
   if (!/(^|;)\s*bughq_token=/.test(document.cookie)) {
     document.cookie = 'bughq_token=' + t + '; path=/; max-age=2592000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
     window.location.reload()
