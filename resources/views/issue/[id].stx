@@ -116,7 +116,9 @@ const stack = latest?.stack || ''
 const stackJson = JSON.stringify(stack)
 
 // --- formatting helpers ----------------------------------------------------
-function levelColor(level) {
+// Every parameter here is nullable because the column it comes from is. Issue
+// and ErrorEvent are declared in types/domain.d.ts, which mirrors the schema.
+function levelColor(level: IssueLevel | null): string {
   switch (level) {
     case 'fatal': return '#ef4444'
     case 'error': return '#f87171'
@@ -126,21 +128,24 @@ function levelColor(level) {
     default: return '#94a3b8'
   }
 }
-function fromNow(iso) {
+function fromNow(iso: string | null): string {
   if (!iso) return '-'
   const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
-  if (s < 60) return s + 's ago'
-  if (s < 3600) return Math.floor(s / 60) + 'm ago'
-  if (s < 86400) return Math.floor(s / 3600) + 'h ago'
-  return Math.floor(s / 86400) + 'd ago'
+  if (s < 60) return `${s}s ago`
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
+  return `${Math.floor(s / 86400)}d ago`
 }
-function fmtDate(iso) {
+function fmtDate(iso: string | null): string {
   if (!iso) return '-'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return String(iso)
-  return d.toISOString().replace('T', ' ').slice(0, 19) + ' UTC'
+  return `${d.toISOString().replace('T', ' ').slice(0, 19)} UTC`
 }
-function parseJson(raw) {
+// The columns this reads (`metadata`, `user_context`) are JSON *text*, and older
+// rows can hold anything — so the return is deliberately `unknown`, forcing the
+// caller to narrow rather than trusting a shape the database does not enforce.
+function parseJson(raw: string | null): unknown {
   if (!raw) return null
   if (typeof raw === 'object') return raw
   try { return JSON.parse(raw) }
@@ -159,10 +164,10 @@ const isIgnored = status === 'ignored'
 // Vendor/system = third-party code the app author can't fix. `webpack-internal`
 // / `webpack://` are the bundler's representation of the app's OWN source, so
 // they are app frames unless the path itself is under node_modules.
-function isVendor(file) {
+function isVendor(file: string | null): boolean {
   return /node_modules|node:internal|[\\/]vendor[\\/]|\.pantry[\\/]|[\\/]\.next[\\/]server/i.test(String(file || ''))
 }
-function shortPath(file) {
+function shortPath(file: string | null): { base: string, dir: string } {
   if (!file) return { base: '', dir: '' }
   const clean = String(file).replace(/[?#].*$/, '')
   const idx = Math.max(clean.lastIndexOf('/'), clean.lastIndexOf('\\'))
@@ -170,24 +175,24 @@ function shortPath(file) {
   const dir = idx >= 0 ? clean.slice(0, idx + 1) : ''
   return { base: base || clean, dir }
 }
-function cleanFile(file) {
+function cleanFile(file: string): string {
   return String(file).replace(/^webpack-internal:\/\/\//, '').replace(/^webpack:\/\/\/?(_N_E\/)?/, '').replace(/^\.\//, '')
 }
-function parseLocation(loc) {
+function parseLocation(loc: string): { file: string, line: string | null, col: string | null } {
   const m = String(loc).match(/^(.*?):(\d+)(?::(\d+))?$/)
   if (m) return { file: m[1], line: m[2], col: m[3] || null }
   return { file: String(loc), line: null, col: null }
 }
-function makeFrame(func, loc) {
+function makeFrame(func: string, loc: string): StackFrame {
   const { file, line, col } = parseLocation(loc)
   const { base, dir } = shortPath(cleanFile(file))
   const cleanFunc = String(func || '').replace(/^\{|\}$/g, '').trim() || '<anonymous>'
   return { func: cleanFunc, base, dir, line, col, isApp: !!file && !isVendor(file) }
 }
-function parseStack(stackStr, fbType, fbMsg) {
-  const groups = []
-  let cur = null
-  const pushHeader = (text, isCause) => {
+function parseStack(stackStr: string, fbType: string | null, fbMsg: string | null): StackGroup[] {
+  const groups: StackGroup[] = []
+  let cur: StackGroup | null = null
+  const pushHeader = (text: string, isCause: boolean): void => {
     const idx = text.indexOf(': ')
     const type = idx === -1 ? text.trim() : text.slice(0, idx).trim()
     const message = idx === -1 ? '' : text.slice(idx + 2).trim()
@@ -246,19 +251,20 @@ const tagList = tags ? Object.keys(tags).map(k => ({ key: k, value: String(tags[
 const contextList = contexts ? Object.keys(contexts).map(k => ({ name: k, rows: kvRows(contexts[k]) })) : []
 const userRows = userCtx ? kvRows(userCtx) : []
 
-function kvRows(obj) {
+function kvRows(obj: unknown): Array<{ k: string, v: string }> {
   if (!obj || typeof obj !== 'object') return []
-  return Object.keys(obj).map((k) => {
-    let v = obj[k]
+  const rec = obj as Record<string, unknown>
+  return Object.keys(rec).map((k) => {
+    let v: unknown = rec[k]
     if (v === null || v === undefined) v = '—'
     else if (typeof v === 'object') v = JSON.stringify(v)
     else v = String(v)
-    return { k, v }
+    return { k, v: v as string }
   })
 }
 
 // --- breadcrumb classification (icon + tint per source) --------------------
-function bcKind(b) {
+function bcKind(b: Breadcrumb | null): BreadcrumbKind {
   const c = String((b && (b.category || b.type)) || '').toLowerCase()
   if (/fetch|xhr|http|request|response/.test(c)) return 'http'
   if (/nav/.test(c)) return 'nav'
@@ -268,7 +274,7 @@ function bcKind(b) {
   if (/error|exception|fatal|fail/.test(c)) return 'error'
   return 'default'
 }
-function bcTint(kind) {
+function bcTint(kind: BreadcrumbKind): string {
   switch (kind) {
     case 'http': return '#38bdf8'
     case 'nav': return '#a78bfa'
@@ -280,7 +286,7 @@ function bcTint(kind) {
   }
 }
 // Small inline icons keyed by kind (safe: rendered from this fixed map only).
-const BC_ICONS = {
+const BC_ICONS: Record<BreadcrumbKind, string> = {
   http: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"/></svg>',
   nav: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   ui: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l6 18 2.5-7L21 11z"/></svg>',
@@ -289,15 +295,15 @@ const BC_ICONS = {
   error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>',
   default: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/></svg>',
 }
-function bcTime(ts) {
+function bcTime(ts: string | number | null | undefined): string {
   if (!ts) return ''
   const d = new Date(ts)
   return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(11, 23).replace('.', '.')
 }
-function bcLabel(b) {
+function bcLabel(b: Breadcrumb | null): string {
   return (b && (b.category || b.type)) || 'event'
 }
-function bcText(b) {
+function bcText(b: Breadcrumb | null): string {
   const msg = b && b.message ? String(b.message) : ''
   const data = b && b.data ? JSON.stringify(b.data) : ''
   if (msg && data) return `${msg}  ${data}`
