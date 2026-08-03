@@ -175,6 +175,26 @@ function stageActive(stage: number): boolean {
   return stages[stage]?.includes(status) || false
 }
 
+// The poll re-arms itself while a run is active. Nothing used to cancel it, so
+// navigating away from an issue left it fetching every 2.2s for the life of the
+// tab — and SPA navigation never reloads the page, so it never stopped. Holding
+// the handle and clearing it in onDestroy is what bounds it to this page.
+let pollHandle: ReturnType<typeof setTimeout> | null = null
+
+function schedulePoll(): void {
+  cancelPoll()
+  pollHandle = setTimeout(() => { pollHandle = null; loadAutofix(true) }, 2200)
+}
+
+function cancelPoll(): void {
+  if (pollHandle !== null) {
+    clearTimeout(pollHandle)
+    pollHandle = null
+  }
+}
+
+onDestroy(cancelPoll)
+
 async function loadAutofix(schedule: boolean = true): void {
   try {
     const response = await fetch(`/api/issues/${encodeURIComponent(autofixIssueId)}/autofix`, { headers: authHeaders() })
@@ -186,7 +206,7 @@ async function loadAutofix(schedule: boolean = true): void {
     if (!repositoryInput() && data.repository) repositoryInput.set(data.repository)
     if (!branchInput() && data.repository_branch) branchInput.set(data.repository_branch)
     autofixError.set('')
-    if (schedule && activeRun(data.run)) setTimeout(() => loadAutofix(true), 2200)
+    if (schedule && activeRun(data.run)) schedulePoll()
   }
   catch (error) {
     autofixError.set(error instanceof Error ? error.message : 'Could not load Autofix.')
