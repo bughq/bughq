@@ -18,22 +18,22 @@ const autofixError = state('')
 const repositoryInput = state('')
 const branchInput = state('')
 
-function authHeaders() {
+function authHeaders(): AuthHeaders {
   return {
     'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
     'Content-Type': 'application/json',
   }
 }
 
-function activeRun(run) {
+function activeRun(run: AutofixRun | null): boolean {
   return !!run && ['queued', 'analyzing', 'planning', 'editing', 'creating_pr'].includes(run.status)
 }
 
-function currentAutofix() {
+function currentAutofix(): AutofixState {
   return autofixState() || {}
 }
 
-function currentRun() {
+function currentRun(): AutofixRun | null {
   return currentAutofix().run || null
 }
 
@@ -156,26 +156,26 @@ function errorClass() {
   return autofixError() || currentRunError() ? 'autofix-error' : 'autofix-hidden'
 }
 
-function stepClass(stage) {
+function stepClass(stage: number): string {
   const classes = ['autofix-step']
   if (stageReached(stage)) classes.push('done')
   if (stageActive(stage)) classes.push('active')
   return classes.join(' ')
 }
 
-function stageReached(stage) {
+function stageReached(stage: number): boolean {
   const order = { queued: 0, analyzing: 0, planning: 1, editing: 2, creating_pr: 3, completed: 4, failed: -1 }
   const status = autofixState()?.run?.status || 'queued'
   return (order[status] ?? -1) >= stage
 }
 
-function stageActive(stage) {
+function stageActive(stage: number): boolean {
   const status = autofixState()?.run?.status || ''
   const stages = [['queued', 'analyzing'], ['planning'], ['editing'], ['creating_pr'], ['completed']]
   return stages[stage]?.includes(status) || false
 }
 
-async function loadAutofix(schedule = true) {
+async function loadAutofix(schedule: boolean = true): void {
   try {
     const response = await fetch(`/api/issues/${encodeURIComponent(autofixIssueId)}/autofix`, { headers: authHeaders() })
     if (response.status === 401)
@@ -218,10 +218,10 @@ async function startAutofix() {
   }
 }
 
-function updateRepository(event) { repositoryInput.set(event.target.value) }
-function updateBranch(event) { branchInput.set(event.target.value) }
+function updateRepository(event: Event): void { repositoryInput.set(event.target.value) }
+function updateBranch(event: Event): void { branchInput.set(event.target.value) }
 
-async function saveRepository(disconnect = false) {
+async function saveRepository(disconnect: boolean = false): void {
   if (repositorySaving()) return
   repositorySaving.set(true)
   autofixError.set('')

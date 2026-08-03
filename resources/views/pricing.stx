@@ -9,7 +9,7 @@ const interval = state('monthly')
 const err = state('')
 const loading = state(false)
 
-function pick(v) { interval.set(v) }
+function pick(v: string): void { interval.set(v) }
 
 async function upgrade() {
   const token = localStorage.getItem('token')

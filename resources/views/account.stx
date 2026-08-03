@@ -15,11 +15,11 @@ useSeoMeta({
 const user = state(null)
 const pro = state(false)
 
-function initial(s) {
+function initial(s: string | null): string {
   return (s || '?').trim().charAt(0).toUpperCase()
 }
 
-function fmtDate(v) {
+function fmtDate(v: string | null): string {
   if (!v)
     return '--'
   const d = new Date(v)

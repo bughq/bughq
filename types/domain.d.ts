@@ -137,3 +137,68 @@ declare interface Breadcrumb {
 
 /** How a breadcrumb is classified for its icon and tint on the issue page. */
 declare type BreadcrumbKind = 'http' | 'nav' | 'ui' | 'console' | 'query' | 'error' | 'default'
+
+// --- autofix ---------------------------------------------------------------
+
+declare type AutofixStatus =
+  | 'queued' | 'analyzing' | 'planning' | 'editing' | 'creating_pr'
+  | 'completed' | 'failed'
+
+/** A row of `autofix_runs` (migration 0000000024). */
+declare interface AutofixRun {
+  id: string
+  issue_id: string
+  project_id: string
+  created_by: number | null
+  status: AutofixStatus
+  provider: string | null
+  model: string | null
+  root_cause: string | null
+  plan: string | null
+  changes: string | null
+  branch_name: string | null
+  pr_url: string | null
+  pr_number: number | null
+  error: string | null
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string | null
+}
+
+/** What GET /api/…/autofix returns and the panel holds in a signal. */
+declare interface AutofixState {
+  run?: AutofixRun | null
+  repository?: string | null
+  branch?: string | null
+  [key: string]: unknown
+}
+
+// --- view models -----------------------------------------------------------
+
+/** The dashboard's URL state. Every field optional: pageUrl takes a partial override. */
+declare interface DashboardQuery {
+  status?: string
+  range?: string
+  page?: number
+}
+
+/** What installGuide() returns for a project's platform. */
+declare interface InstallGuide {
+  label: string
+  install: string
+  code: string
+}
+
+/** A note rendered under a form — settings uses this shape throughout. */
+declare interface FormNote {
+  text: string
+  ok: boolean
+}
+
+/** Auth headers for a bearer-token fetch. */
+declare interface AuthHeaders {
+  'Authorization': string
+  'Content-Type': string
+}
+

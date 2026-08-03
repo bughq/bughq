@@ -95,7 +95,7 @@ const projectId = activeProject?.id || null
 // stay clean (bare /dashboard when everything is default). The project never
 // appears here - it rides the bughq_project cookie. Changing status or range
 // always resets to page 1.
-function pageUrl(overrides) {
+function pageUrl(overrides: DashboardQuery): string {
   const state = { status: statusFilter, range: rangeFilter, page: requestedPage, ...overrides }
   const p = new URLSearchParams()
   if (state.status && state.status !== 'unresolved')
@@ -185,19 +185,19 @@ catch {
 
 // Severity drives the one accent-adjacent semantic color used on the list rail.
 // These are real state colors, not decoration.
-function levelColor(level) {
+function levelColor(level: IssueLevel | null): string {
   if (level === 'fatal') return '#f43f5e'
   if (level === 'error') return '#fb7185'
   if (level === 'warning') return '#f59e0b'
   return '#64748b'
 }
-function levelLabel(level) {
+function levelLabel(level: IssueLevel | null): string {
   if (level === 'fatal') return 'Fatal'
   if (level === 'error') return 'Error'
   if (level === 'warning') return 'Warning'
   return 'Info'
 }
-function fromNow(iso) {
+function fromNow(iso: string | null): string {
   if (!iso) return 'never'
   const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
   if (s < 60) return s + 's ago'
@@ -249,15 +249,15 @@ const pro = state(false)
 const dismissed = state([])
 const joining = state('')
 
-function dismissInvite(token) {
+function dismissInvite(token: string): void {
   dismissed.set([...dismissed(), token])
 }
 
-function joinLabel(token) {
+function joinLabel(token: string): string {
   return joining() === token ? 'Joining…' : 'Join'
 }
 
-function joinInvite(token) {
+function joinInvite(token: string): void {
   if (joining())
     return
   joining.set(token)

@@ -16,7 +16,7 @@ useHead({ title: 'Create your account - bughq' })
 const error = state('')
 const loading = state(false)
 
-async function handleSubmit(e) {
+async function handleSubmit(e: SubmitEvent): Promise<void> {
   e.preventDefault()
   if (loading())
     return

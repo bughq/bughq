@@ -74,14 +74,14 @@ if (user) {
 const projectId = activeProject?.id || null
 const ownerEmail = (user && user.email) || ''
 
-function maskWebhook(url) {
+function maskWebhook(url: string): string {
   try {
     const u = new URL(url)
     return u.host + '/…' + String(url).slice(-4)
   }
   catch { return '…' }
 }
-function maskKey(k) {
+function maskKey(k: string | null): string {
   const s = String(k || '')
   return s.length > 16 ? s.slice(0, 10) + '……' + s.slice(-4) : s
 }
@@ -101,7 +101,7 @@ const keyMask = maskKey(keyFull)
 // Framework-specific install snippet, keyed off the project's platform. Key-only
 // (Flare-style): the ingest key alone identifies the project — no project id, no DSN.
 // TEMPORARY: the snippet src points at the local ingest; switch to https://bughq.org/sdk.js at launch.
-function installGuide(platform, key) {
+function installGuide(platform: string | null, key: string): InstallGuide {
   const p = String(platform || 'javascript').toLowerCase()
   const scriptTag = `<script src="${INGEST_BASE}/sdk.js"\n        data-key="${key}"><\/script>`
   if (p === 'vue')
@@ -147,7 +147,7 @@ const guide = activeProject ? installGuide(activeProject.platform, keyFull) : { 
 //
 // The same trap applies to this comment, which is why it never spells the tag
 // out — doing so truncates the server block instead.
-function b64(value) {
+function b64(value: unknown): string {
   return JSON.stringify(Buffer.from(JSON.stringify(value ?? ''), 'utf8').toString('base64'))
 }
 const guideInstallB64 = b64(guide.install || '')
@@ -184,7 +184,7 @@ function toggleTheme() {
 
 // Decoded from base64 — see the note in the server block above for why these
 // cannot travel as plain literals.
-function fromB64(encoded) {
+function fromB64<T>(encoded: string): T {
   const binary = atob(encoded)
   const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0))
   return JSON.parse(new TextDecoder().decode(bytes))
@@ -199,11 +199,11 @@ const projectId = fromB64({!! projectIdB64 !!})
 // its own restore timer.
 const copied = state('')
 
-function copyLabel(which, done, idle) {
+function copyLabel(which: string, done?: string, idle?: string): string {
   return copied() === which ? (done || 'Copied') : (idle || 'Copy')
 }
 
-function copyText(which, text) {
+function copyText(which: string, text: string): void {
   const mark = () => {
     copied.set(which)
     setTimeout(() => {
@@ -217,7 +217,7 @@ function copyText(which, text) {
     mark()
 }
 
-function switchProject(e) {
+function switchProject(e: Event): void {
   document.cookie = `bughq_project=${encodeURIComponent(e.target.value)}; path=/; max-age=31536000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`
   window.location.href = '/settings'
 }
@@ -278,19 +278,19 @@ const removing = state('')
 const inviting = state(false)
 const inviteNote = state(null)
 
-function memberApi(path) {
+function memberApi(path?: string): string {
   return `/api/projects/${encodeURIComponent(projectId)}/members${path || ''}`
 }
 
-function authHeaders() {
+function authHeaders(): AuthHeaders {
   return { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' }
 }
 
-function removeLabel(id) {
+function removeLabel(id: string): string {
   return removing() === id ? 'Removing…' : 'Remove'
 }
 
-function removeMember(id) {
+function removeMember(id: string): void {
   if (removing())
     return
   removing.set(id)
@@ -309,7 +309,7 @@ function removeMember(id) {
     })
 }
 
-function inviteMember(e) {
+function inviteMember(e: SubmitEvent): void {
   e.preventDefault()
   if (inviting())
     return
@@ -359,26 +359,26 @@ const chEnabled = state(fromB64({!! channelEnabledB64 !!}))
 const testing = state('')
 const tested = state(null)
 
-function channelApi(path) {
+function channelApi(path?: string): string {
   return `/api/projects/${encodeURIComponent(projectId)}/channels${path || ''}`
 }
 
-function urlPlaceholder() {
+function urlPlaceholder(): string {
   return HINTS[chType()]
 }
 
-function isOn(id) {
+function isOn(id: string): boolean {
   return !!chEnabled()[id]
 }
 
 // Every channel id the server rendered is a key here, so the empty state can be
 // reactive: removing the last row now shows it instead of leaving a blank gap.
-function noChannels() {
+function noChannels(): boolean {
   const ids = Object.keys(chEnabled())
   return ids.length === 0 || ids.every(id => gone().includes(id))
 }
 
-function toggleChannel(id) {
+function toggleChannel(id: string): void {
   const next = !isOn(id)
   chEnabled.set({ ...chEnabled(), [id]: next })
   fetch(channelApi(`/${encodeURIComponent(id)}`), {
@@ -393,14 +393,14 @@ function toggleChannel(id) {
     .catch(() => chEnabled.set({ ...chEnabled(), [id]: !next }))
 }
 
-function testLabel(id) {
+function testLabel(id: string): string {
   if (testing() === id)
     return 'Sending…'
   const t = tested()
   return t && t.id === id ? t.text : 'Test'
 }
 
-function testChannel(id) {
+function testChannel(id: string): void {
   if (testing())
     return
   testing.set(id)
@@ -421,7 +421,7 @@ function testChannel(id) {
     })
 }
 
-function removeChannel(id) {
+function removeChannel(id: string): void {
   if (removing())
     return
   removing.set(id)
@@ -440,7 +440,7 @@ function removeChannel(id) {
     })
 }
 
-function addChannel(e) {
+function addChannel(e: SubmitEvent): void {
   e.preventDefault()
   if (adding())
     return
@@ -503,11 +503,11 @@ const DZ = {
   },
 }
 
-function dzCopy() {
+function dzCopy(): { title: string, desc: string, confirm: string, busy: string } {
   return DZ[dzAction()] || { title: '', desc: '', confirm: '', busy: '' }
 }
 
-function dzOpen(which) {
+function dzOpen(which: 'archive' | 'delete'): void {
   dzAction.set(which)
   dzTyped.set('')
   dzNote.set(null)
@@ -524,39 +524,39 @@ function dzOpen(which) {
   }, 20)
 }
 
-function dzClose() {
+function dzClose(): void {
   dzAction.set(null)
   dzTyped.set('')
   dzNote.set(null)
   dzBusy.set(false)
 }
 
-function dzType(e) {
+function dzType(e: Event): void {
   dzTyped.set(e.target.value)
 }
 
 // Escape is handled on the dialog, not on document. A document listener would
 // outlive the fragment swap when you navigate away from /settings and stack up
 // one dead handler per visit — the same leak class as the .shell bug.
-function dzKey(e) {
+function dzKey(e: KeyboardEvent): void {
   if (e.key === 'Escape')
     dzClose()
 }
 
-function dzBackdrop(e) {
+function dzBackdrop(e: MouseEvent): void {
   if (e.target === e.currentTarget)
     dzClose()
 }
 
-function dzMatches() {
+function dzMatches(): boolean {
   return dzTyped().trim() === dzProjectName
 }
 
-function dzConfirmLabel() {
+function dzConfirmLabel(): string {
   return dzBusy() ? dzCopy().busy : dzCopy().confirm
 }
 
-function dzConfirm() {
+function dzConfirm(): void {
   // Re-checked here and not only through :disabled, because this is the last
   // gate before a project is destroyed.
   if (dzBusy() || !dzMatches())
@@ -607,7 +607,7 @@ function dzConfirm() {
 }
 
 // Unarchiving is not destructive, so it stays outside the confirm dialog.
-function unarchive() {
+function unarchive(): void {
   if (unarchiving())
     return
   unarchiving.set(true)

@@ -28,7 +28,7 @@ function ensureAuthed() {
 }
 ensureAuthed()
 
-async function handleSubmit(e) {
+async function handleSubmit(e: SubmitEvent): Promise<void> {
   e.preventDefault()
   if (loading())
     return
