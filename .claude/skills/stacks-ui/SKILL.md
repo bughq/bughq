@@ -148,18 +148,35 @@ const theme = inject(ThemeKey, 'light')    // with default
 ## Browser Composables
 
 ```typescript
-import {
-  useLocalStorage, useSessionStorage, useEventListener,
-  useClickOutside, useWindowSize, useMediaQuery,
-  usePrefersDark, useOnline
-} from '@stacksjs/stx'
+// NO import. These are auto-imported in every <script client> block and in
+// functions/*.ts — the auto-import transform rewrites them to a window.stx
+// destructure. Writing the import works at runtime but TypeScript rejects it,
+// because the package index does not export them (stacksjs/stx#1797).
 
-const { value, remove } = useLocalStorage('key', defaultValue)
+// useLocalStorage returns a SIGNAL, not a { value, remove } object.
+const theme = useLocalStorage('theme', 'dark')
+theme()              // read
+theme.set('light')   // write — persists
+
 const { width, height } = useWindowSize()
 const isDark = usePrefersDark()
 const isOnline = useOnline()
 const cleanup = useClickOutside(elementRef, handler)
 ```
+
+```html
+<!-- In templates use the bare name; the proxy unwraps the signal. -->
+<div x-text="theme"></div>
+```
+
+**Never** `import { useLocalStorage } from '@stacksjs/stx/composables'` for anything
+template-facing. That is a different implementation returning a `StorageRef`
+(`.value` / `.get()` / `.remove()`), and critically it is **not a signal** — nothing bound
+to it re-renders. It is a legitimate API for plain server/Node code only.
+
+Previous versions of this file documented `const { value, remove } = useLocalStorage(...)`.
+That is a third shape, from a module that is not exported; in a `<script client>` block the
+destructure yields `undefined` for both.
 
 ## Crosswind Configuration (config/ui.ts)
 

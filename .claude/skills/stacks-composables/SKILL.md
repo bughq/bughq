@@ -33,7 +33,7 @@ isRef(val)           // type guard
 
 ## Storage
 - `useStorage(key, defaultValue, storage?)` → persistent Ref
-- `useLocalStorage(key, defaultValue)` → localStorage-backed Ref
+- `useLocalStorage(key, defaultValue)` → **signal** (`v()` to read, `v.set(x)` to write). Not a Ref, and not `{ value, remove }`.
 - `useSessionStorage(key, defaultValue)` → sessionStorage-backed Ref
 
 ## Time & Date
