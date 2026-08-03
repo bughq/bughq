@@ -12,7 +12,7 @@ const loading = state(false)
 function pick(v: string): void { interval.set(v) }
 
 async function upgrade() {
-  const token = localStorage.getItem('token')
+  const token = useStore('session').token()
   if (!token) { navigate('/login'); return }
   loading.set(true)
   err.set('')

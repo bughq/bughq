@@ -19,10 +19,10 @@ const repositoryInput = state('')
 const branchInput = state('')
 
 function authHeaders(): AuthHeaders {
-  return {
-    'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
-    'Content-Type': 'application/json',
-  }
+  // The session store reads the bughq_token cookie, which is written at sign-in
+  // and is the same value the server authenticates from. Reading localStorage
+  // here duplicated that and could drift from it.
+  return useStore('session').authHeaders()
 }
 
 function activeRun(run: AutofixRun | null): boolean {

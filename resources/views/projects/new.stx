@@ -16,7 +16,7 @@ const error = state('')
 const loading = state(false)
 
 function ensureAuthed() {
-  const t = localStorage.getItem('token')
+  const t = useStore('session').token()
   if (!t) {
     window.location.replace('/login')
     return
@@ -49,7 +49,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': useStore('session').authHeaders().Authorization,
       },
       body: JSON.stringify({ name, platform: form.elements.platform.value }),
     })

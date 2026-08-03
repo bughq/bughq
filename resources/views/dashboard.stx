@@ -274,7 +274,7 @@ function joinInvite(token: string): void {
   joining.set(token)
   fetch('/api/invites/accept', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+    headers: useStore('session').authHeaders(),
     body: JSON.stringify({ token }),
   })
     .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
@@ -290,7 +290,7 @@ function joinInvite(token: string): void {
     .catch(() => joining.set(''))
 }
 
-const authToken = localStorage.getItem('token')
+const authToken = useStore('session').token()
 if (authToken) {
   fetch('/api/me', { headers: { Authorization: `Bearer ${authToken}` } })
     .then((r) => {

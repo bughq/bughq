@@ -247,7 +247,7 @@ function rotateKey() {
     rotating.set(true)
     fetch(`/api/projects/${encodeURIComponent(projectId)}/rotate-key`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+      headers: authHeaders(),
     })
       .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
       .then((res) => {
@@ -283,7 +283,7 @@ function memberApi(path?: string): string {
 }
 
 function authHeaders(): AuthHeaders {
-  return { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' }
+  return useStore('session').authHeaders()
 }
 
 function removeLabel(id: string): string {

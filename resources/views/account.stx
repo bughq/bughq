@@ -29,7 +29,7 @@ function fmtDate(v: string | null): string {
 }
 
 function logout() {
-  const token = localStorage.getItem('token')
+  const token = useStore('session').token()
   try {
     fetch('/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
   }
@@ -42,7 +42,7 @@ function logout() {
 }
 
 // Runs on hydration, including after a fragment swap onto this page.
-const token = localStorage.getItem('token')
+const token = useStore('session').token()
 if (token) {
   fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } })
     .then((r) => {
@@ -172,7 +172,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
      block at the top of this file. -->
 <script>
 (function () {
-  if (!localStorage.getItem('token'))
+  if (!useStore('session').signedIn())
     window.location.replace('/login')
 })()
 </script>
