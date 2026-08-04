@@ -44,7 +44,26 @@ function fromNow(iso: string | null): string {
 // Theme lives in the store: one implementation, shared across pages, and the
 // pre-paint boot script in config/ui.ts already applied it before this ran.
 const themeStore = useStore('theme')
-const theme = themeStore.theme
+
+// `const theme = themeStore.theme` is what this wants to be. The derived() wrapper
+// is a WORKAROUND for stacksjs/stx#1820, not a preference.
+//
+// stx decides whether to inject the signals runtime with hasSignalsSyntax(), which
+// matches state/derived/effect/computed and a fixed list of directives — but not
+// `@click=`, not an arbitrary `:attr=` binding, and not useStore(). This block used
+// only useStore, and the template only `@click` and `:data-t`, so the page was judged
+// to need no runtime. The client-script pass still emitted window.stx.mount(), which
+// then threw `Cannot read properties of undefined (reading 'mount')` on its first
+// line and took every function here with it — the theme toggle and Log out were both
+// dead, on this page only.
+//
+// Measured: of the app's 8 routes, 7 inject the runtime and this was the only one
+// that did not, purely because the other 7 happen to call state() somewhere. So the
+// cleaner this block gets, the more likely it is to break — which is the actual bug.
+//
+// derived() is in the gate's pattern list, so one call restores the runtime. Delete
+// the wrapper and inline themeStore.theme again when #1820 lands.
+const theme = derived(() => themeStore.theme())
 
 function toggleTheme(): void {
   themeStore.toggle()
