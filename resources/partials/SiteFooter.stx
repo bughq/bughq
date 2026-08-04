@@ -44,8 +44,12 @@
       <StxLink to="/docs">Docs</StxLink>
       <StxLink to="/pricing">Pricing</StxLink>
       <a href="https://github.com/stacksjs/bughq">GitHub</a>
-      <a data-auth-login href="/login" data-no-router>Log in</a>
-      <a data-auth-signup href="/register" data-no-router>Get started</a>
+      @if (signedIn)
+        <a href="/dashboard" data-no-router>Dashboard</a>
+      @else
+        <a href="/login" data-no-router>Log in</a>
+        <a href="/register" data-no-router>Get started</a>
+      @endif
     </div>
   </div>
 

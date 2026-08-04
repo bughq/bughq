@@ -7,6 +7,25 @@ const githubEnabled = !!services.github?.clientId
 const googleEnabled = !!services.google?.clientId
 const anyOauth = githubEnabled || googleEnabled
 
+// The OAuth failure message arrives as `?error=…` on the redirect back from the
+// provider. Read server-side rather than in a bare <script> that hunted for
+// #oauth-error and toggled style.display: the banner is then part of the first
+// paint instead of appearing a frame later, and there is no hidden element in
+// the markup waiting to be found.
+//
+// requestContext.url() is the whole URL, so the query comes off a real URL
+// parser. Guarded the same way as issue/[id].stx — the context is not
+// guaranteed to be present on every render path.
+let oauthError = ''
+try {
+  const u = (typeof requestContext !== 'undefined' && requestContext.url && requestContext.url()) || ''
+  if (u)
+    oauthError = new URL(u).searchParams.get('error') || ''
+}
+catch {
+  oauthError = ''
+}
+
 useHead({ title: 'Sign in - bughq' })
 </script>
 
@@ -111,7 +130,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       </button>
     </form>
 
-    <div id="oauth-error" class="err text-sm rounded-lg px-3 py-2 mt-4" style="display:none"></div>
+    @if (oauthError)
+    <div class="err text-sm rounded-lg px-3 py-2 mt-4">{{ oauthError }}</div>
+    @endif
 
     @if (anyOauth)
     <div class="divider my-5">or</div>
@@ -138,14 +159,3 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     </p>
   </div>
 </div>
-
-<script>
-(function () {
-  try {
-    var msg = new URLSearchParams(window.location.search).get('error')
-    if (!msg) return
-    var el = document.getElementById('oauth-error')
-    if (el) { el.textContent = msg; el.style.display = 'block' }
-  } catch (e) {}
-})()
-</script>

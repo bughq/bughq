@@ -41,8 +41,12 @@
       <a href="https://github.com/stacksjs/bughq">GitHub</a>
     </div>
 
-    <a class="nav-login" data-auth-login href="/login" data-no-router>Log in</a>
-    <a class="btn nav-cta primary sm" data-auth-signup href="/register" data-no-router>Sign up</a>
+    @if (signedIn)
+      <a class="btn nav-cta primary sm" href="/dashboard" data-no-router>Dashboard</a>
+    @else
+      <a class="nav-login" href="/login" data-no-router>Log in</a>
+      <a class="btn nav-cta primary sm" href="/register" data-no-router>Sign up</a>
+    @endif
 
     <details class="nav-menu">
       <summary aria-label="Open menu"><span class="burger" aria-hidden="true"></span></summary>
@@ -67,8 +71,12 @@
         <StxLink to="/pricing">Pricing</StxLink>
         <StxLink to="/docs">Docs</StxLink>
         <a href="https://github.com/stacksjs/bughq">GitHub</a>
-        <a data-auth-login href="/login" data-no-router>Log in</a>
-        <a class="btn primary sm" data-auth-signup href="/register" data-no-router>Sign up</a>
+        @if (signedIn)
+          <a class="btn primary sm" href="/dashboard" data-no-router>Dashboard</a>
+        @else
+          <a href="/login" data-no-router>Log in</a>
+          <a class="btn primary sm" href="/register" data-no-router>Sign up</a>
+        @endif
       </div>
     </details>
   </div>

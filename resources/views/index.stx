@@ -59,7 +59,11 @@ useSeoMeta({
           <h1 class="hero-title">Error tracking for people who ship.</h1>
           <p class="hero-sub">Capture every production error, fold the duplicates into one issue, and see what is actually breaking. Signal, not a wall of noise.</p>
           <div class="hero-actions">
-            <a class="btn primary" data-auth-cta href="/register" data-no-router>Get started</a>
+            @if (signedIn)
+              <a class="btn primary" href="/dashboard" data-no-router>Go to dashboard</a>
+            @else
+              <a class="btn primary" href="/register" data-no-router>Get started</a>
+            @endif
             <a class="btn ghost" href="https://github.com/stacksjs/bughq">View source</a>
           </div>
         </div>
@@ -116,34 +120,16 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Ship with a net under you.</h2>
           <div class="cta-actions">
-            <a class="btn primary" data-auth-cta href="/register" data-no-router>Get started</a>
+            @if (signedIn)
+              <a class="btn primary" href="/dashboard" data-no-router>Go to dashboard</a>
+            @else
+              <a class="btn primary" href="/register" data-no-router>Get started</a>
+            @endif
             <StxLink class="btn ghost" to="/use-cases">See use cases</StxLink>
           </div>
         </div>
       </section>
 
     </main>
-
-
-    <!-- Reflect auth state: a logged-in visitor (token in localStorage) sees
-         "Dashboard" instead of Log in / Sign up. -->
-    <script>
-      (function () {
-        // The cookie is the source of truth for signed-in state; localStorage no
-        // longer holds a token copy.
-        if (!/(^|;)\s*bughq_token=/.test(document.cookie)) return
-        document.querySelectorAll('[data-auth-login]').forEach(function (a) {
-          a.textContent = 'Dashboard'
-          a.setAttribute('href', '/dashboard')
-        })
-        document.querySelectorAll('[data-auth-signup]').forEach(function (a) {
-          a.style.display = 'none'
-        })
-        document.querySelectorAll('[data-auth-cta]').forEach(function (a) {
-          a.textContent = 'Go to dashboard'
-          a.setAttribute('href', '/dashboard')
-        })
-      })()
-    </script>
   
 @endsection

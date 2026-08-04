@@ -7,6 +7,30 @@ const githubEnabled = !!services.github?.clientId
 const googleEnabled = !!services.google?.clientId
 const anyOauth = githubEnabled || googleEnabled
 
+// An invite link carries `?email=…&invite=…`. Both were previously applied by a
+// bare <script> that queried for the input, assigned `.value`, set `readonly`
+// and nudged `style.opacity`, then built the hint paragraph with createElement
+// and a 5-property `cssText` string and spliced it in with insertBefore.
+//
+// Server-side both become ordinary markup: the input renders with its value and
+// readonly attribute already set, and the hint is an `@if`. That also fixes a
+// real bug in the old version — it ran once, on load, so arriving at
+// /register?email=… through an SPA fragment swap left the field blank.
+let inviteEmail = ''
+let isInvite = false
+try {
+  const u = (typeof requestContext !== 'undefined' && requestContext.url && requestContext.url()) || ''
+  if (u) {
+    const q = new URL(u).searchParams
+    inviteEmail = q.get('email') || ''
+    isInvite = !!q.get('invite')
+  }
+}
+catch {
+  inviteEmail = ''
+  isInvite = false
+}
+
 useHead({ title: 'Create your account - bughq' })
 </script>
 
@@ -88,6 +112,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.6; cursor: default; }
 .err { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
+/* Was a 5-property `cssText` string assigned to a createElement'd <p>. */
+.invite-hint { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); }
+input[readonly].field { opacity: 0.85; }
 .oauth-btn { border: 1px solid var(--border); border-radius: 10px; color: var(--text); background: var(--panel); transition: border-color 0.15s ease, transform 0.12s ease; }
 .oauth-btn:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .oauth-btn:active { transform: translateY(1px); }
@@ -102,6 +129,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       <p class="text-sm mt-2 text-subtle">Create your account</p>
     </div>
 
+    @if (isInvite)
+      <p class="invite-hint text-[13px] rounded-[9px] px-3 py-2.5 mb-3.5">You've been invited to a project — sign up to join it.</p>
+    @endif
+
     <form @submit="handleSubmit" class="space-y-4">
       @if (error())
         <div class="err text-sm rounded-lg px-3 py-2">{{ error() }}</div>
@@ -113,7 +144,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
       </div>
       <div>
         <label class="block text-xs font-medium mb-1.5 text-muted">Email</label>
-        <input name="email" type="email" required autocomplete="email" placeholder="you@example.com" class="field w-full px-3.5 py-2.5 text-sm">
+        <input name="email" type="email" required autocomplete="email" placeholder="you@example.com" class="field w-full px-3.5 py-2.5 text-sm" value="{{ inviteEmail }}" @if (inviteEmail) readonly @endif>
       </div>
       <div>
         <label class="block text-xs font-medium mb-1.5 text-muted">Password</label>
@@ -150,28 +181,3 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
     </p>
   </div>
 </div>
-
-<!-- Prefill the email from an invite link (/register?email=…&invite=…) and show
-     an invite hint, so the invitee signs up as the exact person invited. -->
-<script>
-(function () {
-  try {
-    var p = new URLSearchParams(location.search)
-    var email = p.get('email')
-    if (email) {
-      var el = document.querySelector('input[name="email"]')
-      if (el) { el.value = email; el.setAttribute('readonly', 'readonly'); el.style.opacity = '0.85' }
-    }
-    if (p.get('invite')) {
-      var form = document.querySelector('form')
-      if (form) {
-        var hint = document.createElement('p')
-        hint.textContent = "You've been invited to a project — sign up to join it."
-        hint.style.cssText = 'font-size:13px;margin:0 0 14px;padding:9px 12px;border-radius:9px;color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);border:1px solid color-mix(in srgb, var(--accent) 35%, var(--border))'
-        form.parentNode.insertBefore(hint, form)
-      }
-    }
-  }
-  catch (e) {}
-})()
-</script>

@@ -1,3 +1,34 @@
+<script server>
+// Is the visitor signed in? Read once here so SiteNav, SiteFooter and every
+// page's CTA agree, on all 23 marketing pages.
+//
+// This replaced a bare <script> in index.stx that queried [data-auth-login],
+// [data-auth-signup] and [data-auth-cta] and rewrote their text and href. Two
+// things were wrong with it: the hooks it targeted live in SiteNav and
+// SiteFooter — shared by every marketing page — while the script itself was on
+// the home page only, so a signed-in visitor saw "Log in / Sign up" everywhere
+// except "/"; and rewriting after paint meant a visible flicker.
+//
+// Server-side is safe here specifically because these responses are not
+// cacheable: every one sets Cache-Control: no-store and a per-visitor
+// X-CSRF-Token cookie, and the CDN in config/cloud.ts is disabled. If HTML
+// caching is ever introduced, this must move behind a Vary: Cookie or go back
+// to the client — auth state baked into a shared cache entry leaks across
+// visitors.
+//
+// Client-side was the alternative and costs more than it looks: marketing pages
+// currently load router.js only, not runtime.js (measured), so a <script client>
+// here would pull the whole signals runtime onto all 23 public pages to decide
+// the wording of two links.
+let signedIn = false
+try {
+  signedIn = !!(typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token'))
+}
+catch {
+  signedIn = false
+}
+</script>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
