@@ -475,6 +475,8 @@ function addChannel(e: SubmitEvent): void {
 const dzProjectName = projectName
 const dzAction = state(null)
 const dzTyped = state('')
+/** The confirm-phrase input, for focus on open. Registered by ref="dzInput". */
+const dzInput = useRef('dzInput')
 const dzBusy = state(false)
 const dzNote = state(null)
 const unarchiving = state(false)
@@ -503,15 +505,18 @@ function dzOpen(which: 'archive' | 'delete'): void {
   dzTyped.set('')
   dzNote.set(null)
   dzBusy.set(false)
-  // Focus is an imperative browser action with no declarative form here, and the
-  // field has to be reachable before the dialog is any use. The delay lets the
-  // signal render first, exactly as the previous implementation did.
+  // Clearing the field is declarative now: the input binds :value="dzTyped()",
+  // so the dzTyped.set('') above empties it. Only focus stays imperative, which
+  // it has to be — there is no declarative form of "put the caret here" — and it
+  // goes through a template ref rather than getElementById, so it cannot pick up
+  // a stale element from a previous fragment.
+  //
+  // useRef(name) reads componentScope.$refs[name] and exposes `.current`; the
+  // markup registers it with ref="dzInput" (signals.ts:1012, 2353). The 20ms
+  // delay is unchanged — the field is inside a :hidden dialog and has to be
+  // visible before it can take focus.
   setTimeout(() => {
-    const field = document.getElementById('dz-input')
-    if (field) {
-      field.value = ''
-      field.focus()
-    }
+    dzInput.current?.focus()
   }, 20)
 }
 
@@ -949,7 +954,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
           <div id="dz-title" class="text-base font-semibold mb-1" :text="dzCopy().title"></div>
           <p class="text-sm mb-4 text-muted" :text="dzCopy().desc"></p>
           <label class="block text-xs mb-1.5 text-subtle">Type <span class="mono text-muted">{{ activeProject.name }}</span> to confirm</label>
-          <input id="dz-input" type="text" class="field w-full px-3.5 py-2.5 text-sm mono mb-4" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <input ref="dzInput" type="text" class="field w-full px-3.5 py-2.5 text-sm mono mb-4" :value="dzTyped()" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
           <div class="flex items-center justify-end gap-2">
             <button @click="dzClose" type="button" class="btn-ghost px-4 py-2.5 text-sm font-medium">Cancel</button>
             <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :text="dzConfirmLabel()" type="button" class="btn-danger px-4 py-2.5 text-sm font-semibold" disabled></button>
