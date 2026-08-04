@@ -265,11 +265,51 @@ async function gotoAndInstrument(cdp: Cdp, url: string, opts: { viewport?: { w: 
     }
   })
 
+  // App routes are auth-gated and need BOTH: the cookie authenticates the server
+  // render, and each page's client guard redirects to /login unless the token is
+  // also in localStorage. Same SPA_COOKIE / SPA_LOCALSTORAGE contract the
+  // spa-probe / spa-shot / link-intercept scripts already read, so one export
+  // seeds every tool in the skill. Without this, browse.ts silently reports on
+  // the login page while claiming to have visited the path you asked for.
+  await seedAuth(cdp, url)
+
   await cdp.send('Page.navigate', { url })
   try { await cdp.waitFor('Page.loadEventFired', () => true, opts.timeoutMs ?? 15_000) }
   catch { /* SSE/long-poll pages may never fire load; proceed after a settle */ }
   await Bun.sleep(700)
   return state
+}
+
+/** Seed cookies and localStorage before the first navigation, from the env. */
+async function seedAuth(cdp: Cdp, url: string): Promise<void> {
+  const cookie = process.env.SPA_COOKIE
+  const store = process.env.SPA_LOCALSTORAGE
+  if (!cookie && !store)
+    return
+
+  const { hostname } = new URL(url)
+
+  if (cookie) {
+    for (const pair of cookie.split(';')) {
+      const i = pair.indexOf('=')
+      if (i < 1)
+        continue
+      await cdp.send('Network.setCookie', {
+        name: pair.slice(0, i).trim(),
+        value: pair.slice(i + 1).trim(),
+        domain: hostname,
+        path: '/',
+      })
+    }
+  }
+
+  if (store) {
+    // Runs before every document, so it survives the redirect chain a guard may
+    // trigger — setting it once after load would be too late for that guard.
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `try{const s=${JSON.stringify(store)};for(const[k,v]of Object.entries(JSON.parse(s)))localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v))}catch(e){}`,
+    })
+  }
 }
 
 async function title(cdp: Cdp): Promise<string> {
@@ -334,7 +374,7 @@ async function main() {
   const url = positional[0]
 
   if (!command || command === 'help' || !url) {
-    console.log('Usage: bun browse.ts <navigate|screenshot|responsive|monitor|snapshot> <url> [flags]')
+    console.log('Usage: bun browse.ts <navigate|screenshot|responsive|monitor|snapshot|eval> <url> [flags]')
     process.exit(url ? 0 : 1)
   }
 
@@ -424,6 +464,43 @@ async function main() {
       })()`
       const r = await cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true })
       console.log(JSON.stringify({ url, ...r.result?.value }, null, 2))
+      cdp.close()
+    }
+
+    else if (command === 'eval') {
+      // Answers "what is actually on the page object at runtime?" — which no
+      // other command can. snapshot reports DOM structure; this reports state:
+      // what landed on window.stx, whether a store hydrated, what a signal holds.
+      const expr = flags.expr ?? positional[1]
+      if (!expr) {
+        console.error('eval needs an expression: browse.ts eval <url> --expr "…"')
+        process.exit(1)
+      }
+      const cdp = await openPage(session.port)
+      // --pre runs BEFORE any page script, so it can observe pre-paint state:
+      // what a FOUC guard did before hydration corrected it. Without this, every
+      // reading is post-hydration and a wrong-then-fixed value looks correct.
+      if (flags.pre) {
+        await cdp.send('Page.enable')
+        await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: String(flags.pre) })
+      }
+      const state = await gotoAndInstrument(cdp, url)
+      if (flags.settle)
+        await Bun.sleep(Number(flags.settle))
+      const r = await cdp.send('Runtime.evaluate', {
+        expression: `(() => { try { return (${expr}) } catch (e) { return { __evalError: String(e) } } })()`,
+        returnByValue: true,
+        awaitPromise: true,
+      })
+      console.log(JSON.stringify({
+        url,
+        // Where the browser ended up. An auth redirect lands on /login and every
+        // assertion below it would then describe the wrong page.
+        at: (await cdp.send('Runtime.evaluate', { expression: 'location.pathname', returnByValue: true })).result?.value,
+        value: r.result?.value ?? r.result?.description,
+        exception: r.exceptionDetails?.exception?.description,
+        consoleErrors: state.consoleErrors,
+      }, null, 2))
       cdp.close()
     }
 

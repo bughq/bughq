@@ -122,13 +122,21 @@ export default {
     //
     // storageKey is bughq's existing key, so nobody's saved preference is lost.
     // attribute is what marketing.css and every app page's CSS already select on
-    // (:root[data-theme="dark"]). darkClass is null because nothing in this app
-    // styles off a `dark` class — opting out explicitly rather than letting the
-    // 'dark' default add a class no stylesheet reads.
+    // (:root[data-theme="dark"]).
+    //
+    // darkClass is deliberately left at its 'dark' default even though no
+    // stylesheet here selects on a `dark` class. Opting out with `darkClass: null`
+    // reads better but measures worse: stx also injects a second, older pre-paint
+    // theme script (site-builder's FOUC guard) that cannot be configured or
+    // disabled from here, and it puts `class="dark"` on <html> unconditionally —
+    // it reads localStorage['theme'], a key nothing writes, and falls back to
+    // dark. With darkClass null nothing ever removes that class, so a visitor
+    // whose preference is light ends up with data-theme="light" and class="dark"
+    // permanently disagreeing. Letting useColorMode own the class means it
+    // corrects the guard on hydration and the two stay in step. stacksjs/stx#1812.
     colorMode: {
       storageKey: 'bughq_theme',
       attribute: 'data-theme',
-      darkClass: null,
       initialMode: 'auto',
     },
 

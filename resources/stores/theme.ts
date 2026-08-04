@@ -29,24 +29,13 @@ export const useTheme = defineStore('theme', () => {
   // is no `.value`: it is `cm.mode` to read and `cm.set(x)` to write. A template
   // binding cannot react to a getter, which is why the signal below exists.
   //
-  // The options are passed explicitly, duplicating app.colorMode in config/ui.ts,
-  // and that duplication is a WORKAROUND for stacksjs/stx#1803 — not a preference.
-  // useColorMode reads its config from window.__STX_COLOR_MODE__, which the
-  // pre-paint boot script publishes, but that script is emitted AFTER the store
-  // bundle. So at the moment this runs the global does not exist yet and the
-  // composable silently falls back to its own defaults: storageKey
-  // 'stx-color-mode' and attribute null. Measured — a toggle wrote 'light' to
-  // 'stx-color-mode' and never touched data-theme, so the theme appeared dead and
-  // the user's preference landed somewhere the boot script never reads.
-  //
-  // When #1803 is fixed (boot script emitted first in <head>), delete these
-  // options and let the config be the single source again.
-  const cm = useColorMode({
-    storageKey: 'bughq_theme',
-    attribute: 'data-theme',
-    darkClass: null,
-    initialMode: 'auto',
-  })
+  // No options: every one comes from app.colorMode in config/ui.ts via
+  // window.__STX_COLOR_MODE__, which the pre-paint boot script publishes. They
+  // used to be duplicated here because that script was emitted after the store
+  // bundle, so the global did not exist yet — stacksjs/stx#1803, now fixed and
+  // verified: the boot script sits ahead of the stores bundle and the global
+  // reads back {bughq_theme, data-theme, auto}.
+  const cm = useColorMode()
 
   /** The resolved mode, mirrored into a signal so `:data-t="theme()"` re-renders. */
   const theme = state(cm.mode)
