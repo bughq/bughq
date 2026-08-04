@@ -162,22 +162,13 @@ const projectName = activeProject?.name || ''
 </script>
 
 <script client>
-// The theme is not owned by this page: it lives on the root html element (which
-// the SPA router never swaps) and in localStorage. The signal mirrors it so the
-// button can render the right icon; it is not the source of truth.
-function effectiveTheme() {
-  return document.documentElement.getAttribute('data-theme')
-    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-}
+// Theme lives in the store: one implementation, shared across pages, and the
+// pre-paint boot script in config/ui.ts already applied it before this ran.
+const themeStore = useStore('theme')
+const theme = themeStore.theme
 
-const theme = state(effectiveTheme())
-
-function toggleTheme() {
-  const next = theme() === 'dark' ? 'light' : 'dark'
-  document.documentElement.setAttribute('data-theme', next)
-  try { localStorage.setItem('bughq_theme', next) }
-  catch { /* Safari private mode */ }
-  theme.set(next)
+function toggleTheme(): void {
+  themeStore.toggle()
 }
 
 

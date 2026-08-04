@@ -113,6 +113,25 @@ export default {
   // reads the rendered <title> into the X-STX-Title response header and the
   // router applies it on fragment swaps.
   app: {
+    // Pre-paint color mode (stacksjs/stx#1794). This emits a synchronous script
+    // as the FIRST thing in <head> — above the stylesheets, because a <link>
+    // ahead of it would block its execution and delay the one thing it exists to
+    // do early. It also publishes these options on window.__STX_COLOR_MODE__, so
+    // a bare useColorMode() in a store agrees with whatever already landed on
+    // <html> instead of re-reading a different key and undoing it on hydration.
+    //
+    // storageKey is bughq's existing key, so nobody's saved preference is lost.
+    // attribute is what marketing.css and every app page's CSS already select on
+    // (:root[data-theme="dark"]). darkClass is null because nothing in this app
+    // styles off a `dark` class — opting out explicitly rather than letting the
+    // 'dark' default add a class no stylesheet reads.
+    colorMode: {
+      storageKey: 'bughq_theme',
+      attribute: 'data-theme',
+      darkClass: null,
+      initialMode: 'auto',
+    },
+
     head: {
       title: 'bughq',
 
@@ -140,20 +159,10 @@ export default {
         },
       ],
 
-      // Pre-paint theme guard. Must be inline and in <head> — it runs before
-      // first paint so the saved theme is applied without a flash, which is
-      // exactly why it cannot be an @include (see the note in pricing.stx).
-      // app.head.script was the option that comment never considered.
-      //
-      // Landing it here also extends it to the 23 marketing pages, which have
-      // no guard today even though marketing.css already ships
-      // :root[data-theme="light"] and [data-theme="dark"] tokens. They were
-      // built for theming and never given the one line that switches it on.
-      script: [
-        {
-          content: `(function(){try{var t=localStorage.getItem('bughq_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`,
-        },
-      ],
+      // NOT here any more: the hand-rolled pre-paint theme guard. `app.colorMode`
+      // below emits that script from the framework instead, off the same option
+      // surface useColorMode reads — so the boot script and the composable
+      // cannot disagree about the storage key or the attribute.
 
       // NOT here: /marketing.css. The remediation plan called for it, but it
       // defines :root, html, body, * and a — and four classes the app pages
