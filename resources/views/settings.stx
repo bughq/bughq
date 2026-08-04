@@ -624,21 +624,6 @@ function unarchive(): void {
 
 
 <style>
-:root {
-  --bg: #fbfbfd; --panel: #ffffff; --border: rgba(15,23,42,0.09);
-  --text: #0b0f19; --text-2: #4b5565; --text-3: #97a1b2; --accent: #e11d48;
-  --slack: #611f69; --discord: #5865f2; --ok: #16a34a; --warn: #b91c1c;
-  --sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #090b11; --panel: #10131c; --border: rgba(148,163,184,0.12);
-    --text: #f3f5f9; --text-2: #b3bccb; --text-3: #667085; --accent: #fb7185;
-    --discord: #818cf8; --ok: #4ade80; --warn: #f87171; }
-}
-:root[data-theme="dark"] { --bg: #090b11; --panel: #10131c; --border: rgba(148,163,184,0.12);
-  --text: #f3f5f9; --text-2: #b3bccb; --text-3: #667085; --accent: #fb7185; --discord: #818cf8; --ok: #4ade80; --warn: #f87171; }
-:root[data-theme="light"] { --bg: #fbfbfd; --panel: #ffffff; --border: rgba(15,23,42,0.09);
-  --text: #0b0f19; --text-2: #4b5565; --text-3: #97a1b2; --accent: #e11d48; --discord: #5865f2; --ok: #16a34a; --warn: #b91c1c; }
 html { scroll-behavior: smooth; }
 body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
 .mono { font-family: var(--mono); }

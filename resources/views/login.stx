@@ -72,19 +72,6 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 
 
 <style>
-:root {
-  --bg: #fbfbfd; --panel: #ffffff; --border: rgba(15,23,42,0.09);
-  --text: #0b0f19; --text-2: #4b5565; --text-3: #97a1b2; --accent: #e11d48;
-  --sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #090b11; --panel: #10131c; --border: rgba(148,163,184,0.12);
-    --text: #f3f5f9; --text-2: #b3bccb; --text-3: #667085; --accent: #fb7185; }
-}
-:root[data-theme="dark"] { --bg: #090b11; --panel: #10131c; --border: rgba(148,163,184,0.12);
-  --text: #f3f5f9; --text-2: #b3bccb; --text-3: #667085; --accent: #fb7185; }
-:root[data-theme="light"] { --bg: #fbfbfd; --panel: #ffffff; --border: rgba(15,23,42,0.09);
-  --text: #0b0f19; --text-2: #4b5565; --text-3: #97a1b2; --accent: #e11d48; }
 body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
 .wordmark { font-weight: 700; letter-spacing: -0.03em; }
 .field { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); }
