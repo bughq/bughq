@@ -140,27 +140,25 @@ const guide = activeProject ? installGuide(activeProject.platform, keyFull) : { 
 //     with a closing tag would do the same thing, and an opening one could
 //     inject script into the page.
 //
-// Escaping the slash is NOT enough: stx re-serializes these values on its way
-// into the client block and drops the escape. Base64 has no `<` in its
-// alphabet, so nothing in it survives as markup no matter how it is re-encoded.
-// The JSON goes inside the encoding so objects travel too.
+// stx bridges these into the client block itself: generateServerDataBridge
+// (client-script.js:538) emits `var <name> = <json>` for every server-scope name
+// the client references and does not redeclare, escaping `<` to \u003c on the
+// way. That escape is the whole problem this file used to solve by hand — a
+// closing script tag inside a value ends the element and truncates everything
+// below it, which is what silently killed this page's controls on any project
+// whose platform is `javascript`.
 //
-// The same trap applies to this comment, which is why it never spells the tag
-// out — doing so truncates the server block instead.
-function b64(value: unknown): string {
-  return JSON.stringify(Buffer.from(JSON.stringify(value ?? ''), 'utf8').toString('base64'))
-}
-const guideInstallB64 = b64(guide.install || '')
-const guideCodeB64 = b64(guide.code || '')
-const keyFullB64 = b64(keyFull)
-const keyMaskB64 = b64(keyMask)
-const projectIdB64 = b64(projectId || '')
+// So there is nothing to encode here. Name the value on the server, reference it
+// in the client block, and do NOT redeclare it there — a client-side `const` of
+// the same name makes the bridge skip it (declaresClientIdentifier).
+const installText = guide.install || ''
+const codeText = guide.code || ''
 // Each channel's on/off state, seeded into a signal so the toggle renders from
 // state rather than from a data-on attribute it also has to write back to.
-const channelEnabledB64 = b64(Object.fromEntries(channelView.map(c => [c.id, c.enabled])))
+const channelEnabled = Object.fromEntries(channelView.map(c => [c.id, c.enabled]))
 // The danger zone used to read these back out of data-project-name / data-active
 // on the panel. Passing them as values keeps the DOM out of it.
-const projectNameB64 = b64(activeProject?.name || '')
+const projectName = activeProject?.name || ''
 </script>
 
 <script client>
@@ -182,17 +180,6 @@ function toggleTheme() {
   theme.set(next)
 }
 
-// Decoded from base64 — see the note in the server block above for why these
-// cannot travel as plain literals.
-function fromB64<T>(encoded: string): T {
-  const binary = atob(encoded)
-  const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0))
-  return JSON.parse(new TextDecoder().decode(bytes))
-}
-
-const installText = fromB64({!! guideInstallB64 !!})
-const codeText = fromB64({!! guideCodeB64 !!})
-const projectId = fromB64({!! projectIdB64 !!})
 
 // One signal names whichever button most recently copied, so every Copy button
 // on the page shares the same "Copied" affordance without any of them holding
@@ -201,6 +188,19 @@ const copied = state('')
 
 function copyLabel(which: string, done?: string, idle?: string): string {
   return copied() === which ? (done || 'Copied') : (idle || 'Copy')
+}
+
+// installText and codeText are used ONLY by the copy buttons in the markup.
+// The bridge scans the client SCRIPT for a name before emitting it
+// (client-script.js:544), not the template — so a value referenced only in an
+// @click binding is silently never bridged and the binding resolves to
+// undefined. Naming them in a handler here is what makes them cross.
+function copyInstall(): void {
+  copyText('install', installText)
+}
+
+function copyCode(): void {
+  copyText('code', codeText)
 }
 
 function copyText(which: string, text: string): void {
@@ -223,8 +223,8 @@ function switchProject(e: Event): void {
 }
 
 // ---- API key -------------------------------------------------------------
-const currentKey = state(fromB64({!! keyFullB64 !!}))
-const maskedKey = state(fromB64({!! keyMaskB64 !!}))
+const currentKey = state(keyFull)
+const maskedKey = state(keyMask)
 const revealed = state(false)
 const rotating = state(false)
 const keyNote = state(null)
@@ -355,7 +355,7 @@ const whNote = state(null)
 // Toggle state lives here rather than on a data-on attribute the handler both
 // reads and writes, so a failed PATCH reverts by restoring a value instead of
 // re-deriving the old one from the attribute it just overwrote.
-const chEnabled = state(fromB64({!! channelEnabledB64 !!}))
+const chEnabled = state(channelEnabled)
 const testing = state('')
 const tested = state(null)
 
@@ -481,7 +481,7 @@ function addChannel(e: SubmitEvent): void {
 // mAction was last assigned, so the two destructive paths were separated only
 // by assignment order. Now the button reads the same signal the title and copy
 // read, and a stale one is unrepresentable.
-const dzProjectName = fromB64({!! projectNameB64 !!})
+const dzProjectName = projectName
 const dzAction = state(null)
 const dzTyped = state('')
 const dzBusy = state(false)
@@ -759,12 +759,12 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
           @if (guide.install)
             <div class="relative mb-2">
               <div class="code-block">{{ guide.install }}</div>
-              <button type="button" class="copy-btn" @click="copyText('install', installText)" :text="copyLabel('install')">Copy</button>
+              <button type="button" class="copy-btn" @click="copyInstall" :text="copyLabel('install')">Copy</button>
             </div>
           @endif
           <div class="relative">
             <div class="code-block" style="white-space: pre">{{ guide.code }}</div>
-            <button type="button" class="copy-btn" @click="copyText('code', codeText)" :text="copyLabel('code')">Copy</button>
+            <button type="button" class="copy-btn" @click="copyCode" :text="copyLabel('code')">Copy</button>
           </div>
         </div>
       </section>

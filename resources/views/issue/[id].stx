@@ -111,9 +111,9 @@ useSeoMeta({
   robots: 'noindex, nofollow',
 })
 const stack = latest?.stack || ''
-// Handed to the copy button as a JS literal. JSON.stringify does the escaping,
-// so the client script needs no hidden element to read the text back out of.
-const stackJson = JSON.stringify(stack)
+// `stack` crosses to the client through stx's own bridge — no hand-rolled
+// literal. JSON.stringify alone was not enough: it does not escape `<`, so a
+// stack frame containing a closing script tag would have ended the block.
 
 // --- formatting helpers ----------------------------------------------------
 // Every parameter here is nullable because the column it comes from is. Issue
@@ -356,7 +356,7 @@ function toggleTheme() {
 
 // The stack arrives as a JS literal from the server block, so the copy button
 // no longer reads it back out of a hidden <pre>.
-const stackText = {!! stackJson !!}
+const stackText = stack
 const copyLabel = state('Copy')
 
 function copyStack() {
