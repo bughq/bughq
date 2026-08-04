@@ -46,23 +46,21 @@ function fromNow(iso: string | null): string {
 const themeStore = useStore('theme')
 
 // `const theme = themeStore.theme` is what this wants to be. The derived() wrapper
-// is a WORKAROUND for stacksjs/stx#1820, not a preference.
+// is a WORKAROUND for stacksjs/stx#1824, not a preference.
 //
-// stx decides whether to inject the signals runtime with hasSignalsSyntax(), which
-// matches state/derived/effect/computed and a fixed list of directives — but not
-// `@click=`, not an arbitrary `:attr=` binding, and not useStore(). This block used
-// only useStore, and the template only `@click` and `:data-t`, so the page was judged
-// to need no runtime. The client-script pass still emitted window.stx.mount(), which
-// then threw `Cannot read properties of undefined (reading 'mount')` on its first
-// line and took every function here with it — the theme toggle and Log out were both
-// dead, on this page only.
+// stx has three separate "does this template use signals" tests. #1819 and #1820
+// fixed two of them by deriving from the runtime globals list; events.ts still has
+// its own, matching only state/derived/effect. A client block that uses just
+// useStore fails it, so processEventDirectives strips `@click` from the markup and
+// rebinds it imperatively — to code that looks for a `[data-stx-scope]` ancestor
+// that page-level client blocks never get, then falls back to evaluating the bare
+// name `toggleTheme`, which lives in the setup closure and is not a global.
+// Result: ReferenceError on click, and a dead theme toggle and Log out button.
 //
-// Measured: of the app's 8 routes, 7 inject the runtime and this was the only one
-// that did not, purely because the other 7 happen to call state() somewhere. So the
-// cleaner this block gets, the more likely it is to break — which is the actual bug.
-//
-// derived() is in the gate's pattern list, so one call restores the runtime. Delete
-// the wrapper and inline themeStore.theme again when #1820 lands.
+// This page is the app's only useStore-only client block, so it is the only one
+// affected — the other seven routes call state() somewhere and pass the regex by
+// accident. derived() is in that regex, so one call keeps the declarative binding.
+// Delete the wrapper and inline themeStore.theme when #1824 lands.
 const theme = derived(() => themeStore.theme())
 
 function toggleTheme(): void {
