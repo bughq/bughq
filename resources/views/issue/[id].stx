@@ -390,7 +390,6 @@ function copyStack() {
 body { background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
 .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
 .card-head { display:flex; align-items:center; gap:.5rem; padding:.7rem 1rem; border-bottom:1px solid var(--border-2); font-size:.72rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); }
-.mono { font-family: var(--mono); }
 .pill { display:inline-flex; align-items:center; gap:.35rem; padding:.15rem .55rem; border-radius:999px; font-size:.7rem; font-weight:600; letter-spacing:.02em; }
 
 /* Severity chips: the one deliberately loud element on the page. Solid

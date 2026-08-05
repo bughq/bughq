@@ -141,6 +141,33 @@ export default {
       },
     },
   },
+  /**
+   * Shared class primitives, defined once. Each was previously redeclared in
+   * every view that used it.
+   *
+   * A shortcut maps a class name to utility classes, and stx flattens the result
+   * into a single `.name { … }` rule. Two consequences worth knowing before
+   * adding to this map:
+   *
+   *   - A utility on the same element cannot override a shortcut, because stx
+   *     appends the flattened rule at the END of the sheet
+   *     (stx/src/dev-server/crosswind.ts:761). `class="wordmark text-accent"`
+   *     does not do what it looks like — put variants inside the shortcut.
+   *   - A variant cannot be applied to a shortcut NAME (`hover:wordmark` emits
+   *     nothing). Variants belong in the value: `hover:bg-…`.
+   *
+   * Unknown utilities and unhandled variants emit nothing, silently, so verify
+   * against the served /_stx/crosswind.*.css after adding one.
+   */
+  shortcuts: {
+    // font-sans resolves to the same stack as var(--sans), so this is identical
+    // to the nine copies that omitted the family and inherited it from body.
+    wordmark: 'font-sans font-bold tracking-[-0.03em]',
+    // font-mono resolves to the same stack as var(--mono). dashboard.stx keeps a
+    // local `font-feature-settings: 'tnum' 1` on top of this — tabular figures
+    // are deliberate there and were never in the other three copies.
+    mono: 'font-mono',
+  },
   preflights: [
     { getCSS: paletteCss },
   ],

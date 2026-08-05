@@ -64,7 +64,6 @@ if (token) {
 
 <style>
 body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
-.wordmark { font-weight: 700; letter-spacing: -0.03em; }
 .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
 .btn { border-radius: 10px; transition: transform 0.12s ease, opacity 0.15s ease, background-color 0.15s ease; font-weight: 600; }
 .btn:active { transform: translateY(1px); }

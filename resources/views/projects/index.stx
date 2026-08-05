@@ -77,8 +77,6 @@ function logout() {
 
 <style>
 body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
-.mono { font-family: var(--mono); }
-.wordmark { font-weight: 700; letter-spacing: -0.03em; }
 .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; }
 .card { transition: border-color 0.15s ease, transform 0.12s ease; }
 .card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); transform: translateY(-1px); }
