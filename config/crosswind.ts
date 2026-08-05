@@ -213,6 +213,21 @@ export default {
     // Raised surface. Three copies, byte-identical.
     panel: 'bg-panel border border-solid border-line rounded-[12px]',
 
+    // Square icon button — theme toggle, copy, row actions. dashboard.stx,
+    // settings.stx and issue/[id].stx declare this identically.
+    //
+    // projects/index.stx keeps its own: 36px instead of 34, radius 10 instead of
+    // 9, --text-3 instead of --text-2, and an 18px glyph. Measured rather than
+    // assumed to be drift — at 36px it matches the height of the "+ New app"
+    // button beside it exactly, where 34px would sit 2px short. It declares all
+    // eleven of the same properties, so it overrides this cleanly with nothing
+    // leaking through.
+    'icon-btn': 'inline-flex items-center justify-center w-[34px] h-[34px] '
+      + 'border border-solid border-line rounded-[9px] text-muted bg-panel cursor-pointer '
+      + '[transition:color_0.15s_ease,border-color_0.15s_ease] '
+      + 'hover:text-ink hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] '
+      + '[&_svg]:w-[17px] [&_svg]:h-[17px]',
+
     // Third-party sign-in button on /login and /register. Two copies, identical.
     'oauth-btn': 'border border-solid border-line rounded-[10px] text-ink bg-panel '
       + '[transition:border-color_0.15s_ease,transform_0.12s_ease] '

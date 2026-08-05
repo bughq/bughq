@@ -346,9 +346,6 @@ select.panel:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--b
 @media (prefers-reduced-motion: reduce) { .reveal { animation: none; opacity: 1; transform: none; } }
 summary { list-style: none; cursor: pointer; }
 summary::-webkit-details-marker { display: none; }
-.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 9px; color: var(--text-2); background: var(--panel); cursor: pointer; transition: color 0.15s ease, border-color 0.15s ease; }
-.icon-btn:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
-.icon-btn svg { width: 17px; height: 17px; }
 .theme-btn .ic-sun, .theme-btn .ic-moon { display: none; }
 .theme-btn[data-t="light"] .ic-sun { display: block; }
 .theme-btn[data-t="dark"] .ic-moon { display: block; }

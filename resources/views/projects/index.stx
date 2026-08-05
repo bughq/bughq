@@ -83,7 +83,6 @@ function logout() {
 .btn-ghost { border: 1px solid var(--border); color: var(--text); border-radius: 10px; }
 .btn-ghost:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 10px; color: var(--text-3); background: var(--panel); cursor: pointer; transition: color .15s ease, border-color .15s ease; }
-.icon-btn:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .icon-btn svg { width: 18px; height: 18px; }
 .theme-btn .ic-sun, .theme-btn .ic-moon { display: none; }
 .theme-btn[data-t="light"] .ic-sun { display: block; }
