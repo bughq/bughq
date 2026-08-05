@@ -114,6 +114,15 @@ function paletteCss(): string {
     `@media (prefers-color-scheme: dark) { :root { ${declarations(dark)}; } }`,
     `:root[data-theme="dark"] { ${declarations(dark)}; }`,
     `:root[data-theme="light"] { ${declarations(light)}; }`,
+    // Eleven views declared this identically but for one: issue/[id].stx uses a
+    // system font stack instead of var(--sans), and keeps that as a local rule.
+    //
+    // An element selector, so it belongs here and not in `shortcuts` — there is
+    // no class to attach. Being in a preflight also puts it in the @layer
+    // cw-base cascade layer, where an unlayered utility beats it regardless of
+    // specificity. That is the right way round for `body`: a page or a utility
+    // that sets its own background should win, and nothing here competes.
+    `body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }`,
   ].join('\n')
 }
 
@@ -158,6 +167,20 @@ export default {
    *
    * Unknown utilities and unhandled variants emit nothing, silently, so verify
    * against the served /_stx/crosswind.*.css after adding one.
+   *
+   * A shortcut is only safe when EVERY page agrees on the rule, because a page
+   * that declares fewer properties inherits the rest from here. A local rule in
+   * a page's <style> does win property-by-property (measured), but only for the
+   * properties it actually sets — anything it omits leaks through.
+   *
+   * That is why `.btn` is absent despite being the most duplicated class in the
+   * app. It has six different definitions across ten files, and two of them
+   * (account.stx, pricing.stx) deliberately set no background or colour because
+   * those pages colour their buttons via `.btn.primary`. A shared `btn` carrying
+   * `bg-accent text-white` would paint every plain button on those two pages.
+   * Same for `.btn-ghost` (four definitions, four files), `.icon-btn` (three),
+   * `.err` and `.field:focus`. Those need a decision about whether the pages
+   * SHOULD differ before they can be shared.
    */
   shortcuts: {
     // font-sans resolves to the same stack as var(--sans), so this is identical
@@ -167,6 +190,18 @@ export default {
     // local `font-feature-settings: 'tnum' 1` on top of this — tabular figures
     // are deliberate there and were never in the other three copies.
     mono: 'font-mono',
+
+    // Text input. Six copies, byte-identical.
+    field: 'bg-canvas border border-solid border-line rounded-[10px] text-ink',
+
+    // Raised surface. Three copies, byte-identical.
+    panel: 'bg-panel border border-solid border-line rounded-[12px]',
+
+    // Third-party sign-in button on /login and /register. Two copies, identical.
+    'oauth-btn': 'border border-solid border-line rounded-[10px] text-ink bg-panel '
+      + '[transition:border-color_0.15s_ease,transform_0.12s_ease] '
+      + 'hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] '
+      + 'active:translate-y-px',
   },
   preflights: [
     { getCSS: paletteCss },
