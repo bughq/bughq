@@ -72,17 +72,8 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 
 
 <style>
-body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
-.field { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); }
 .field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
-.btn { background: var(--accent); color: #fff; border-radius: 10px; transition: transform 0.12s ease, opacity 0.15s ease; }
-.btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
-.btn:active { transform: translateY(1px); }
-.btn:disabled { opacity: 0.6; cursor: default; }
 .err { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
-.oauth-btn { border: 1px solid var(--border); border-radius: 10px; color: var(--text); background: var(--panel); transition: border-color 0.15s ease, transform 0.12s ease; }
-.oauth-btn:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
-.oauth-btn:active { transform: translateY(1px); }
 .divider { display: flex; align-items: center; gap: 0.75rem; color: var(--text-3); font-size: 12px; }
 .divider::before, .divider::after { content: ""; height: 1px; flex: 1; background: var(--border); }
 </style>
@@ -111,7 +102,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); -web
         <input name="password" type="password" required autocomplete="current-password" placeholder="••••••••" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
 
-      <button type="submit" :disabled="loading()" class="btn w-full py-2.5 text-sm font-semibold">
+      <button type="submit" :disabled="loading()" class="btn-accent w-full py-2.5 text-sm font-semibold">
         {{ loading() ? 'Signing in…' : 'Sign in' }}
       </button>
     </form>

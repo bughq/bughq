@@ -194,6 +194,22 @@ export default {
     // Text input. Six copies, byte-identical.
     field: 'bg-canvas border border-solid border-line rounded-[10px] text-ink',
 
+    // The primary submit button on the five auth-shaped forms: /login,
+    // /register, /forgot-password, /reset-password and /projects/new. All five
+    // declared these four rules identically.
+    //
+    // Named rather than folded into `btn` on purpose. Ten files use `class="btn"`
+    // with six different definitions, and the other five are genuinely different
+    // components — account.stx and pricing.stx colour theirs via `.btn.primary`
+    // and set no background of their own, so a shared `btn` would paint every
+    // plain button on those pages accent. This owns one of the six and leaves
+    // the rest to their pages.
+    'btn-accent': 'bg-accent text-white rounded-[10px] '
+      + '[transition:transform_0.12s_ease,opacity_0.15s_ease] '
+      + 'hover:bg-[color-mix(in_srgb,var(--accent)_88%,#000)] '
+      + 'active:translate-y-px '
+      + 'disabled:opacity-60 disabled:cursor-default',
+
     // Raised surface. Three copies, byte-identical.
     panel: 'bg-panel border border-solid border-line rounded-[12px]',
 

@@ -70,10 +70,6 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 
 <style>
 .field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
-.btn { background: var(--accent); color: #fff; border-radius: 10px; transition: transform 0.12s ease, opacity 0.15s ease; }
-.btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
-.btn:active { transform: translateY(1px); }
-.btn:disabled { opacity: 0.6; cursor: default; }
 .err { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
 </style>
 
@@ -111,7 +107,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
         </select>
       </div>
 
-      <button type="submit" :disabled="loading()" class="btn w-full py-2.5 text-sm font-semibold">
+      <button type="submit" :disabled="loading()" class="btn-accent w-full py-2.5 text-sm font-semibold">
         {{ loading() ? 'Creating…' : 'Create app' }}
       </button>
     </form>
