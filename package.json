@@ -71,10 +71,10 @@
   },
   "dependencies": {
     "bun-plugin-auto-imports": "^0.4.1",
-    "stacks": "^0.70.201"
+    "stacks": "^0.70.324"
   },
   "devDependencies": {
-    "better-dx": "^0.2.15"
+    "better-dx": "^0.2.22"
   },
   "git-hooks": {
     "pre-commit": {
