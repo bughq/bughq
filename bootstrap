@@ -55,8 +55,14 @@ if [ -n "$1" ]; then
   cd "$1"
 fi
 
-# Detect if we're in a Stacks project
-if [ ! -d "storage/framework/core" ]; then
+# Detect if we're in a Stacks project.
+#
+# `./buddy` and not `storage/framework/core`: the framework now arrives as
+# packages, so an app that consumes it that way has no vendored core to point
+# at and this check failed on a project that was set up perfectly well. `buddy`
+# is the entrypoint every Stacks app has, vendored or not, and it is tracked
+# rather than generated, so it is there before a single install has run.
+if [ ! -f "buddy" ]; then
   echo "Error: not inside a Stacks project. Run with a project name to clone one:"
   echo "  curl -fsSL https://stacksjs.com/install | bash -s my-project"
   exit 1
