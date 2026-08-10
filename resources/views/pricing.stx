@@ -9,29 +9,6 @@ useSeoMeta({
 @extends('marketing')
 
 @push('styles')
-{{-- Declaring the runtime tag here is what keeps this page out of quirks mode,
-     and it is a workaround for an stx defect rather than a preference.
-
-     injectSignalsRuntime (stx runtime-injection.ts) places the runtime at
-     `template.indexOf('<script')` — the first script ANYWHERE in the template,
-     with no check that the position is after the doctype. On a page using a
-     full-document layout whose head contains no script of its own, that offset
-     resolves ahead of `<!DOCTYPE html>`, so the runtime and the 54-line store
-     block get prepended above it. A start tag before the doctype puts the
-     document in quirks mode: measured `document.compatMode === 'BackCompat'`
-     on /pricing while every other page on the site was CSS1Compat. It returns
-     200, renders correctly in a screenshot and logs no console error, so only
-     compatMode catches it.
-
-     The injector opens with `if (template.includes('data-stx-runtime')) return
-     template` — so declaring the tag ourselves skips the injection entirely and
-     the runtime stays where we put it, inside <head>. Pushing it from THIS page
-     rather than adding it to layouts/marketing.stx is deliberate: the layout
-     ships router.js only, and hoisting the signals runtime into it would pull
-     it onto all 23 public marketing pages to serve the one that needs it.
-
-     Remove this once stx anchors the injection after the doctype. --}}
-<script data-stx-runtime src="/_stx/runtime.js"></script>
 <style>
       .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); }
       .card-pro { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); box-shadow: 0 12px 40px color-mix(in srgb, var(--accent) 12%, transparent); }
