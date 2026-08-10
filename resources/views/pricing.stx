@@ -1,104 +1,133 @@
 <script server>
-useHead({ title: 'Pricing - bughq' })
+useSeoMeta({
+  title: "Pricing - bughq",
+  description: "Simple, honest pricing for bughq error tracking. Start free with one project, upgrade to Pro when you outgrow it, or self-host free forever.",
+  canonical: "https://bughq.org/pricing",
+})
 </script>
 
-<script client>
-// Pricing / upgrade via stx client directives. Interval + state are signals; the
-// Upgrade button starts a Stripe Checkout (external redirect via location).
-const interval = state('monthly')
-const err = state('')
-const loading = state(false)
+@extends('marketing')
 
-function pick(v: string): void { interval.set(v) }
+@push('styles')
+{{-- Declaring the runtime tag here is what keeps this page out of quirks mode,
+     and it is a workaround for an stx defect rather than a preference.
 
-async function upgrade() {
-  const token = useStore('session').token()
-  if (!token) { navigate('/login'); return }
-  loading.set(true)
-  err.set('')
-  try {
-    const res = await fetch('/payments/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify({ interval: interval() }),
-    })
-    const data = await res.json().catch(() => ({}))
-    if (res.ok && data.url) { location.assign(data.url); return }
-    err.set(data.error || 'Checkout is not available yet.')
-  }
-  catch {
-    err.set('Something went wrong. Please try again.')
-  }
-  finally {
-    loading.set(false)
-  }
-}
-</script>
+     injectSignalsRuntime (stx runtime-injection.ts) places the runtime at
+     `template.indexOf('<script')` — the first script ANYWHERE in the template,
+     with no check that the position is after the doctype. On a page using a
+     full-document layout whose head contains no script of its own, that offset
+     resolves ahead of `<!DOCTYPE html>`, so the runtime and the 54-line store
+     block get prepended above it. A start tag before the doctype puts the
+     document in quirks mode: measured `document.compatMode === 'BackCompat'`
+     on /pricing while every other page on the site was CSS1Compat. It returns
+     200, renders correctly in a screenshot and logs no console error, so only
+     compatMode catches it.
 
+     The injector opens with `if (template.includes('data-stx-runtime')) return
+     template` — so declaring the tag ourselves skips the injection entirely and
+     the runtime stays where we put it, inside <head>. Pushing it from THIS page
+     rather than adding it to layouts/marketing.stx is deliberate: the layout
+     ships router.js only, and hoisting the signals runtime into it would pull
+     it onto all 23 public marketing pages to serve the one that needs it.
 
+     Remove this once stx anchors the injection after the doctype. --}}
+<script data-stx-runtime src="/_stx/runtime.js"></script>
 <style>
-:root { --bg:#fbfbfd; --panel:#ffffff; --border:rgba(15,23,42,0.09); --text:#0b0f19; --text-2:#4b5565; --text-3:#97a1b2; --accent:#e11d48; --sans:'Space Grotesk', ui-sans-serif, system-ui, sans-serif; }
-@media (prefers-color-scheme: dark) { :root { --bg:#090b11; --panel:#10131c; --border:rgba(148,163,184,0.12); --text:#f3f5f9; --text-2:#b3bccb; --text-3:#667085; --accent:#fb7185; } }
-:root[data-theme="dark"] { --bg:#090b11; --panel:#10131c; --border:rgba(148,163,184,0.12); --text:#f3f5f9; --text-2:#b3bccb; --text-3:#667085; --accent:#fb7185; }
-:root[data-theme="light"] { --bg:#fbfbfd; --panel:#ffffff; --border:rgba(15,23,42,0.09); --text:#0b0f19; --text-2:#4b5565; --text-3:#97a1b2; --accent:#e11d48; }
-.card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; }
-.card-pro { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); box-shadow: 0 12px 40px color-mix(in srgb, var(--accent) 12%, transparent); }
-.btn { border-radius: 10px; transition: transform .12s ease, opacity .15s ease; font-weight: 600; }
-.btn:active { transform: translateY(1px); }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:disabled { opacity: .6; cursor: default; }
-.btn-ghost { border: 1px solid var(--border); color: var(--text-2); }
-.check { color: var(--accent); }
-.seg { border: 1px solid var(--border); border-radius: 999px; }
-.seg button { border-radius: 999px; cursor: pointer; background: transparent; color: var(--text-2); border: none; }
-.seg button.on { background: var(--accent); color: #fff; }
-.err { color: #ef4444; }
-</style>
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); }
+      .card-pro { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); box-shadow: 0 12px 40px color-mix(in srgb, var(--accent) 12%, transparent); }
+      .btn:disabled { opacity: .6; cursor: default; }
+      .check { color: var(--accent); }
+      .seg { border: 1px solid var(--border); border-radius: 999px; }
+      .seg button { border-radius: 999px; cursor: pointer; background: transparent; color: var(--text-2); border: none; }
+      .seg button.on { background: var(--accent); color: var(--accent-ink); }
+      .err { color: #ef4444; }
+    </style>
+@endpush
 
-<div class="min-h-[100dvh] px-5 py-14 md:px-10">
-  <div class="max-w-3xl mx-auto">
-    <header class="text-center mb-10">
-      <a href="/" class="wordmark text-2xl" data-no-router>bughq</a>
-      <h1 class="wordmark text-3xl md:text-4xl mt-6" style="letter-spacing:-0.035em">Simple, honest pricing</h1>
-      <p class="text-base mt-3 text-subtle">Start free. Upgrade when you outgrow it. Self-host free forever.</p>
-      <div class="seg inline-flex items-center gap-1 p-1 mt-6 text-sm">
-        <button @click="pick('monthly')" :class="interval() === 'monthly' ? 'on px-4 py-1.5 font-medium' : 'px-4 py-1.5 font-medium'">Monthly</button>
-        <button @click="pick('yearly')" :class="interval() === 'yearly' ? 'on px-4 py-1.5 font-medium' : 'px-4 py-1.5 font-medium'">Yearly <span style="opacity:.8">-17%</span></button>
-      </div>
-    </header>
+@section('content')
+    <main>
+      <nav class="subnav shell" aria-label="Breadcrumb">
+        <StxLink to="/">Home</StxLink><span class="sep">/</span>
+        <span>Pricing</span>
+      </nav>
 
-    <div class="grid md:grid-cols-2 gap-5">
-      <div class="card p-7">
-        <div class="text-sm font-semibold uppercase tracking-wider text-subtle">Free</div>
-        <div class="mt-3"><span class="wordmark text-4xl">\$0</span><span class="text-sm text-subtle"> / forever</span></div>
-        <p class="text-sm mt-2 text-muted">Everything you need to get started.</p>
-        <ul class="mt-6 space-y-2.5 text-sm">
-          <li class="flex items-center gap-2"><span class="check">✓</span> 1 project</li>
-          <li class="flex items-center gap-2"><span class="check">✓</span> 5k errors / mo</li>
-          <li class="flex items-center gap-2"><span class="check">✓</span> 30-day retention</li>
-          <li class="flex items-center gap-2"><span class="check">✓</span> Community support</li>
-        </ul>
-        <StxLink to="/register" class="btn btn-ghost w-full block text-center py-2.5 text-sm mt-7">Get started</StxLink>
-      </div>
+      <script client>
+      // Pricing / upgrade via stx client directives. Interval + state are signals; the
+      // Upgrade button starts a Stripe Checkout (external redirect via location).
+      const interval = state('monthly')
+      const err = state('')
+      const loading = state(false)
 
-      <div class="card card-pro p-7">
-        <div class="text-sm font-semibold uppercase tracking-wider text-accent">Pro</div>
-        <div class="mt-3">
-          <span class="wordmark text-4xl">{{ interval() === 'yearly' ? '\$190' : '\$19' }}</span><span class="text-sm text-subtle">{{ interval() === 'yearly' ? ' / year' : ' / month' }}</span>
+      function pick(v: string): void { interval.set(v) }
+
+      async function upgrade() {
+        const token = useStore('session').token()
+        if (!token) { navigate('/login'); return }
+        loading.set(true)
+        err.set('')
+        try {
+          const res = await fetch('/payments/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({ interval: interval() }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (res.ok && data.url) { location.assign(data.url); return }
+          err.set(data.error || 'Checkout is not available yet.')
+        }
+        catch {
+          err.set('Something went wrong. Please try again.')
+        }
+        finally {
+          loading.set(false)
+        }
+      }
+      </script>
+
+      <section class="feat-hero shell">
+        <span class="kicker">Pricing</span>
+        <h1>Simple, honest pricing</h1>
+        <p>Start free. Upgrade when you outgrow it. Self-host free forever.</p>
+        <div class="seg inline-flex items-center gap-1 p-1 mt-6 text-sm">
+          <button @click="pick('monthly')" :class="interval() === 'monthly' ? 'on px-4 py-1.5 font-medium' : 'px-4 py-1.5 font-medium'">Monthly</button>
+          <button @click="pick('yearly')" :class="interval() === 'yearly' ? 'on px-4 py-1.5 font-medium' : 'px-4 py-1.5 font-medium'">Yearly <span style="opacity:.8">-17%</span></button>
         </div>
-        <p class="text-sm mt-2 text-muted">For teams and sites that are growing.</p>
-        <ul class="mt-6 space-y-2.5 text-sm">
-          <li class="flex items-center gap-2"><span class="check">✓</span> Unlimited projects</li>
-          <li class="flex items-center gap-2"><span class="check">✓</span> Unlimited errors</li>
-          <li class="flex items-center gap-2"><span class="check">✓</span> Full retention</li>
-          <li class="flex items-center gap-2"><span class="check">✓</span> Priority support</li>
-        </ul>
-        <button @click="upgrade" :disabled="loading()" class="btn btn-primary w-full py-2.5 text-sm mt-7">{{ loading() ? 'Redirecting…' : 'Upgrade to Pro' }}</button>
-        @if (err())
-          <p class="err text-xs text-center mt-3">{{ err() }}</p>
-        @endif
-      </div>
-    </div>
-    <p class="text-center text-xs mt-10 text-subtle">Prefer to self-host? bughq is open source and free to run yourself.</p>
-  </div>
-</div>
+      </section>
+
+      <section class="section shell reveal" aria-label="Plans">
+        <div class="grid md:grid-cols-2 gap-5">
+          <div class="card p-7">
+            <div class="text-sm font-semibold uppercase tracking-wider text-subtle">Free</div>
+            <div class="mt-3"><span class="wordmark text-4xl">$0</span><span class="text-sm text-subtle"> / forever</span></div>
+            <p class="text-sm mt-2 text-muted">Everything you need to get started.</p>
+            <ul class="mt-6 space-y-2.5 text-sm">
+              <li class="flex items-center gap-2"><span class="check">✓</span> 1 project</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> 5k errors / mo</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> 30-day retention</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> Community support</li>
+            </ul>
+            <StxLink to="/register" class="btn ghost w-full mt-7">Get started</StxLink>
+          </div>
+
+          <div class="card card-pro p-7">
+            <div class="text-sm font-semibold uppercase tracking-wider text-accent">Pro</div>
+            <div class="mt-3">
+              <span class="wordmark text-4xl">{{ interval() === 'yearly' ? '\$190' : '\$19' }}</span><span class="text-sm text-subtle">{{ interval() === 'yearly' ? ' / year' : ' / month' }}</span>
+            </div>
+            <p class="text-sm mt-2 text-muted">For teams and sites that are growing.</p>
+            <ul class="mt-6 space-y-2.5 text-sm">
+              <li class="flex items-center gap-2"><span class="check">✓</span> Unlimited projects</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> Unlimited errors</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> Full retention</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> Priority support</li>
+            </ul>
+            <button @click="upgrade" :disabled="loading()" class="btn primary w-full mt-7">{{ loading() ? 'Redirecting…' : 'Upgrade to Pro' }}</button>
+            @if (err())
+              <p class="err text-xs text-center mt-3">{{ err() }}</p>
+            @endif
+          </div>
+        </div>
+        <p class="text-center text-xs mt-10 text-subtle">Prefer to self-host? bughq is open source and free to run yourself.</p>
+      </section>
+    </main>
+@endsection
