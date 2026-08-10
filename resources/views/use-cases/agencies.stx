@@ -21,7 +21,7 @@ useSeoMeta({
         <h1>One project per client, one place to watch them all.</h1>
         <p>You maintain a dozen sites on a dozen stacks. bughq keeps each client as its own isolated project with its own issues, releases, and members, so you always know which build on which site started erroring.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <a class="btn primary" href="/register">Get started</a>
           <StxLink class="btn ghost" to="/features/self-host">Self-hosting</StxLink>
         </div>
       </section>
@@ -91,7 +91,7 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Give every client site a net under it.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <a class="btn primary" href="/register">Get started</a>
             <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
           </div>
         </div>

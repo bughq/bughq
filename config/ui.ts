@@ -59,21 +59,33 @@ export default {
   //
   // `interceptAllLinks: false` — SPA navigation is now opted INTO, by writing
   // <StxLink>, rather than applied to every anchor and opted out of. 263 links
-  // were converted to reach this point; the only plain <a href="/…"> left are
-  // the four /api/auth/*/redirect ones.
+  // were converted to reach this point. Roughly 66 plain <a href="/…"> remain
+  // deliberately — the marketing <-> app boundary crossings and the marketing
+  // auth CTAs — and they are full navigations because they are unmarked, not
+  // because of any attribute written on them.
   //
   // This was previously `true` and documented as impossible to turn off,
   // because the marketing site's nav and footer were plain anchors and the flag
   // was the only thing making them navigate. Converting them removed that
   // dependency. The `data-no-router` escape hatches on the app -> marketing
-  // links went with it: those pages now report `stx-layout-group`, and the
-  // router already full-reloads on a group change of its own accord
-  // (stx-router/dist/client.js:255-257), so the boundary is handled by the
-  // framework instead of by an attribute on every link.
+  // links went with it, because turning the flag off had already made them
+  // unreachable: the click handler matches [data-stx-link] first and returns on
+  // an unmarked anchor before the opt-out is ever consulted. The boundary is
+  // held by the shell instead — checkLayoutChange full-reloads whenever the
+  // layout group differs (stx-router/dist/client.js:419-429). The renderer
+  // stamps that group into the page: process.ts emits `<meta
+  // name="stx-layout-group">` alongside `<meta name="stx-layout">` on every
+  // laid-out page, and getCurrentLayoutGroup reads that meta and returns.
+  // `defaultLayoutGroup` exists only as the fallback for a page that ships no
+  // such meta, which no page here does — so app pages report `default` and
+  // marketing pages report `marketing`, and crossing between them reloads.
   //
-  // The OAuth links keep `data-no-router` permanently. They are server
-  // redirects, not a layout change, so the group check does not catch them and
-  // a fragment fetch would swallow the redirect instead of following it.
+  // The four OAuth links keep `data-no-router` even though it is just as inert
+  // today. It is a latch rather than documentation: theirs is the only
+  // non-idempotent target left — an endpoint the router cannot render gets
+  // fetched and then navigated to, hitting it twice, which on a redirect mints
+  // state twice — and the router now honours the opt-out on marked links, so
+  // the attribute starts working the moment one of these becomes an <StxLink>.
   //
   // Pinned rather than inherited because the defaults disagree — stx-router's
   // own default is `false` and bun-plugin-stx's serve path hardcodes `true` on

@@ -30,7 +30,7 @@ useSeoMeta({
         <h1>bughq vs GlitchTip</h1>
         <p>GlitchTip is the other open-source name here, and a genuinely good one. It reimplements a Sentry-compatible API, so you can point existing Sentry SDKs straight at it, which is a real advantage if you are migrating off Sentry. bughq is a different bet: a Stacks-native, Postgres-only app with its own SDK and a tighter, more opinionated triage flow. If SDK compatibility is your priority, GlitchTip is hard to beat; if you want a self-contained app that matches this stack, bughq fits.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <a class="btn primary" href="/register">Get started</a>
           <StxLink class="btn ghost" to="/compare">All alternatives</StxLink>
         </div>
       </section>
@@ -140,7 +140,7 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Own your error tracking.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <a class="btn primary" href="/register">Get started</a>
             <StxLink class="btn ghost" to="/features/self-host">Read about self-hosting</StxLink>
           </div>
         </div>

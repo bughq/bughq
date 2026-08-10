@@ -30,7 +30,7 @@ useSeoMeta({
         <h1>bughq vs Bugsnag</h1>
         <p>Bugsnag, now part of SmartBear, is polished stability monitoring with release health and stability targets baked into the product. It is closed source and primarily delivered as SaaS. If you want to own the data and run error tracking yourself on plain Postgres, bughq is the open alternative that covers the same capture-and-triage loop.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <a class="btn primary" href="/register">Get started</a>
           <StxLink class="btn ghost" to="/compare">All alternatives</StxLink>
         </div>
       </section>
@@ -140,7 +140,7 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Own your error tracking.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <a class="btn primary" href="/register">Get started</a>
             <StxLink class="btn ghost" to="/features/self-host">Read about self-hosting</StxLink>
           </div>
         </div>

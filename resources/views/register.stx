@@ -102,7 +102,7 @@ input[readonly].field { opacity: 0.85; }
 <div class="min-h-[100dvh] flex items-center justify-center px-5 py-12">
   <div class="w-full max-w-sm">
     <div class="text-center mb-8">
-      <a href="/" class="wordmark text-2xl" data-no-router>bughq</a>
+      <a href="/" class="wordmark text-2xl">bughq</a>
       <p class="text-sm mt-2 text-subtle">Create your account</p>
     </div>
 

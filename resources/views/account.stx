@@ -81,7 +81,7 @@ if (token) {
 
 <div class="min-h-[100dvh]">
   <header class="max-w-3xl mx-auto flex items-center justify-between px-5 md:px-6 h-16">
-    <a href="/" class="wordmark text-lg" data-no-router>bughq</a>
+    <a href="/" class="wordmark text-lg">bughq</a>
     <div class="flex items-center gap-2.5">
       <StxLink to="/dashboard" class="btn btn-ghost px-3.5 py-2 text-sm">Dashboard</StxLink>
       <button @click="logout" class="btn btn-ghost px-3.5 py-2 text-sm">Log out</button>
@@ -145,7 +145,7 @@ if (token) {
     </section>
 
     <p class="text-sm text-subtle">
-      Signed in with a private token. <a href="/" class="text-accent" data-no-router>Back to site</a>
+      Signed in with a private token. <a href="/" class="text-accent">Back to site</a>
     </p>
   </div>
 </div>

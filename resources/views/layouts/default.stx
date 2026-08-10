@@ -14,27 +14,30 @@
         over the next page.
 
      3. In-app links use <StxLink to="...">, which renders a plain <a> carrying
-        `data-stx-link`. The router matches [data-stx-link] FIRST and does not
-        consult shouldIntercept() for it — so `data-no-router` on an StxLink is
-        silently ignored. Any link that must not be intercepted has to stay a
-        plain <a> (see below).
+        `data-stx-link`. The router matches [data-stx-link] FIRST, but a marked
+        link still has to clear the opt-out set, so `data-no-router` on an
+        StxLink is honoured (client.js:1334-1336; it used to be ignored). Any
+        link that must not be intercepted is still simplest left a plain <a>
+        (see below).
 
      Marketing pages (/, /features/*, /use-cases/*, /compare/*) are NOT
      fragments — each is a self-contained document with its own <head> and
      /marketing.css. Links from an app page to one of those cross a shell
      boundary the router cannot fragment-swap: the marketing stylesheet lives
      in a <head> the swap never brings along, so the page arrives unstyled.
-     Those links therefore stay plain <a href="/"> with `data-no-router`, and
-     do a normal navigation. Same for the /api/auth/*/redirect OAuth links,
-     which are server redirects: intercepting one fetches the redirect as a
-     fragment instead of following it.
+     Those links therefore stay plain <a href="/">, and do a normal navigation.
+     Same for the /api/auth/*/redirect OAuth links, which are server redirects:
+     intercepting one fetches the redirect as a fragment instead of following
+     it.
 
-     `data-no-router` only works because config/ui.ts sets
-     `router.interceptAllLinks: true` — the marketing site's ~64 plain nav and
-     footer anchors depend on that flag for SPA navigation, so it cannot be
-     turned off without converting them to <StxLink> first. See the comment in
-     config/ui.ts. Unifying both shells onto one layout would remove the
-     marketing-boundary exception entirely. --}}
+     Staying a plain <a> is the whole mechanism, because config/ui.ts now sets
+     `router.interceptAllLinks: false` — an unmarked anchor is never claimed.
+     That flag used to be `true`, which is why these links also carried
+     `data-no-router`; converting the marketing site's nav and footer anchors to
+     <StxLink> is what allowed it to be turned off, and the attributes have
+     since been removed as dead weight. The four OAuth links keep theirs as a
+     latch — see the comment in config/ui.ts. Unifying both shells onto one
+     layout would remove the marketing-boundary exception entirely. --}}
 <main>
 @yield('content')
 </main>

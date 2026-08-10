@@ -33,7 +33,7 @@ useSeoMeta({
         <h1>All the alternatives, compared honestly.</h1>
         <p>Every error tracker here is good at what it does, and most of them are closed source or hosted only. bughq is the open one you run on your own Postgres. These pages lay out the trade-offs side by side, including where each tool still beats us.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <a class="btn primary" href="/register">Get started</a>
           <StxLink class="btn ghost" to="/features/self-host">Read about self-hosting</StxLink>
         </div>
       </section>
@@ -70,7 +70,7 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Own your error tracking.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <a class="btn primary" href="/register">Get started</a>
             <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
           </div>
         </div>

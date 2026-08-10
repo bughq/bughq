@@ -21,7 +21,7 @@ useSeoMeta({
         <h1>Pages that mean something, at 3am.</h1>
         <p>An alert that fires for every known warning trains you to ignore it. bughq tells you when an issue is genuinely new or spiking, and stays quiet for the errors you have already seen and handled.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <a class="btn primary" href="/register">Get started</a>
           <StxLink class="btn ghost" to="/features/alerts">Alerts and triage</StxLink>
         </div>
       </section>
@@ -122,7 +122,7 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Give on-call a net under it.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <a class="btn primary" href="/register">Get started</a>
             <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
           </div>
         </div>

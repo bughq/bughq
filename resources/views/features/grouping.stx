@@ -21,7 +21,7 @@ useSeoMeta({
         <h1>Ten thousand errors, one issue.</h1>
         <p>Identical errors fold into a single issue by fingerprint, with a live event count and an affected-user tally. Your inbox becomes signal instead of a wall of duplicates.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register" data-no-router>Get started</a>
+          <a class="btn primary" href="/register">Get started</a>
           <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
         </div>
       </section>
@@ -122,7 +122,7 @@ useSeoMeta({
         <div class="cta-band">
           <h2>Ship with a net under you.</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register" data-no-router>Get started</a>
+            <a class="btn primary" href="/register">Get started</a>
             <StxLink class="btn ghost" to="/docs">Read the docs</StxLink>
           </div>
         </div>

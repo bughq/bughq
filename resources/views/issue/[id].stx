@@ -470,7 +470,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
   <div class="mx-auto" style="max-width: 78rem">
 
     <div class="flex items-center justify-between gap-3 mb-5">
-      <a href="/dashboard" class="backlink inline-flex items-center gap-1.5 text-sm" data-no-router>
+      <a href="/dashboard" class="backlink inline-flex items-center gap-1.5 text-sm">
         <span>&larr;</span> Back to issues
       </a>
       <div class="flex items-center gap-2">

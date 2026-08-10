@@ -76,7 +76,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 <div class="min-h-[100dvh] flex items-center justify-center px-5 py-12">
   <div class="w-full max-w-md">
     <div class="text-center mb-8">
-      <a href="/" class="wordmark text-2xl" data-no-router>bughq</a>
+      <a href="/" class="wordmark text-2xl">bughq</a>
     </div>
 
     <div class="text-center mb-8">

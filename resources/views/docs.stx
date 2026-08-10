@@ -20,7 +20,7 @@ useSeoMeta({
         <h1>From install to first grouped issue in minutes.</h1>
         <p>bughq is one SDK and one init call. Drop it into your app, point it at your project's DSN, and every uncaught error is captured, fingerprinted, and grouped. Start here, then dive into the topic you need.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="/register" data-no-router>Create a project</a>
+          <a class="btn primary" href="/register">Create a project</a>
           <a class="btn ghost" href="https://github.com/stacksjs/bughq">View on GitHub</a>
         </div>
       </section>
@@ -114,7 +114,7 @@ bughq.init({
         <div class="cta-band">
           <h2>Ready to catch your first issue?</h2>
           <div class="cta-actions">
-            <a class="btn primary" href="/register" data-no-router>Create a project</a>
+            <a class="btn primary" href="/register">Create a project</a>
             <StxLink class="btn ghost" to="/use-cases">See use cases</StxLink>
           </div>
         </div>

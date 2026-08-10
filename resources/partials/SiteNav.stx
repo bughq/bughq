@@ -42,10 +42,10 @@
     </div>
 
     @if (signedIn)
-      <a class="btn nav-cta primary sm" href="/dashboard" data-no-router>Dashboard</a>
+      <a class="btn nav-cta primary sm" href="/dashboard">Dashboard</a>
     @else
-      <a class="nav-login" href="/login" data-no-router>Log in</a>
-      <a class="btn nav-cta primary sm" href="/register" data-no-router>Sign up</a>
+      <a class="nav-login" href="/login">Log in</a>
+      <a class="btn nav-cta primary sm" href="/register">Sign up</a>
     @endif
 
     <details class="nav-menu">
@@ -72,10 +72,10 @@
         <StxLink to="/docs">Docs</StxLink>
         <a href="https://github.com/stacksjs/bughq">GitHub</a>
         @if (signedIn)
-          <a class="btn primary sm" href="/dashboard" data-no-router>Dashboard</a>
+          <a class="btn primary sm" href="/dashboard">Dashboard</a>
         @else
-          <a href="/login" data-no-router>Log in</a>
-          <a class="btn primary sm" href="/register" data-no-router>Sign up</a>
+          <a href="/login">Log in</a>
+          <a class="btn primary sm" href="/register">Sign up</a>
         @endif
       </div>
     </details>
