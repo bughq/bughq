@@ -201,6 +201,28 @@ function fmtDate(iso: string | null): string {
   if (Number.isNaN(d.getTime())) return String(iso)
   return `${d.toISOString().replace('T', ' ').slice(0, 19)} UTC`
 }
+/**
+ * Short form of an event id, for the "Recent events" list.
+ *
+ * That list's primary label has to answer WHICH event a row is. A browser event
+ * answers it with its `url`; every server-side SDK leaves that column null, and
+ * the fallback used to be the environment — which the right-hand column of the
+ * same row already prints. So a Node project's list read "production …
+ * production" on all 25 rows, with nothing at all to tell one event from the
+ * next. The id is the identity of last resort: message, type and culprit are the
+ * values the rows were grouped BY, so they are constant within an issue, and it
+ * is the id you quote in a support thread. Not the only column that varies —
+ * release, environment and the affected user do too (measured: one issue here
+ * spans 2 releases and 3 users) — but those are shown elsewhere on the row and
+ * none of them identifies a single event.
+ *
+ * Truncated because 24 hex characters is a scrollbar, not a label; the row
+ * carries the whole id in its `title` for copying. Guarded despite the
+ * non-nullable type — every row on this page came out of `db.unsafe`.
+ */
+function shortEventId(id: string): string {
+  return id ? id.slice(0, 8) : 'event'
+}
 // The columns this reads (`metadata`, `user_context`) are JSON *text*, and older
 // rows can hold anything — so the return is deliberately `unknown`, forcing the
 // caller to narrow rather than trusting a shape the database does not enforce.
@@ -787,7 +809,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
                 <div class="flex items-center gap-3 px-4 py-2.5" style="border-top:1px solid var(--border-2)">
                   <span class="shrink-0 rounded-full" style="width:7px; height:7px; background: {{ levelColor(ev.severity) }}; box-shadow: 0 0 8px color-mix(in srgb, {{ levelColor(ev.severity) }} 60%, transparent)"></span>
                   <div class="min-w-0 flex-1">
-                    <div class="text-sm truncate">{{ ev.url || ev.environment || 'event' }}</div>
+                    <div class="text-sm truncate {{ ev.url ? '' : 'mono' }}" title="{{ ev.url || ev.id }}">{{ ev.url || shortEventId(ev.id) }}</div>
                     <div class="text-xs mono truncate text-subtle">{{ [ev.browser, ev.os, ev.framework, ev.release].filter(Boolean).join(' · ') || ev.category || '-' }}</div>
                   </div>
                   <div class="text-right shrink-0">

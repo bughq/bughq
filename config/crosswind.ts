@@ -143,6 +143,12 @@ export default {
         muted: 'var(--text-2)',
         subtle: 'var(--text-3)',
         accent: 'var(--accent)',
+        // `--ok` has existed since this palette was written and was only ever
+        // reachable as `var(--ok)` in a page's own CSS. Registering it makes the
+        // success state a utility like every other colour here, which is what
+        // the resolved chip below needs — `border-[var(--ok)]` is one of the
+        // arbitrary border values this crosswind silently drops.
+        ok: 'var(--ok)',
       },
       fontFamily: {
         sans: ['Space Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -213,7 +219,7 @@ export default {
     // Raised surface. Three copies, byte-identical.
     panel: 'bg-panel border border-solid border-line rounded-[12px]',
 
-    // Metadata chip on an issue row: environment, release, "new in this
+    // Metadata chip on an issue row: status, environment, release, "new in this
     // release". Quiet by default — this sits under the title and must not
     // compete with it or with the level colour on the same row.
     //
@@ -229,6 +235,10 @@ export default {
     'tag-prod': 'text-muted',
     // The one chip that is a finding rather than a label, so it gets the accent.
     'tag-new': 'text-accent border-accent',
+    // A row that is done. Green rather than grey because this is the one chip
+    // that contradicts the row it sits on — everything else about a resolved
+    // issue (level rail, error type, event count) still reads as a live problem.
+    'tag-resolved': 'text-ok border-ok',
 
     // Square icon button — theme toggle, copy, row actions. dashboard.stx,
     // settings.stx and issue/[id].stx declare this identically.

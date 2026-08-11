@@ -6,6 +6,38 @@ useSeoMeta({
   // signed out can load.
   robots: 'noindex, nofollow',
 })
+
+const { db } = await import('@stacksjs/database')
+
+// Authenticate the render, like every other auth-walled page here. This screen
+// used to be the one that did not: it rendered the form to anybody and only
+// discovered a dead token from the 401 on submit — i.e. after you had typed a
+// name and picked a platform, both of which the redirect then threw away. The
+// cookie is present in both cases, so only resolving it tells the two apart.
+const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
+let user = null
+if (token) {
+  try {
+    const { Auth } = await import('@stacksjs/auth')
+    user = await Auth.getUserFromToken(token)
+  }
+  catch { user = null }
+}
+
+// Owned OR joined — the scope /projects and the dashboard switcher both call
+// "your apps", so the heading agrees with the page you arrived from. A count,
+// not the rows: nothing on this screen renders an app, only whether any exist.
+let projectCount = 0
+if (user) {
+  const counted = (await db.unsafe(
+    `SELECT COUNT(DISTINCT p.id) AS n
+     FROM projects p
+     LEFT JOIN project_members m ON m.project_id = p.id AND lower(m.email) = $2
+     WHERE p.owner_id = $1 OR m.email IS NOT NULL`,
+    [Number(user.id), String(user.email ?? '').toLowerCase()],
+  ))?.[0]
+  projectCount = Number(counted?.n ?? 0)
+}
 </script>
 
 <script client>
@@ -15,16 +47,11 @@ useSeoMeta({
 const error = state('')
 const loading = state(false)
 
-function ensureAuthed() {
-  const t = useStore('session').token()
-  if (!t) {
-    window.location.replace('/login')
-    return
-  }
-  // Nothing to mirror: token() reads the cookie, so if it is non-empty the
-  // cookie already exists and the server will see it.
-}
-ensureAuthed()
+// The "are you signed in" check used to live here as an ensureAuthed() that ran
+// after hydration and only tested that the cookie was non-empty — which a dead
+// token also is. It is now the pre-paint guard at the bottom of this file,
+// reading the server's own verdict. The 401 branch in handleSubmit stays: a
+// token can still die between render and submit.
 
 // Reading an uncontrolled field is two narrowings: `e.target` is an EventTarget
 // and `form.elements` hands back Elements, and neither of those carries a
@@ -90,8 +117,16 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       <a href="/" class="wordmark text-2xl">bughq</a>
     </div>
 
+    @if (!user)
+      <div id="auth-pending" class="text-center py-24 text-sm text-subtle">Loading…</div>
+    @endif
+
+    @if (user)
     <div class="text-center mb-8">
-      <h1 class="text-xl font-semibold tracking-tight">Create your first app</h1>
+      {{-- "your first" is a claim about the account, and it was hardcoded, so it
+           greeted people on their fifth app too. projectCount is the same
+           owned-or-joined scope /projects counts. --}}
+      <h1 class="text-xl font-semibold tracking-tight">{{ projectCount === 0 ? 'Create your first app' : 'Create a new app' }}</h1>
       <p class="text-sm mt-2 text-subtle">Each app gets its own error stream and ingest key.</p>
     </div>
 
@@ -122,5 +157,30 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
         {{ loading() ? 'Creating…' : 'Create app' }}
       </button>
     </form>
+    @endif
   </div>
 </div>
+
+<!-- Client guard: same pre-paint recovery dashboard, /projects and settings all
+     run. Deliberately NOT a client directive — it has to run before paint, and
+     it navigates rather than rendering anything.
+
+     Do not write a literal script tag in this comment: the fragment swap
+     re-executes scripts by scanning the incoming HTML for them, and it matches
+     inside comments, so the words alone produce a SyntaxError mid-navigation. -->
+<script>
+(function () {
+  // Raw document.cookie because this is a bare script that runs before the
+  // signals runtime exists, so useStore is not defined yet.
+  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) { window.location.replace('/login'); return }
+  // The cookie WAS sent and the server still rendered the unauthenticated
+  // state, so the token is dead — expired, revoked, or replaced by a newer
+  // login. A presence test cannot see that; only the server's verdict can.
+  // Leaving now is the whole point: this page's form is the one you lose work
+  // in if the bounce waits for submit.
+  if (document.getElementById('auth-pending')) {
+    document.cookie = 'bughq_token=; path=/; max-age=0'
+    window.location.replace('/login')
+  }
+})()
+</script>

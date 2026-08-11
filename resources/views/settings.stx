@@ -296,9 +296,16 @@ function toggleReveal() {
   revealed.set(!revealed())
 }
 
+// 404, not 401, and that is not a slip. A key-only client sends no project id,
+// so /errors resolves the project BY the key (routes/errors.ts) — a retired key
+// matches no row at all, and authorizeIngest answers `404 unknown project`
+// before it ever gets as far as comparing keys. 401 `invalid ingest key` is
+// reachable only by a client that pins a project id AND sends the wrong key for
+// it, which no snippet this page hands out does. The paragraph under the key
+// field quotes the same code; the two have to keep saying the same thing.
 function rotateKey() {
   const ask = window.stxConfirm
-    ? window.stxConfirm('The current key stops working immediately — any SDK still sending it will get 401 until you update its config. Continue?', { title: 'Rotate API key?', confirmText: 'Rotate key', cancelText: 'Cancel', type: 'warning' })
+    ? window.stxConfirm('The current key stops working immediately — any SDK still sending it is rejected with 404 unknown project until you update its config. Continue?', { title: 'Rotate API key?', confirmText: 'Rotate key', cancelText: 'Cancel', type: 'warning' })
     : Promise.resolve(window.confirm('Rotate the API key? The current key stops working immediately.'))
   Promise.resolve(ask).then((ok) => {
     if (!ok)
@@ -321,8 +328,8 @@ function rotateKey() {
         // and, twice, in the install snippet — once as text and once as what
         // the snippet's Copy button puts on your clipboard. Updating only the
         // field left the rest showing the dead key, so rotating and then
-        // copying the snippet handed you a key guaranteed to 401, which is the
-        // exact thing the success note tells you to go and do.
+        // copying the snippet handed you a key guaranteed to be turned away,
+        // which is the exact thing the success note tells you to go and do.
         //
         // Patching them client-side was tried and reverted. The install snippet
         // for a browser project IS an sdk.js script tag, and making it reactive
@@ -663,6 +670,15 @@ function dzMatches(): boolean {
   return dzTyped().trim() === dzProjectName
 }
 
+// The other half of the confirm button's disabled state. Dimming it says it is
+// unavailable; only this says why — a disabled button takes no clicks and shows
+// no title, so it cannot explain itself, and a mistyped phrase otherwise looked
+// exactly like a broken button. An empty field is not a mismatch, it is not
+// having started, so this stays quiet until something has actually been typed.
+function dzMismatch(): boolean {
+  return dzTyped().trim() !== '' && !dzMatches()
+}
+
 function dzConfirmLabel(): string {
   return dzBusy() ? dzCopy().busy : dzCopy().confirm
 }
@@ -751,6 +767,16 @@ html { scroll-behavior: smooth; }
 .btn-ghost:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .btn-danger { border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); color: var(--warn); border-radius: 9px; background: var(--panel); transition: all 0.15s ease; }
 .btn-danger:hover { color: #fff; background: var(--warn); border-color: var(--warn); }
+/* .btn has had a disabled state since the start; .btn-danger never got one, and
+   every :disabled binding in this file lands on a danger button — Rotate while a
+   rotation is in flight, each Remove while its request is, and the confirm button
+   that stays inert until the typed phrase matches. All of them rendered
+   identically to a live button, and the hover rule above still filled them solid
+   red under the cursor, which reads as armed rather than unavailable. The hover
+   override has to restore all three properties: `all 0.15s ease` above means a
+   partial reset animates back to the danger fill. */
+.btn-danger:disabled { opacity: 0.55; cursor: default; }
+.btn-danger:disabled:hover { color: var(--warn); background: var(--panel); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
 .field:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 .badge { border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; padding: 2px 9px; }
 .badge-slack { color: #fff; background: var(--slack); }
@@ -818,7 +844,11 @@ html { scroll-behavior: smooth; }
           @if (projects.length > 1)
             <select @change="switchProject" aria-label="Switch project" class="panel mono px-3 py-1.5 text-sm text-muted">
               @foreach (projects as p)
-                <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}</option>
+                {{-- The same marker dashboard.stx puts on its options. An
+                     archived project is not capturing anything, and this page is
+                     where you come to unarchive it — so of the two selectors it
+                     is the one that can least afford to hide the state. --}}
+                <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}{{ p.is_active === false ? ' (archived)' : '' }}</option>
               @endforeach
             </select>
           @else
@@ -827,7 +857,7 @@ html { scroll-behavior: smooth; }
                  so the guard is real — but template expressions are checked one at
                  a time and cannot see it, and asserting non-null would be claiming
                  something this expression has not established. --}}
-            <span class="mono text-sm text-muted">{{ activeProject?.name }}</span>
+            <span class="mono text-sm text-muted">{{ activeProject?.name }}{{ activeProject?.is_active === false ? ' (archived)' : '' }}</span>
           @endif
         </div>
         <p class="text-sm mt-1.5 text-subtle">Manage the API key, team, alerts, and deletion for this project.</p>
@@ -846,7 +876,18 @@ html { scroll-behavior: smooth; }
         <div class="sec-title mb-3">Install</div>
         <div class="panel px-5 py-5">
           <div class="flex items-center justify-between gap-3 mb-3.5">
-            <p class="text-sm text-subtle">Wire bughq into <span class="mono text-muted">{{ activeProject?.name }}</span> to start capturing errors — they group into issues automatically.</p>
+            {{-- An archived project's ingest turns every event away with 403
+                 `project inactive` (app/Errors/ingest.ts) — before the key is
+                 even looked at — so the usual "wire this up to start capturing"
+                 is an instruction that cannot succeed. The snippet itself is
+                 still correct and still worth copying; what changes is that
+                 nothing arrives until the project is unarchived. Same voice as
+                 the archived notice in the danger zone below. --}}
+            @if (activeProject.is_active === false)
+              <p class="text-sm text-subtle"><span class="mono text-muted">{{ activeProject?.name }}</span> is archived, so its ingest rejects every event with <span class="mono">project inactive</span> — installing this now captures nothing. Unarchive it in the danger zone below first.</p>
+            @else
+              <p class="text-sm text-subtle">Wire bughq into <span class="mono text-muted">{{ activeProject?.name }}</span> to start capturing errors — they group into issues automatically.</p>
+            @endif
             <span class="badge badge-soft shrink-0">{{ guide.label }}</span>
           </div>
           @if (guide.install)
@@ -876,8 +917,11 @@ html { scroll-behavior: smooth; }
             <button @click="copyText('key', currentKey())" :text="copyLabel('key')" class="btn-ghost px-3 py-2 text-sm font-medium">Copy</button>
             <button @click="rotateKey" :disabled="rotating()" class="btn-danger px-3 py-2 text-sm font-medium">Rotate</button>
           </div>
+          {{-- The same 404 the rotate confirm quotes, for the reason spelled out
+               in the note above rotateKey: a retired key resolves to no project,
+               so the ingest never reaches the key comparison that would 401. --}}
           <p class="text-xs mt-3.5 leading-relaxed text-subtle">
-            Rotating generates a new key and <span style="color: var(--warn)">invalidates the current one immediately</span> — any SDK still sending the old key will get 401 until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
+            Rotating generates a new key and <span style="color: var(--warn)">invalidates the current one immediately</span> — any SDK still sending the old key is rejected with <span class="mono">404 unknown project</span> until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
           </p>
           @if (keyNote() && keyNote().ok)
             <span class="note show note-ok text-xs mt-2" :text="noteText(keyNote())"></span>
@@ -1052,7 +1096,16 @@ html { scroll-behavior: smooth; }
           <p class="text-sm mb-4 text-muted" :text="dzCopy().desc"></p>
           <label for="dz-confirm" class="block text-xs mb-1.5 text-subtle">Type <span class="mono text-muted">{{ activeProject?.name }}</span> to confirm</label>
           <input ref="dzInput" id="dz-confirm" type="text" class="field w-full px-3.5 py-2.5 text-sm mono mb-4" :value="dzTyped()" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
-          <div class="flex items-center justify-end gap-2">
+          <div class="flex items-center justify-end gap-2 flex-wrap">
+            {{-- Inside the button row and `w-full`, so it takes a line of its own
+                 above the buttons rather than sharing one with them. Sharing was
+                 tried: at the card's 440px there is no room left, and the confirm
+                 button wrapped to two lines and changed shape the moment the
+                 hint appeared. This way the row only exists when there is
+                 something to say and nothing else moves. --}}
+            @if (dzMismatch())
+              <span class="text-xs w-full text-subtle">Doesn't match yet — type the name exactly.</span>
+            @endif
             <button @click="dzClose" type="button" class="btn-ghost px-4 py-2.5 text-sm font-medium">Cancel</button>
             {{-- Static text as well as :text. The dialog markup is always in the
                  document, and :text only fills this in once the runtime binds —

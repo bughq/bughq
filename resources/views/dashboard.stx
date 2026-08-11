@@ -72,7 +72,7 @@ if (token) {
 let projects: DashboardProject[] = []
 let activeProject = null
 let needsOnboarding = false
-let pendingInvites = []
+let pendingInvites: DashboardInvite[] = []
 if (user) {
   // The user's own projects plus any they've been invited to (matched by email),
   // so shared projects appear in the switcher just like owned ones.
@@ -300,6 +300,18 @@ function levelLabel(level: IssueLevel | null): string {
   if (level === 'warning') return 'Warning'
   return 'Info'
 }
+// Whether a row should say which state it is in.
+//
+// Only the All tab mixes states, so only there does the answer carry
+// information: on the other two every row shares the status of the tab you are
+// standing on, and a chip on each would just repeat it. Unresolved earns no
+// chip even here — it is the state an issue is born in and the one the list is
+// otherwise entirely about, so it is the exceptions that are worth marking.
+// Ignored counts as an exception too: there is no Ignored tab, so All is the
+// only place such a row ever appears, and unmarked it reads as still open.
+function showsStatus(issue: DashboardIssue): boolean {
+  return statusFilter === 'all' && !!issue.status && issue.status !== 'unresolved'
+}
 function fromNow(iso: string | null): string {
   if (!iso) return 'never'
   const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
@@ -315,12 +327,20 @@ const stats = [
   { label: 'Events captured', value: counts.events.toLocaleString() },
 ]
 
+// The banner rows are server-rendered one per invite, and each one hides itself
+// against `dismissed`. The empty state underneath points AT those rows, so it
+// needs the same answer they do — and "is any banner still on screen" is a fact
+// that only exists client-side. Hand over the tokens so the copy can be derived
+// from the very list the banners test themselves against, rather than from a
+// second count that could disagree with them.
+const inviteTokens: string[] = pendingInvites.map(i => i.token)
+
 // Name what crosses into the client block. Without this the bridge still ships
 // these values, but untyped — the checker cannot see them, so a rename here or
 // a wrong assumption there is only found at runtime. Declaring the set makes it
 // checked, and makes the set itself reviewable: anything not listed and not
 // declared client-side is an accident.
-defineClientPayload({ token })
+defineClientPayload({ inviteTokens, token })
 </script>
 
 <script client>
@@ -362,6 +382,15 @@ function switchProject(e: Event): void {
 
 function dismissInvite(token: string): void {
   dismissed.set([...dismissed(), token])
+}
+
+// Is any invite banner still on screen? A user with no projects of their own
+// gets an empty state that points at those banners ("accept an invitation
+// above"), and dismissing the last one used to leave that sentence aimed at
+// nothing until a manual reload. Same list, same test as each banner runs on
+// itself, so the two can never disagree about what is up there.
+function invitesShowing(): boolean {
+  return inviteTokens.some(t => !dismissed().includes(t))
 }
 
 function joinLabel(token: string): string {
@@ -484,7 +513,16 @@ summary::-webkit-details-marker { display: none; }
      spills the remainder onto the page — which is exactly what the first
      attempt at this comment did. Describe the delimiters; never type them. --}}
 
-<div class="min-h-[100dvh] px-5 py-10 md:px-10">
+{{-- The top padding clears the fixed chrome, it is not taste. Upgrade and Log
+     out are position:fixed at top 16px and 31px tall, so they own the page's
+     top 47px on the right — while py-10 started the content at 40, seven pixels
+     INSIDE them. Nothing showed it until the invite banner arrived: a bordered,
+     full-width panel first in the flow, whose top-right corner the Upgrade pill
+     then painted over. The header that normally sits there overlaps the same
+     band and gets away with it only because its right-hand column wraps to a
+     second line. Below 1406px viewport the chrome reaches into this column at
+     every width, so the room has to be reserved rather than hoped for. --}}
+<div class="min-h-[100dvh] px-5 pt-16 pb-10 md:px-10">
   <div class="max-w-5xl mx-auto">
 
     @if (!user)
@@ -605,8 +643,14 @@ summary::-webkit-details-marker { display: none; }
               <span aria-hidden="true">/</span>
               <span class="mono truncate">{{ issue.culprit || issue.error_type }}</span>
             </div>
-            @if (issue.environment || issue.release || issue.newInRelease)
+            @if (showsStatus(issue) || issue.environment || issue.release || issue.newInRelease)
               <div class="flex flex-wrap items-center gap-1.5 mt-1.5 text-xs">
+                {{-- First, because it changes how the rest of the row reads: a
+                     resolved issue still shows a level rail, an error type and
+                     an event count, all of which describe a live problem. --}}
+                @if (showsStatus(issue))
+                  <span class="tag {{ issue.status === 'resolved' ? 'tag-resolved' : '' }}">{{ issue.status }}</span>
+                @endif
                 @if (issue.environment)
                   <span class="tag {{ issue.environment === 'production' ? 'tag-prod' : '' }}">
                     {{ issue.environment }}{{ issue.environmentCount > 1 ? ` +${issue.environmentCount - 1}` : '' }}
@@ -665,7 +709,15 @@ summary::-webkit-details-marker { display: none; }
     @else
       <div class="text-center py-20">
         <StxLink to="/projects" class="wordmark-link"><h1 class="wordmark text-2xl mb-3">bughq</h1></StxLink>
-        <p class="text-sm text-subtle">Accept an invitation above to get started, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
+        {{-- Two whole sentences rather than one with a swappable clause. The
+             word "above" is only true while a banner is up there, and Dismiss
+             takes them down one at a time without declining anything — so the
+             copy that survives the last dismissal has to stand on its own and
+             say where the invitation went. Both are rendered and the runtime
+             picks one; stx cloaks a directive-hidden element until then, so
+             neither flashes. --}}
+        <p class="text-sm text-subtle" @if="invitesShowing()">Accept an invitation above to get started, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
+        <p class="text-sm text-subtle" @if="!invitesShowing()">Dismissed for this visit only — reload to bring {{ inviteTokens.length === 1 ? 'the invitation' : 'them' }} back, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
       </div>
     @endif
 

@@ -258,6 +258,17 @@ declare interface DashboardProject {
 }
 
 /**
+ * A pending invitation as the dashboard's banner selects it: the join token and
+ * the name of the project it is for, which is everything one banner row prints.
+ * `token` doubles as the row's identity — it is what the dismiss list holds and
+ * what the accept call sends.
+ */
+declare interface DashboardInvite {
+  token: string
+  project_name: string
+}
+
+/**
  * An issue row as the dashboard renders it: the columns selected from `issues`,
  * plus the per-issue facets folded on from `error_events` afterwards.
  *

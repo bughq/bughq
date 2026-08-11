@@ -57,6 +57,41 @@ function fieldValue(form: HTMLFormElement, name: string): string {
   return el instanceof HTMLInputElement ? el.value : ''
 }
 
+/**
+ * Seconds left on a 429's window, from its `Retry-After` header.
+ *
+ * RFC 9110 allows either delta-seconds or an HTTP-date; the limiter behind
+ * /register sends seconds, and the date branch is here so a proxy that rewrites
+ * the header degrades to a correct number instead of a NaN in the copy. 0 means
+ * "no usable value" — the caller words that case without a duration rather than
+ * promising a wait it cannot substantiate.
+ */
+function retryAfterSeconds(header: string | null): number {
+  if (!header)
+    return 0
+  const delta = Number(header)
+  if (Number.isFinite(delta))
+    return Math.max(0, Math.ceil(delta))
+  const at = Date.parse(header)
+  return Number.isNaN(at) ? 0 : Math.max(0, Math.ceil((at - Date.now()) / 1000))
+}
+
+/**
+ * The 429 body is a bare "Too many requests", which reads as a refusal rather
+ * than a wait. The limit is 3/minute/IP, so on a shared address (office, campus,
+ * CGNAT) someone else's signup is what blocked you and there is nothing to
+ * change about your own input — without the duration there is no path forward,
+ * only a form that keeps saying no.
+ */
+function rateLimitedMessage(seconds: number): string {
+  if (seconds <= 0)
+    return 'Too many signups from your network. Please wait a minute and try again.'
+  const wait = seconds < 60
+    ? `${seconds} second${seconds === 1 ? '' : 's'}`
+    : `${Math.ceil(seconds / 60)} minute${Math.ceil(seconds / 60) === 1 ? '' : 's'}`
+  return `Too many signups from your network. Try again in ${wait}.`
+}
+
 async function handleSubmit(e: SubmitEvent): Promise<void> {
   e.preventDefault()
   if (loading())
@@ -83,6 +118,13 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
         password,
       }),
     })
+    // Read before the body: the rate limiter answers with the remaining window
+    // in a header, not in the JSON, so `data.message` alone can only ever repeat
+    // "Too many requests".
+    if (res.status === 429) {
+      error.set(rateLimitedMessage(retryAfterSeconds(res.headers.get('Retry-After'))))
+      return
+    }
     const data: RegisterResponse = await res.json().catch(() => ({}))
     if (!res.ok) {
       error.set(data.message || 'Could not create the account.')

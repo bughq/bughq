@@ -22,19 +22,27 @@ route.get('/api/me', 'Actions/MeAction').skipCsrf()
 // reveals whether an account exists. The reset side reuses the framework's
 // default action (hashed single-use tokens, expiry, session revocation).
 // The emailed link points at /reset-password (config/auth.ts passwordReset.url).
-route.post('/password/forgot', async (request: any) => {
+route.post('/password/forgot', (request: any) => {
   const email = String((request.jsonBody ?? {}).email ?? '').trim().toLowerCase()
   const uniform = { success: true, message: 'If an account exists for that email, a reset link is on its way.' }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return response.json(uniform)
-  try {
-    await passwordResets(email).sendEmail()
-  }
-  catch (err) {
-    // Transport failure must not leak account existence; surface it in the
-    // server log only.
-    console.error('[password/forgot] send failed:', err instanceof Error ? err.message : err)
-  }
+  // Identical bodies were only half of anti-enumeration — the clock was the
+  // other half, and it was leaking. sendEmail() returns from its first query
+  // when the address is unknown; a known one goes on to bcrypt a reset token
+  // and hand the mail to the transport. Awaited, that measured 0.247s against
+  // 0.0015s, so response time answered the question the body refuses to.
+  //
+  // Detaching equalises the two at the FAST number rather than padding the real
+  // path out to the slow one, and the send still happens: same fire-and-forget
+  // the invite (routes/projects.ts) and alert (routes/errors.ts) mails use.
+  // Nothing downstream waits on it — the reply is fixed text either way.
+  //
+  // The .catch is what keeps this honest: without it a transport failure is an
+  // unhandled rejection, and it must stay a server-log line rather than
+  // anything the caller can observe.
+  passwordResets(email).sendEmail()
+    .catch(err => console.error('[password/forgot] send failed:', err instanceof Error ? err.message : err))
   return response.json(uniform)
 }).skipCsrf().rateLimit(3, 'minute')
 route.post('/password/reset', 'Actions/Password/PasswordResetAction').skipCsrf().rateLimit(5, 'minute')
