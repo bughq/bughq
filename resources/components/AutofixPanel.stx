@@ -8,8 +8,12 @@ const { issueId, projectId } = defineProps<AutofixPanelProps>()
 </script>
 
 <script client>
-const autofixIssueId = '{{ issueId }}'
-const autofixProjectId = '{{ projectId }}'
+// No surrounding quotes: inside a script block `{{ }}` emits a JSON-encoded
+// literal, so it brings its own. Wrapping it produced a string that literally
+// contained the quote characters, `encodeURIComponent` turned those into %22,
+// and every request this panel makes 404'd on an id no route could match.
+const autofixIssueId = {{ issueId }}
+const autofixProjectId = {{ projectId }}
 const autofixState = state(null)
 const autofixLoading = state(true)
 const autofixStarting = state(false)

@@ -540,9 +540,16 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
       <div class="grid gap-5 items-start" style="grid-template-columns: minmax(0,1fr)">
         <div class="grid gap-5 items-start bughq-cols">
 
-          <!-- MAIN COLUMN — a <div>, not <main>: this is one grid column beside
-               the <aside>, and layouts/default.stx already provides the single
-               <main> the SPA router swaps. A second one broke the swap. -->
+          <!-- MAIN COLUMN — a div, not a main element: this is one grid column
+               beside the sidebar, and layouts/default.stx already provides the
+               single main element the SPA router swaps. A second one broke it.
+
+               Spelled out in prose on purpose. The server extracts a fragment by
+               counting main open and close tags as plain strings, and it counts
+               them inside comments too — so writing the tag literally here made
+               the count unbalanced, the extractor gave up and returned the whole
+               document, and the router (trusting X-STX-Fragment) injected that
+               document's head and body into the live main element. -->
           <div class="min-w-0 grid gap-5 items-start" style="grid-auto-rows:min-content">
 
             @if (exceptions.length)
@@ -773,7 +780,12 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
   // Viewing an issue makes its project the active one, so "Back to issues"
   // (a clean /dashboard) lands on the right project - e.g. arriving from an
   // alert email for a project you were not last browsing.
-  var proj = '{{ issue ? issue.project_id : '' }}'
+  // Unquoted: `{{ }}` in a script block emits a JSON-encoded literal and brings
+  // its own quotes. Wrapping it wrote bughq_project=%22id%22, which matched no
+  // project when the dashboard read it back — and on the not-found path wrote
+  // the string '""', which is truthy, so it stored a junk cookie rather than
+  // skipping. Bare, that path yields "" and the guard below correctly declines.
+  var proj = {{ issue ? issue.project_id : '' }}
   if (proj)
     document.cookie = 'bughq_project=' + encodeURIComponent(proj) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
 })()

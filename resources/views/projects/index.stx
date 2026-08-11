@@ -108,7 +108,7 @@ function logout() {
     </header>
 
     @if (!user)
-      <div class="text-center py-24 text-sm text-subtle">Loading…</div>
+      <div id="auth-pending" class="text-center py-24 text-sm text-subtle">Loading…</div>
     @endif
 
     @if (user)
@@ -161,5 +161,16 @@ function logout() {
   // Raw document.cookie because this is a bare <script> that runs before the
   // signals runtime exists, so useStore is not defined yet.
   if (!/(^|;)\s*bughq_token=/.test(document.cookie)) { window.location.replace('/login'); return }
+  // The cookie WAS sent but the server still rendered the unauthenticated
+  // state, so the token is dead — expired, revoked, or replaced by a newer
+  // login. The presence test above cannot see that, because a dead token is
+  // still a present cookie. Clear it and go to login; without this the page
+  // wedges on "Loading…" with no fetch pending to ever replace it. Same
+  // recovery as dashboard.stx, which had it first.
+  if (document.getElementById('auth-pending')) {
+    document.cookie = 'bughq_token=; path=/; max-age=0'
+    window.location.replace('/login')
+    return
+  }
 })()
 </script>

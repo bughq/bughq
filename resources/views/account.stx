@@ -88,9 +88,14 @@ if (token) {
     </div>
   </header>
 
-  <!-- A <div>, not <main>: layouts/default.stx already wraps every page fragment
-       in the <main> the SPA router swaps. Nesting a second one gave the router
-       two candidate containers and broke the fragment swap. -->
+  <!-- A div, not a main element: layouts/default.stx already wraps every page
+       fragment in the one main element the SPA router swaps. Nesting a second
+       gave the router two candidate containers and broke the fragment swap.
+
+       Written in prose rather than as a tag because the server's fragment
+       extractor counts those tags as plain strings and does not skip comments;
+       naming it literally unbalanced the count, so this page was served as a
+       full document and the router injected its head into the live page. -->
   <div class="max-w-3xl mx-auto px-5 md:px-6 py-8">
     <h1 class="wordmark text-2xl mb-6">Account</h1>
 
