@@ -75,6 +75,39 @@ jobs:
       - name: Typecheck
         run: bunx --bun tsc --noEmit
 
+      # This gate is for the BRIDGE WARNING, not for type errors. Be precise
+      # about that, because the name suggests more than it delivers.
+      #
+      # `tsc` above never opens a .stx file, so nothing checks the script blocks
+      # or the {{ }} expressions that make up most of this app. `stx typecheck`
+      # does — but only in single-file mode. Measured on stx 0.2.175, cache
+      # cleared between runs, with one deliberate `const x: number = "str"`
+      # planted in a client block:
+      #
+      #   stx typecheck resources/views/dashboard.stx   -> 46 error(s)
+      #   stx typecheck 'resources/**/*.stx'            ->  0 error(s)
+      #
+      # Same file, same planted error, and the glob includes it. So a glob run
+      # reporting "0 errors" says nothing about type errors, and single-file
+      # mode over-reports instead (it loses project context and invents
+      # Cannot-find-name errors), so neither is usable as an error gate yet.
+      # Filed as stacksjs/stx#1924; revisit and tighten this when it lands.
+      #
+      # The WARNING path does work in glob mode, and was verified by sabotage:
+      # removing one defineClientPayload takes it 0 -> 1 warning and fails this
+      # step, restoring it passes. That warning is "values reach this block on
+      # the implicit bridge and are untyped", which is exactly how a server
+      # value reaches client code unchecked — the class behind several real bugs
+      # here. `stx typecheck` has no --fail-on-warning, hence the grep.
+      - name: Typecheck .stx (bridge warnings)
+        run: |
+          set -o pipefail
+          bunx --bun stx typecheck 'resources/**/*.stx' | tee /tmp/stx-typecheck.log
+          if ! grep -qE '0 warning\(s\)' /tmp/stx-typecheck.log; then
+            echo "::error::stx typecheck reported warnings — declare bridge values with defineClientPayload"
+            exit 1
+          fi
+
   test:
     runs-on: ${{ matrix.os }}
     permissions:

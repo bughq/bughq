@@ -165,6 +165,17 @@ const channelEnabled = Object.fromEntries(channelView.map(c => [c.id, c.enabled]
 // The danger zone used to read these back out of data-project-name / data-active
 // on the panel. Passing them as values keeps the DOM out of it.
 const projectName = activeProject?.name || ''
+
+// Name the set that crosses into the client block, so the checker sees it.
+//
+// codeText and installText are the dangerous two: on a `javascript`, `browser`
+// or default-HTML project the install snippet IS an sdk.js script tag, and an
+// HTML parser ends a script element at the first closing tag in its text no
+// matter where it sits. Declaring them here does not reintroduce that — the
+// bridge escapes `<` to < on the way out (see the long note above) — and
+// naming them makes it explicit which values carry that hazard rather than
+// leaving it to whoever next reads the client block.
+defineClientPayload({ channelEnabled, codeText, installText, keyFull, keyMask, projectId, projectName })
 </script>
 
 <script client>

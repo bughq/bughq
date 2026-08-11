@@ -303,6 +303,13 @@ const stats = [
   { label: 'Total issues', value: counts.total.toLocaleString() },
   { label: 'Events captured', value: counts.events.toLocaleString() },
 ]
+
+// Name what crosses into the client block. Without this the bridge still ships
+// these values, but untyped — the checker cannot see them, so a rename here or
+// a wrong assumption there is only found at runtime. Declaring the set makes it
+// checked, and makes the set itself reviewable: anything not listed and not
+// declared client-side is an accident.
+defineClientPayload({ token })
 </script>
 
 <script client>

@@ -352,6 +352,10 @@ const statRows = issue ? [
 ] : []
 const lastSeenAgo = issue ? fromNow(issue.last_seen) : ''
 const firstSeenAgo = issue ? fromNow(issue.first_seen) : ''
+
+// The one value the client block reads off the bridge. Declared so the checker
+// can see it — see the note in dashboard.stx.
+defineClientPayload({ stack })
 </script>
 
 <script client>
