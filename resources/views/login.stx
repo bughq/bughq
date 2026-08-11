@@ -14,11 +14,12 @@ const anyOauth = githubEnabled || googleEnabled
 // the markup waiting to be found.
 //
 // requestContext.url() is the whole URL, so the query comes off a real URL
-// parser. Guarded the same way as issue/[id].stx — the context is not
-// guaranteed to be present on every render path.
+// parser. Guarded because the context is absent on some render paths (SSG, the
+// client bundle) — not because its shape is in doubt: types/domain.d.ts now
+// mirrors @stacksjs/config's own declaration.
 let oauthError = ''
 try {
-  const u = (typeof requestContext !== 'undefined' && requestContext.url && requestContext.url()) || ''
+  const u = typeof requestContext !== 'undefined' && requestContext.url ? requestContext.url() : ''
   if (u)
     oauthError = new URL(u).searchParams.get('error') || ''
 }
@@ -35,20 +36,39 @@ useHead({ title: 'Sign in - bughq' })
 const error = state('')
 const loading = state(false)
 
+/** What POST /login answers with, on either outcome. */
+interface LoginResponse {
+  message?: string
+  token?: string
+  access_token?: string
+  user?: unknown
+}
+
+// Reading an uncontrolled field is two narrowings: `e.target` is an EventTarget
+// and `form.elements` hands back Elements, and neither of those carries a
+// `.value`. A field the markup does not contain reads as empty rather than
+// throwing — the endpoint validates what it is sent regardless.
+function fieldValue(form: HTMLFormElement, name: string): string {
+  const el = form.elements.namedItem(name)
+  return el instanceof HTMLInputElement ? el.value : ''
+}
+
 async function handleSubmit(e: SubmitEvent): Promise<void> {
   e.preventDefault()
   if (loading())
     return
   const form = e.target
+  if (!(form instanceof HTMLFormElement))
+    return
   loading.set(true)
   error.set('')
   try {
     const res = await fetch('/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: form.elements.email.value, password: form.elements.password.value }),
+      body: JSON.stringify({ email: fieldValue(form, 'email'), password: fieldValue(form, 'password') }),
     })
-    const data = await res.json().catch(() => ({}))
+    const data: LoginResponse = await res.json().catch(() => ({}))
     if (!res.ok) {
       error.set(data.message || 'Invalid email or password.')
       return

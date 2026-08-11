@@ -26,12 +26,23 @@ function ensureAuthed() {
 }
 ensureAuthed()
 
+// Reading an uncontrolled field is two narrowings: `e.target` is an EventTarget
+// and `form.elements` hands back Elements, and neither of those carries a
+// `.value`. This form reads both an input (name) and a select (platform); a
+// field the markup does not contain reads as empty rather than throwing.
+function fieldValue(form: HTMLFormElement, name: string): string {
+  const el = form.elements.namedItem(name)
+  return el instanceof HTMLInputElement || el instanceof HTMLSelectElement ? el.value : ''
+}
+
 async function handleSubmit(e: SubmitEvent): Promise<void> {
   e.preventDefault()
   if (loading())
     return
   const form = e.target
-  const name = form.elements.name.value.trim()
+  if (!(form instanceof HTMLFormElement))
+    return
+  const name = fieldValue(form, 'name').trim()
   if (!name) {
     error.set('Give your app a name.')
     return
@@ -45,7 +56,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
         'Content-Type': 'application/json',
         'Authorization': useStore('session').authHeaders().Authorization,
       },
-      body: JSON.stringify({ name, platform: form.elements.platform.value }),
+      body: JSON.stringify({ name, platform: fieldValue(form, 'platform') }),
     })
     const data = await res.json().catch(() => ({}))
     if (res.status === 401) {

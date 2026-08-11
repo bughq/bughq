@@ -1,4 +1,22 @@
 <script server>
+/**
+ * The variables the mailer interpolates. app/Mail/SubscriptionConfirmation.ts
+ * passes `email` and `unsubscribeUrl`; everything else falls back below, so
+ * every field is optional.
+ */
+interface SubscriptionProps {
+  email?: string
+  unsubscribeUrl?: string
+  appName?: string
+  appUrl?: string
+  primaryColor?: string
+  year?: number
+}
+
+// `props` is injected by the renderer, and the typecheck harness only declares
+// it for template expressions — a script block has to name it itself.
+declare const props: SubscriptionProps
+
 const email = props.email || ''
 const unsubscribeUrl = props.unsubscribeUrl || '#'
 const appName = props.appName || 'Stacks'

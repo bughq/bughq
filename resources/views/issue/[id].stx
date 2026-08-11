@@ -11,12 +11,12 @@
 
 const { db } = await import('@stacksjs/database')
 
-// Resolve the issue id from whatever request signal the framework exposes: the
-// request URL path, the query string (`?i=<id>`, on __stxServeSearch), or an
-// injected `id` global.
+// Resolve the issue id from whatever request signal the framework exposes, in
+// order: the request URL path, the query string (`?i=<id>`, on
+// __stxServeSearch), then the route parameter.
 let issueId = ''
 try {
-  const u = (typeof requestContext !== 'undefined' && requestContext.url && requestContext.url()) || ''
+  const u = typeof requestContext !== 'undefined' && requestContext.url ? requestContext.url() : ''
   if (u) {
     const seg = new URL(u).pathname.split('/').filter(Boolean)
     const i = seg.indexOf('issue')
@@ -36,13 +36,37 @@ if (!issueId) {
     issueId = ''
   }
 }
-if (!issueId && typeof id !== 'undefined' && id)
-  issueId = String(id)
+// Last resort: the route parameter. storage/framework/stx/routes.ts declares
+// this route as `{ pattern: '/issue/:id', params: ["id"] }`, and
+// requestContext.params() is how a block reads that.
+//
+// This used to read a bare `id` global, which was actively dangerous rather than
+// merely dead. `id` IS defined — @stacksjs/auth exports
+// `declare function id(): Promise<number | undefined>` and it is auto-imported —
+// so it is a FUNCTION, and truthy. Had the URL parse and `?i=` both come back
+// empty, `String(id)` would have set issueId to the function's source text and
+// the page would have looked up an issue whose id is a JavaScript function body.
+// Unreachable in practice because the URL parse above always resolves on this
+// route, which is the only reason it never showed.
+const routeParams = typeof requestContext !== 'undefined' && requestContext.params ? requestContext.params() : {}
+if (!issueId && routeParams.id)
+  issueId = String(routeParams.id)
 
 // Authenticate + owner-scope: an issue is only visible to the owner of the
 // project it belongs to, so no tenant can read another's issue by id.
 const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
-let user = null
+/**
+ * The two fields this page reads off the signed-in user, and nothing more.
+ * Annotated rather than inferred because `user` is read inside loadData(): a
+ * `let user = null` assigned only from within a nested function is an implicit
+ * `any` there, not a shape. The framework's own UserModel is not a name a script
+ * block can reach — no value imports, and the checker sees only types/*.d.ts.
+ */
+interface Viewer {
+  id: number | string
+  email: string | null
+}
+let user: Viewer | null = null
 if (token) {
   try {
     const { Auth } = await import('@stacksjs/auth')
@@ -58,16 +82,27 @@ if (token) {
 // evidence: it was sent, and it did not resolve to anyone.
 const sessionExpired = Boolean(token) && !user
 
-let issue = null
-let events = []
+let issue: Issue | null = null
+let events: ErrorEvent[] = []
 let live = false
 
-async function loadData() {
+/** What one page load needs out of Postgres. */
+interface IssueData {
+  issue: Issue | null
+  events: ErrorEvent[]
+}
+
+// Returns what it read instead of assigning the bindings above. A mutation made
+// inside a function is invisible to the checker, so with the old shape every
+// later `issue?.…` was read against the `null` the binding was declared with —
+// the entire page typed against a value that, as far as anything could tell,
+// was never anything else.
+async function loadData(): Promise<IssueData> {
   if (!issueId || !user)
-    return
+    return { issue: null, events: [] }
   // Visible to the project owner OR an invited member (matched by email).
   const userEmail = String(user.email || '').trim().toLowerCase()
-  issue = (await db.unsafe(
+  const row: Issue | null = (await db.unsafe(
     `SELECT i.* FROM issues i JOIN projects p ON p.id = i.project_id
      WHERE i.id = $1 AND (
        p.owner_id = $2
@@ -75,29 +110,34 @@ async function loadData() {
      ) LIMIT 1`,
     [issueId, Number(user.id), userEmail],
   ))?.[0] ?? null
-  if (issue) {
-    // Count the affected users off the events, exactly as the dashboard does.
-    // i.* carries issues.users_affected, which ingest writes as a literal 0 and
-    // never updates, so reading the column had this page reporting "Users 0"
-    // for an issue the dashboard row said had hit three people. Same expression
-    // on both surfaces, so the two cannot drift apart again.
-    issue.users_affected = Number((await db.unsafe(
-      `SELECT COUNT(DISTINCT CASE WHEN user_context ~ '^\\s*\\{'
-         THEN COALESCE(user_context::jsonb ->> 'id', user_context::jsonb ->> 'email', user_context::jsonb ->> 'username', user_context)
-       END) AS n FROM error_events WHERE issue_id = $1`,
-      [issueId],
-    ))?.[0]?.n ?? 0)
+  if (!row)
+    return { issue: null, events: [] }
 
-    events = (await db.unsafe(
-      'SELECT * FROM error_events WHERE issue_id = $1 ORDER BY timestamp DESC LIMIT 25',
-      [issueId],
-    )) ?? []
-  }
-  live = true
+  // Count the affected users off the events, exactly as the dashboard does.
+  // i.* carries issues.users_affected, which ingest writes as a literal 0 and
+  // never updates, so reading the column had this page reporting "Users 0"
+  // for an issue the dashboard row said had hit three people. Same expression
+  // on both surfaces, so the two cannot drift apart again.
+  row.users_affected = Number((await db.unsafe(
+    `SELECT COUNT(DISTINCT CASE WHEN user_context ~ '^\\s*\\{'
+       THEN COALESCE(user_context::jsonb ->> 'id', user_context::jsonb ->> 'email', user_context::jsonb ->> 'username', user_context)
+     END) AS n FROM error_events WHERE issue_id = $1`,
+    [issueId],
+  ))?.[0]?.n ?? 0)
+
+  const rows: ErrorEvent[] = (await db.unsafe(
+    'SELECT * FROM error_events WHERE issue_id = $1 ORDER BY timestamp DESC LIMIT 25',
+    [issueId],
+  )) ?? []
+  return { issue: row, events: rows }
 }
 
 try {
-  await Promise.race([loadData(), new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 5000))])
+  // `never` because the timeout only ever rejects — it has no value to race
+  // with, and left un-annotated it widened the race's result to `unknown`.
+  const data = await Promise.race([loadData(), new Promise<never>((_, r) => setTimeout(() => r(new Error('timeout')), 5000))])
+  issue = data.issue
+  events = data.events
   live = true
 }
 catch {
@@ -208,34 +248,83 @@ function makeFrame(func: string, loc: string): StackFrame {
   const cleanFunc = String(func || '').replace(/^\{|\}$/g, '').trim() || '<anonymous>'
   return { func: cleanFunc, base, dir, line, col, isApp: !!file && !isVendor(file) }
 }
-function parseStack(stackStr: string, fbType: string | null, fbMsg: string | null): StackGroup[] {
-  const groups: StackGroup[] = []
-  let cur: StackGroup | null = null
-  const pushHeader = (text: string, isCause: boolean): void => {
+/**
+ * A frame plus the one flag this page adds after the fact. Which frame crashed
+ * is only knowable once every group is parsed, so it is not something makeFrame
+ * can return and not part of the ambient StackFrame.
+ */
+interface ParsedFrame extends StackFrame {
+  isCrash?: boolean
+}
+/**
+ * A run of adjacent frames as the trace renders them: one app frame on its own,
+ * or a block of consecutive vendor frames behind a single expander.
+ */
+interface FrameSegment {
+  kind: 'app' | 'system'
+  frame: ParsedFrame | null
+  frames: ParsedFrame[]
+}
+/**
+ * One exception in the trace — the top-level throw, or a `Caused by:` link.
+ *
+ * Deliberately not the ambient StackGroup: this page splits the header line into
+ * `type` and `message` because the template renders them as separate elements,
+ * and it carries the collapse grouping that is computed once the frames are in.
+ */
+interface ParsedException {
+  type: string
+  message: string
+  isCause: boolean
+  frames: ParsedFrame[]
+  segments: FrameSegment[]
+  appCount: number
+  systemCount: number
+}
+// fbType/fbMsg come off `issue`/`latest`, either of which can be absent — hence
+// undefined as well as the columns' own null.
+function parseStack(stackStr: string, fbType: string | null | undefined, fbMsg: string | null | undefined): ParsedException[] {
+  const groups: ParsedException[] = []
+  let cur: ParsedException | null = null
+  // Returns the group rather than assigning `cur` itself. An assignment made
+  // inside this closure is invisible to the checker, which then reads every
+  // later `cur.frames` as a use of the `null` cur was declared with — and the
+  // trailing-message branch below as unreachable.
+  const pushHeader = (text: string, isCause: boolean): ParsedException => {
     const idx = text.indexOf(': ')
     const type = idx === -1 ? text.trim() : text.slice(0, idx).trim()
     const message = idx === -1 ? '' : text.slice(idx + 2).trim()
-    cur = { type: type || (fbType || 'Error'), message, isCause, frames: [] }
-    groups.push(cur)
+    const group: ParsedException = {
+      type: type || (fbType || 'Error'),
+      message,
+      isCause,
+      frames: [],
+      // Filled in by the grouping pass below, for every group.
+      segments: [],
+      appCount: 0,
+      systemCount: 0,
+    }
+    groups.push(group)
+    return group
   }
-  const ensure = () => { if (!cur) pushHeader(`${fbType || 'Error'}: ${fbMsg || ''}`, false) }
+  const ensure = (): ParsedException => cur ?? pushHeader(`${fbType || 'Error'}: ${fbMsg || ''}`, false)
   for (const raw of String(stackStr || '').split('\n')) {
     const line = raw.replace(/\s+$/, '')
     if (!line.trim()) continue
     const cause = line.match(/^Caused by:\s*(.*)$/i)
-    if (cause) { pushHeader(cause[1], true); continue }
+    if (cause) { cur = pushHeader(cause[1], true); continue }
     const atParen = line.match(/^\s*at\s+(.*?)\s+\((.+)\)\s*$/)
-    if (atParen) { ensure(); cur.frames.push(makeFrame(atParen[1], atParen[2])); continue }
+    if (atParen) { cur = ensure(); cur.frames.push(makeFrame(atParen[1], atParen[2])); continue }
     const atBare = line.match(/^\s*at\s+(.+?)\s*$/)
-    if (atBare) { ensure(); cur.frames.push(makeFrame('', atBare[1])); continue }
+    if (atBare) { cur = ensure(); cur.frames.push(makeFrame('', atBare[1])); continue }
     const ffox = line.match(/^\s*(.+?)@(.+?)\s*$/)
     if (ffox && cur) { cur.frames.push(makeFrame(ffox[1], ffox[2])); continue }
-    if (!cur) pushHeader(line.trim(), false)
+    if (!cur) cur = pushHeader(line.trim(), false)
     else if (cur.frames.length === 0) cur.message = (cur.message ? `${cur.message} ` : '') + line.trim()
   }
   // Group consecutive vendor frames so they collapse into one expander.
   for (const g of groups) {
-    const segs = []
+    const segs: FrameSegment[] = []
     for (const fr of g.frames) {
       if (fr.isApp) {
         segs.push({ kind: 'app', frame: fr, frames: [] })
@@ -258,8 +347,29 @@ const exceptions = stack ? parseStack(stack, issue?.error_type, latest?.message 
 // --- rich metadata bundle --------------------------------------------------
 const userCtx = latest ? parseJson(latest.user_context) : null
 const rawMeta = latest ? parseJson(latest.metadata) : null
+/**
+ * The bundle an SDK sends in `metadata`. Every member optional: the column is
+ * JSON text, and rows older than the bundle hold whatever the app passed —
+ * carrying one of BUNDLE_KEYS is the only thing that makes a row a bundle.
+ *
+ * The member types say what a well-formed bundle looks like, not what the
+ * database guarantees, which is why each one is still re-checked below before
+ * it is read.
+ */
+interface MetaBundle {
+  extra?: unknown
+  tags?: Record<string, unknown>
+  contexts?: Record<string, unknown>
+  breadcrumbs?: Breadcrumb[]
+  sdk?: { name?: string, version?: string }
+  session?: unknown
+  client_timestamp?: unknown
+}
 const BUNDLE_KEYS = ['extra', 'tags', 'contexts', 'breadcrumbs', 'sdk', 'session', 'client_timestamp']
-const isBundle = !!(rawMeta && typeof rawMeta === 'object' && !Array.isArray(rawMeta) && BUNDLE_KEYS.some(k => k in rawMeta))
+function isMetaBundle(value: unknown): value is MetaBundle {
+  return !!value && typeof value === 'object' && !Array.isArray(value) && BUNDLE_KEYS.some(k => k in value)
+}
+const isBundle = isMetaBundle(rawMeta)
 const extra = isBundle ? (rawMeta.extra || null) : rawMeta
 const tags = isBundle && rawMeta.tags && typeof rawMeta.tags === 'object' ? rawMeta.tags : null
 const contexts = isBundle && rawMeta.contexts && typeof rawMeta.contexts === 'object' ? rawMeta.contexts : null

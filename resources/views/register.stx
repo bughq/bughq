@@ -19,7 +19,7 @@ const anyOauth = githubEnabled || googleEnabled
 let inviteEmail = ''
 let isInvite = false
 try {
-  const u = (typeof requestContext !== 'undefined' && requestContext.url && requestContext.url()) || ''
+  const u = typeof requestContext !== 'undefined' && requestContext.url ? requestContext.url() : ''
   if (u) {
     const q = new URL(u).searchParams
     inviteEmail = q.get('email') || ''
@@ -40,12 +40,34 @@ useHead({ title: 'Create your account - bughq' })
 const error = state('')
 const loading = state(false)
 
+/** What POST /register answers with, on either outcome. */
+interface RegisterResponse {
+  message?: string
+  token?: string
+  access_token?: string
+  user?: unknown
+}
+
+// Reading an uncontrolled field is two narrowings: `e.target` is an EventTarget
+// and `form.elements` hands back Elements, and neither of those carries a
+// `.value`. A field the markup does not contain reads as empty rather than
+// throwing — the endpoint validates what it is sent regardless.
+function fieldValue(form: HTMLFormElement, name: string): string {
+  const el = form.elements.namedItem(name)
+  return el instanceof HTMLInputElement ? el.value : ''
+}
+
 async function handleSubmit(e: SubmitEvent): Promise<void> {
   e.preventDefault()
   if (loading())
     return
   const form = e.target
-  if (form.elements.password.value.length < 8) {
+  if (!(form instanceof HTMLFormElement))
+    return
+  // Read once: the length check and the request body were two separate reads of
+  // the same field.
+  const password = fieldValue(form, 'password')
+  if (password.length < 8) {
     error.set('Password must be at least 8 characters.')
     return
   }
@@ -56,12 +78,12 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: form.elements.name.value,
-        email: form.elements.email.value,
-        password: form.elements.password.value,
+        name: fieldValue(form, 'name'),
+        email: fieldValue(form, 'email'),
+        password,
       }),
     })
-    const data = await res.json().catch(() => ({}))
+    const data: RegisterResponse = await res.json().catch(() => ({}))
     if (!res.ok) {
       error.set(data.message || 'Could not create the account.')
       return

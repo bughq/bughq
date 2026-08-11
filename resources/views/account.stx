@@ -12,14 +12,39 @@ useSeoMeta({
 // The account view is entirely client-rendered: /api/me is the only source, so
 // the page ships a skeleton and fills in from these signals. Nothing here
 // touches the DOM - the template binds to user() and pro().
-const user = state(null)
+
+/**
+ * The signed-in user as /api/me sends it (app/Actions/MeAction.ts). The profile
+ * columns are read best-effort there and default to null, so nothing but the id
+ * is guaranteed to carry a value.
+ */
+interface AccountUser {
+  id: number | string
+  name: string | null
+  email: string | null
+  avatar: string | null
+  provider: string | null
+  created_at: string | null
+}
+
+/** What /api/me answers with. Everything optional: a 401 sends neither field. */
+interface MeResponse {
+  user?: AccountUser
+  pro?: boolean
+}
+
+// Annotated rather than inferred: `state(null)` is a signal of exactly null, and
+// the template binds every field off it.
+const user = state<AccountUser | null>(null)
 const pro = state(false)
 
-function initial(s: string | null): string {
+// Both take the nullable fields straight off AccountUser, and undefined as well
+// so the template can reach them through `user()?.` before /api/me has answered.
+function initial(s: string | null | undefined): string {
   return (s || '?').trim().charAt(0).toUpperCase()
 }
 
-function fmtDate(v: string | null): string {
+function fmtDate(v: string | null | undefined): string {
   if (!v)
     return '--'
   const d = new Date(v)
@@ -51,7 +76,7 @@ if (token) {
       }
       return r.json()
     })
-    .then((d) => {
+    .then((d: MeResponse | null) => {
       if (!d || !d.user)
         return
       user.set(d.user)
@@ -102,22 +127,22 @@ if (token) {
     <section class="card p-6 mb-5">
       <div class="flex items-center gap-4">
         @if (user() && user().avatar)
-          <img class="avatar w-14 h-14" :src="user().avatar" alt="" width="56" height="56">
+          <img class="avatar w-14 h-14" :src="user()?.avatar" alt="" width="56" height="56">
         @endif
         @if (!user() || !user().avatar)
-          <div class="avatar w-14 h-14 grid place-items-center text-accent" style="font-weight: 700; font-size: 1.25rem">{{ user() ? initial(user().name || user().email) : '' }}</div>
+          <div class="avatar w-14 h-14 grid place-items-center text-accent" style="font-weight: 700; font-size: 1.25rem">{{ user() ? initial(user()?.name || user()?.email) : '' }}</div>
         @endif
         <div class="min-w-0">
           @if (!user())
             <div class="skeleton" style="width: 160px; height: 20px"></div>
           @endif
           @if (user())
-            <div class="text-lg font-semibold">{{ user().name || 'Your account' }}</div>
+            <div class="text-lg font-semibold">{{ user()?.name || 'Your account' }}</div>
           @endif
-          <div class="text-sm mt-1.5 text-muted">{{ user() ? (user().email || '') : '' }}</div>
+          <div class="text-sm mt-1.5 text-muted">{{ user()?.email || '' }}</div>
         </div>
         @if (user() && user().provider)
-          <span class="badge px-2.5 py-1 ml-auto">{{ user().provider }}</span>
+          <span class="badge px-2.5 py-1 ml-auto">{{ user()?.provider }}</span>
         @endif
       </div>
     </section>
@@ -143,7 +168,7 @@ if (token) {
       <div class="row flex items-center justify-between px-6 py-4">
         <div>
           <div class="text-xs uppercase tracking-wide text-subtle" style="font-family: var(--mono)">Member since</div>
-          <div class="text-base mt-1 text-muted">{{ user() ? fmtDate(user().created_at) : '--' }}</div>
+          <div class="text-base mt-1 text-muted">{{ fmtDate(user()?.created_at) }}</div>
         </div>
         <StxLink to="/dashboard" class="btn btn-ghost px-4 py-2 text-sm">Open dashboard</StxLink>
       </div>

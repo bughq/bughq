@@ -40,12 +40,25 @@ if (token) {
   catch { user = null }
 }
 
-let projects = []
-let activeProject = null
+// The four reads below go through `db.unsafe`, which returns `any`, so naming
+// the destination is the only thing that gives these rows a shape at all. Each
+// names exactly the columns its SELECT asks for rather than the whole table —
+// a row here genuinely does not carry `dsn` or `updated_at`, and promising it
+// would be the same class of lie the row types exist to stop.
+interface ProjectRow extends Pick<Project, 'id' | 'name' | 'platform' | 'ingest_key' | 'is_active'> {}
+interface ChannelRow extends Pick<AlertChannel, 'id' | 'type' | 'label' | 'webhook_url' | 'enabled' | 'created_at'> {}
+interface MemberRow extends Pick<ProjectMember, 'id' | 'email' | 'role'> {}
+/** `registered` is computed per row (`u.id IS NOT NULL`), not a project_invites column. */
+interface InviteRow extends Pick<ProjectInvite, 'id' | 'email' | 'token'> {
+  registered: boolean
+}
+
+let projects: ProjectRow[] = []
+let activeProject: ProjectRow | null = null
 let needsOnboarding = false
-let channels = []
-let members = []
-let invites = []
+let channels: ChannelRow[] = []
+let members: MemberRow[] = []
+let invites: InviteRow[] = []
 if (user) {
   // Owned projects only — settings is the owner's admin surface.
   projects = (await db.unsafe(
@@ -166,7 +179,10 @@ const installText = guide.install || ''
 const codeText = guide.code || ''
 // Each channel's on/off state, seeded into a signal so the toggle renders from
 // state rather than from a data-on attribute it also has to write back to.
-const channelEnabled = Object.fromEntries(channelView.map(c => [c.id, c.enabled]))
+// Annotated as a pair rather than left to inference: `.map` would widen
+// `[c.id, c.enabled]` to `(string | boolean)[]`, which is not the entry tuple
+// Object.fromEntries wants, and the result would lose `boolean` on the way out.
+const channelEnabled: Record<string, boolean> = Object.fromEntries(channelView.map((c): [string, boolean] => [c.id, c.enabled]))
 // The danger zone used to read these back out of data-project-name / data-active
 // on the panel. Passing them as values keeps the DOM out of it.
 const projectName = activeProject?.name || ''
@@ -235,6 +251,30 @@ function switchProject(e: Event): void {
   window.location.href = '/settings'
 }
 
+// The path segment every /api/projects/… call below is built from. `projectId`
+// is `string | null` on the server — nothing resolved means the page redirects
+// to onboarding instead — and every control that reaches these endpoints only
+// exists inside @if (user && activeProject), so by the time one can fire there
+// is a project. The client block is typechecked on its own and cannot see that,
+// so the fallback is stated once here rather than asserted at six call sites.
+const apiProjectId = projectId || ''
+
+// Every note renders through this instead of the markup reaching into the signal
+// as `keyNote().text`. The signals are `FormNote | null` and a template
+// expression is checked on its own, so it cannot see the `@if` that guards it.
+//
+// A total function rather than `?.`, because the two are not equally safe here.
+// `:text` assigns its result straight to textContent with no coercion — only
+// `:html` coerces null/undefined to '' (#1767) — so `undefined` would render as
+// the literal string "undefined". Nothing renders it today: each note's `@if`
+// compiles to a reactive attribute, and bindIf only processes an element's other
+// directives once its condition is true, so `:text` never evaluates on a null
+// note. But that makes `?.` correct only for as long as the guard stays where it
+// is, and this returns '' whether or not it does.
+function noteText(note: FormNote | null): string {
+  return note ? note.text : ''
+}
+
 // ---- API key -------------------------------------------------------------
 const currentKey = state(keyFull)
 const maskedKey = state(keyMask)
@@ -243,7 +283,10 @@ const maskedKey = state(keyMask)
 // told to go and update your SDK config with it.
 const revealed = state(justRotated)
 const rotating = state(false)
-const keyNote = state(justRotated ? { text: 'New key generated. Update your SDK config with it.', ok: true } : null)
+// Every note signal on this page is `FormNote | null` — null is "nothing to
+// say", not a note with empty text, which is what lets the @if around each one
+// decide whether the element exists at all.
+const keyNote = state<FormNote | null>(justRotated ? { text: 'New key generated. Update your SDK config with it.', ok: true } : null)
 
 function keyDisplay() {
   return revealed() ? currentKey() : maskedKey()
@@ -261,7 +304,7 @@ function rotateKey() {
     if (!ok)
       return
     rotating.set(true)
-    fetch(`/api/projects/${encodeURIComponent(projectId)}/rotate-key`, {
+    fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/rotate-key`, {
       method: 'POST',
       headers: authHeaders(),
     })
@@ -306,17 +349,31 @@ function rotateKey() {
 // no delegated listener walking up from the click target to work out which
 // button was hit. `gone` holds the ids that have left; each row's @if reads it.
 // Members and channels share it safely: ids are prefixed `mem_` and `ch_`.
-const gone = state([])
+const gone = state<string[]>([])
 const removing = state('')
 const inviting = state(false)
-const inviteNote = state(null)
+const inviteNote = state<FormNote | null>(null)
 
 function memberApi(path?: string): string {
-  return `/api/projects/${encodeURIComponent(projectId)}/members${path || ''}`
+  return `/api/projects/${encodeURIComponent(apiProjectId)}/members${path || ''}`
 }
 
 function authHeaders(): AuthHeaders {
   return useStore('session').authHeaders()
+}
+
+// Both submit handlers read their fields through this. `form.elements.email` is
+// not wrong at runtime — the collection's legacy named getter resolves it — but
+// the type does not model that getter, and `e.target` is `EventTarget | null`,
+// which carries no `elements` at all. Narrowing both hops keeps the runtime
+// behaviour and makes the two assumptions the old chain relied on (that the
+// handler is bound to a form, and that the named control is an input) things the
+// compiler checks rather than things a rebind would discover in production.
+function fieldValue(target: EventTarget | null, name: string): string {
+  if (!(target instanceof HTMLFormElement))
+    return ''
+  const field = target.elements.namedItem(name)
+  return field instanceof HTMLInputElement ? field.value : ''
 }
 
 function removeLabel(id: string): string {
@@ -346,7 +403,7 @@ function inviteMember(e: SubmitEvent): void {
   e.preventDefault()
   if (inviting())
     return
-  const email = (e.target.elements.email.value || '').trim()
+  const email = fieldValue(e.target, 'email').trim()
   if (!email) {
     inviteNote.set({ text: 'Enter an email address.', ok: false })
     return
@@ -377,23 +434,28 @@ function inviteMember(e: SubmitEvent): void {
 // The provider picker is one signal. Everything that used to be pushed into the
 // DOM when it changed — both buttons' data-sel, the URL placeholder, the help
 // text — is now read back out of it.
-const HINTS = {
+// Keyed by AlertChannelType, and the picker signal carries that same type — so
+// the two provider buttons, this lookup and the row badges cannot drift apart,
+// and a third provider would have to be added in both places or neither.
+const HINTS: Record<AlertChannelType, string> = {
   slack: 'https://hooks.slack.com/services/…',
   discord: 'https://discord.com/api/webhooks/…',
 }
-const chType = state('slack')
+const chType = state<AlertChannelType>('slack')
 const adding = state(false)
-const whNote = state(null)
+const whNote = state<FormNote | null>(null)
 
 // Toggle state lives here rather than on a data-on attribute the handler both
 // reads and writes, so a failed PATCH reverts by restoring a value instead of
 // re-deriving the old one from the attribute it just overwrote.
 const chEnabled = state(channelEnabled)
 const testing = state('')
-const tested = state(null)
+// Which channel last answered a test, and what to show on its button. One signal
+// rather than one per row, which is why it has to carry the id alongside the text.
+const tested = state<{ id: string, text: string } | null>(null)
 
 function channelApi(path?: string): string {
-  return `/api/projects/${encodeURIComponent(projectId)}/channels${path || ''}`
+  return `/api/projects/${encodeURIComponent(apiProjectId)}/channels${path || ''}`
 }
 
 function urlPlaceholder(): string {
@@ -478,7 +540,7 @@ function addChannel(e: SubmitEvent): void {
   if (adding())
     return
   const form = e.target
-  const url = (form.elements.webhook_url.value || '').trim()
+  const url = fieldValue(form, 'webhook_url').trim()
   if (!url) {
     whNote.set({ text: 'Paste a webhook URL first.', ok: false })
     return
@@ -488,7 +550,7 @@ function addChannel(e: SubmitEvent): void {
   fetch(channelApi(), {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ type: chType(), webhook_url: url, label: (form.elements.label.value || '').trim() }),
+    body: JSON.stringify({ type: chType(), webhook_url: url, label: fieldValue(form, 'label').trim() }),
   })
     .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
     .then((res) => {
@@ -515,12 +577,15 @@ function addChannel(e: SubmitEvent): void {
 // by assignment order. Now the button reads the same signal the title and copy
 // read, and a stale one is unrepresentable.
 const dzProjectName = projectName
-const dzAction = state(null)
+// Spelled out rather than inferred, so the union the comment above describes is
+// the one the compiler enforces: nothing can arm this with a third value, and
+// dzCopy has to account for the closed state.
+const dzAction = state<'archive' | 'delete' | null>(null)
 const dzTyped = state('')
 /** The confirm-phrase input, for focus on open. Registered by ref="dzInput". */
-const dzInput = useRef('dzInput')
+const dzInput = useRef<HTMLInputElement>('dzInput')
 const dzBusy = state(false)
-const dzNote = state(null)
+const dzNote = state<FormNote | null>(null)
 const unarchiving = state(false)
 
 const DZ = {
@@ -539,7 +604,11 @@ const DZ = {
 }
 
 function dzCopy(): { title: string, desc: string, confirm: string, busy: string } {
-  return DZ[dzAction()] || { title: '', desc: '', confirm: '', busy: '' }
+  // Closed means no key at all, not a missing one — the dialog stays mounted, so
+  // it still has to render something. Reading the signal once and branching gives
+  // the same empty copy the `|| {}` fallback did, without indexing DZ with null.
+  const which = dzAction()
+  return which ? DZ[which] : { title: '', desc: '', confirm: '', busy: '' }
 }
 
 function dzOpen(which: 'archive' | 'delete'): void {
@@ -570,7 +639,11 @@ function dzClose(): void {
 }
 
 function dzType(e: Event): void {
-  dzTyped.set(e.target.value)
+  // `e.target` is EventTarget | null and carries no `.value`. Narrowing rather
+  // than casting means rebinding this to anything but an input fails here, instead
+  // of writing undefined into the phrase that gates a project deletion.
+  if (e.target instanceof HTMLInputElement)
+    dzTyped.set(e.target.value)
 }
 
 // Escape is handled on the dialog, not on document. A document listener would
@@ -604,7 +677,7 @@ function dzConfirm(): void {
   dzNote.set(null)
 
   if (which === 'archive') {
-    fetch(`/api/projects/${encodeURIComponent(projectId)}/archive`, {
+    fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/archive`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({ archived: true }),
@@ -625,7 +698,7 @@ function dzConfirm(): void {
   }
 
   if (which === 'delete') {
-    fetch(`/api/projects/${encodeURIComponent(projectId)}`, { method: 'DELETE', headers: authHeaders() })
+    fetch(`/api/projects/${encodeURIComponent(apiProjectId)}`, { method: 'DELETE', headers: authHeaders() })
       .then((r) => {
         if (!r.ok) {
           dzBusy.set(false)
@@ -649,7 +722,7 @@ function unarchive(): void {
   if (unarchiving())
     return
   unarchiving.set(true)
-  fetch(`/api/projects/${encodeURIComponent(projectId)}/archive`, {
+  fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/archive`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ archived: false }),
@@ -749,7 +822,12 @@ html { scroll-behavior: smooth; }
               @endforeach
             </select>
           @else
-            <span class="mono text-sm text-muted">{{ activeProject.name }}</span>
+            {{-- Optional-chained here and at every other `activeProject` read in
+                 the markup. The whole block is inside @if (user && activeProject),
+                 so the guard is real — but template expressions are checked one at
+                 a time and cannot see it, and asserting non-null would be claiming
+                 something this expression has not established. --}}
+            <span class="mono text-sm text-muted">{{ activeProject?.name }}</span>
           @endif
         </div>
         <p class="text-sm mt-1.5 text-subtle">Manage the API key, team, alerts, and deletion for this project.</p>
@@ -768,7 +846,7 @@ html { scroll-behavior: smooth; }
         <div class="sec-title mb-3">Install</div>
         <div class="panel px-5 py-5">
           <div class="flex items-center justify-between gap-3 mb-3.5">
-            <p class="text-sm text-subtle">Wire bughq into <span class="mono text-muted">{{ activeProject.name }}</span> to start capturing errors — they group into issues automatically.</p>
+            <p class="text-sm text-subtle">Wire bughq into <span class="mono text-muted">{{ activeProject?.name }}</span> to start capturing errors — they group into issues automatically.</p>
             <span class="badge badge-soft shrink-0">{{ guide.label }}</span>
           </div>
           @if (guide.install)
@@ -789,7 +867,7 @@ html { scroll-behavior: smooth; }
         <div class="sec-title mb-3">API key</div>
         <div class="panel px-5 py-5">
           <p class="text-sm mb-4 text-subtle">
-            This key authorizes error reports for <span class="mono text-muted">{{ activeProject.name }}</span>.
+            This key authorizes error reports for <span class="mono text-muted">{{ activeProject?.name }}</span>.
             It's a public identifier (safe to ship in client code), not a secret — it says <em>which</em> project a report belongs to.
           </p>
           <div class="flex items-center gap-2 flex-wrap">
@@ -802,10 +880,10 @@ html { scroll-behavior: smooth; }
             Rotating generates a new key and <span style="color: var(--warn)">invalidates the current one immediately</span> — any SDK still sending the old key will get 401 until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
           </p>
           @if (keyNote() && keyNote().ok)
-            <span class="note show note-ok text-xs mt-2" :text="keyNote().text"></span>
+            <span class="note show note-ok text-xs mt-2" :text="noteText(keyNote())"></span>
           @endif
           @if (keyNote() && !keyNote().ok)
-            <span class="note show note-err text-xs mt-2" :text="keyNote().text"></span>
+            <span class="note show note-err text-xs mt-2" :text="noteText(keyNote())"></span>
           @endif
         </div>
       </section>
@@ -856,10 +934,10 @@ html { scroll-behavior: smooth; }
             </div>
           </form>
           @if (inviteNote() && inviteNote().ok)
-            <span class="note show note-ok text-xs mt-2.5" :text="inviteNote().text"></span>
+            <span class="note show note-ok text-xs mt-2.5" :text="noteText(inviteNote())"></span>
           @endif
           @if (inviteNote() && !inviteNote().ok)
-            <span class="note show note-err text-xs mt-2.5" :text="inviteNote().text"></span>
+            <span class="note show note-err text-xs mt-2.5" :text="noteText(inviteNote())"></span>
           @endif
           <p class="text-xs mt-3.5 leading-relaxed text-subtle">
             We email them a join link. They sign up (or log in) with that email, then accept from a banner in the app. Members can view and triage issues; only you can manage keys, members, and deletion.
@@ -907,10 +985,10 @@ html { scroll-behavior: smooth; }
             <div class="flex items-center gap-3">
               <button type="submit" :disabled="adding()" :text="adding() ? 'Adding…' : 'Add channel'" class="btn px-4 py-2.5 text-sm font-semibold">Add channel</button>
               @if (whNote() && whNote().ok)
-                <span class="note show note-ok text-xs" :text="whNote().text"></span>
+                <span class="note show note-ok text-xs" :text="noteText(whNote())"></span>
               @endif
               @if (whNote() && !whNote().ok)
-                <span class="note show note-err text-xs" :text="whNote().text"></span>
+                <span class="note show note-err text-xs" :text="noteText(whNote())"></span>
               @endif
             </div>
           </form>
@@ -939,10 +1017,10 @@ html { scroll-behavior: smooth; }
             <div class="min-w-0">
               @if (activeProject.is_active === false)
                 <div class="text-sm font-semibold mb-0.5">Unarchive this project</div>
-                <p class="text-sm text-subtle"><span class="mono text-muted">{{ activeProject.name }}</span> is archived and isn’t capturing new errors. Unarchiving resumes ingestion right away.</p>
+                <p class="text-sm text-subtle"><span class="mono text-muted">{{ activeProject?.name }}</span> is archived and isn’t capturing new errors. Unarchiving resumes ingestion right away.</p>
               @else
                 <div class="text-sm font-semibold mb-0.5">Archive this project</div>
-                <p class="text-sm text-subtle">Stops capturing new errors and pauses alerts for <span class="mono text-muted">{{ activeProject.name }}</span>. Existing issues and events are kept — you can unarchive anytime.</p>
+                <p class="text-sm text-subtle">Stops capturing new errors and pauses alerts for <span class="mono text-muted">{{ activeProject?.name }}</span>. Existing issues and events are kept — you can unarchive anytime.</p>
               @endif
             </div>
             @if (activeProject.is_active === false)
@@ -956,7 +1034,7 @@ html { scroll-behavior: smooth; }
           <div class="flex items-center justify-between gap-4 px-5 py-4">
             <div class="min-w-0">
               <div class="text-sm font-semibold mb-0.5">Delete this project</div>
-              <p class="text-sm text-subtle">Permanently deletes <span class="mono text-muted">{{ activeProject.name }}</span> and all of its issues, events, alert channels, and members. This cannot be undone.</p>
+              <p class="text-sm text-subtle">Permanently deletes <span class="mono text-muted">{{ activeProject?.name }}</span> and all of its issues, events, alert channels, and members. This cannot be undone.</p>
             </div>
             <button @click="dzOpen('delete')" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">Delete</button>
           </div>
@@ -972,14 +1050,14 @@ html { scroll-behavior: smooth; }
         <div class="dz-card panel" role="dialog" aria-modal="true" aria-labelledby="dz-title">
           <div id="dz-title" class="text-base font-semibold mb-1" :text="dzCopy().title"></div>
           <p class="text-sm mb-4 text-muted" :text="dzCopy().desc"></p>
-          <label class="block text-xs mb-1.5 text-subtle">Type <span class="mono text-muted">{{ activeProject.name }}</span> to confirm</label>
+          <label class="block text-xs mb-1.5 text-subtle">Type <span class="mono text-muted">{{ activeProject?.name }}</span> to confirm</label>
           <input ref="dzInput" type="text" class="field w-full px-3.5 py-2.5 text-sm mono mb-4" :value="dzTyped()" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
           <div class="flex items-center justify-end gap-2">
             <button @click="dzClose" type="button" class="btn-ghost px-4 py-2.5 text-sm font-medium">Cancel</button>
             <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :text="dzConfirmLabel()" type="button" class="btn-danger px-4 py-2.5 text-sm font-semibold" disabled></button>
           </div>
           @if (dzNote())
-            <span class="note show note-err text-xs mt-2.5" :text="dzNote().text"></span>
+            <span class="note show note-err text-xs mt-2.5" :text="noteText(dzNote())"></span>
           @endif
         </div>
       </div>

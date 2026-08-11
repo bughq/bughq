@@ -75,36 +75,34 @@ jobs:
       - name: Typecheck
         run: bunx --bun tsc --noEmit
 
-      # This gate is for the BRIDGE WARNING, not for type errors. Be precise
-      # about that, because the name suggests more than it delivers.
+      # `tsc` above never opens a .stx file, so without this nothing checks the
+      # script blocks or the {{ }} expressions that make up most of this app.
       #
-      # `tsc` above never opens a .stx file, so nothing checks the script blocks
-      # or the {{ }} expressions that make up most of this app. `stx typecheck`
-      # does — but only in single-file mode. Measured on stx 0.2.175, cache
-      # cleared between runs, with one deliberate `const x: number = "str"`
-      # planted in a client block:
+      # This gate was warnings-only until stx 0.2.176. On 0.2.175 a glob run
+      # could not report a type error at all: tsc skips semantic checking for
+      # the whole program when any file has a syntax error, so one unparseable
+      # block muted every other file, and `0 error(s)` across 38 files meant
+      # nothing (stacksjs/stx#1924). 0.2.176 fixed it, the same run reported 407,
+      # and Phase A took that to 0 — so errors are now load-bearing and fail the
+      # build.
       #
-      #   stx typecheck resources/views/dashboard.stx   -> 46 error(s)
-      #   stx typecheck 'resources/**/*.stx'            ->  0 error(s)
+      # --lib is required and must be a SINGLE file: the checker does not read
+      # ambient types from tsconfig `include`, and repeating the flag silently
+      # drops all but the last (stacksjs/stx#1926). That is why the SSR globals
+      # share types/domain.d.ts instead of living in a file of their own.
       #
-      # Same file, same planted error, and the glob includes it. So a glob run
-      # reporting "0 errors" says nothing about type errors, and single-file
-      # mode over-reports instead (it loses project context and invents
-      # Cannot-find-name errors), so neither is usable as an error gate yet.
-      # Filed as stacksjs/stx#1924; revisit and tighten this when it lands.
-      #
-      # The WARNING path does work in glob mode, and was verified by sabotage:
-      # removing one defineClientPayload takes it 0 -> 1 warning and fails this
-      # step, restoring it passes. That warning is "values reach this block on
-      # the implicit bridge and are untyped", which is exactly how a server
-      # value reaches client code unchecked — the class behind several real bugs
-      # here. `stx typecheck` has no --fail-on-warning, hence the grep.
-      - name: Typecheck .stx (bridge warnings)
+      # Warnings still fail too. The only one this emits is "values reach this
+      # block on the implicit bridge and are untyped" — how a server value
+      # reaches client code unchecked, which is the class behind several real
+      # bugs here. `stx typecheck` exits 0 on warnings and has no
+      # --fail-on-warning, hence the grep; errors it exits non-zero for, which
+      # `set -o pipefail` propagates through the tee.
+      - name: Typecheck .stx
         run: |
           set -o pipefail
           bunx --bun stx typecheck 'resources/**/*.stx' --lib types/domain.d.ts | tee /tmp/stx-typecheck.log
-          if ! grep -qE '0 warning\(s\)' /tmp/stx-typecheck.log; then
-            echo "::error::stx typecheck reported warnings — declare bridge values with defineClientPayload"
+          if ! grep -qE '0 error\(s\), 0 warning\(s\)' /tmp/stx-typecheck.log; then
+            echo "::error::stx typecheck is not clean — see the log above"
             exit 1
           fi
 

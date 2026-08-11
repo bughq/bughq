@@ -319,29 +319,43 @@ declare type AuthHeaders = {
 /**
  * Ambient globals that a `.stx` script block can reach without an import.
  *
- * `requestContext` is the SSR request accessor. It is injected by the renderer
- * and has no declaration anywhere in the framework — filed upstream as
- * stacksjs/stacks#2232 ("two divergent requestContext globals, none typed").
- * Every page that authenticates reads a cookie through it, which is why it was
- * the single largest source of type errors here once the checker started
- * working: 78 of the first 407.
+ * `requestContext` is the SSR request accessor, injected by the renderer. Every
+ * page that authenticates reads a cookie through it, which made it the single
+ * largest source of type errors here once the checker started working: 78 of
+ * the first 407.
  *
- * Declared optional-shaped on purpose. Every call site already guards with
- * `typeof requestContext !== 'undefined' && requestContext.cookie && …` because
- * the global is absent in the SSG build and in the client bundle, and the type
- * should not tempt anyone into dropping that guard.
+ * This MIRRORS `StacksRequestContext` in @stacksjs/config
+ * (dist/request-context.d.ts) field for field — that module is what
+ * stacksjs/stacks#2232 produced, and both servers install exactly its object,
+ * so this is a copy of the real shape rather than a guess at it. Copied only
+ * because a `.stx` script block cannot import a type; delete it the day one
+ * can.
  *
- * Local rather than upstream because the app cannot wait for the framework to
- * describe its own global, and a wrong-but-guarded shape here is still better
- * than `any`. Delete this when #2232 lands and the framework ships the type.
+ * The first version of this block WAS a guess and got two things wrong: `url`
+ * declared as a string when it is an accessor, and a `header()` that the
+ * installed object does not have at all. Three files grew `unknown` +
+ * typeof-callable workarounds around the first of those before anyone read the
+ * framework's own declaration. If this drifts again, diff it against that file
+ * rather than inferring from call sites.
+ *
+ * Still `| undefined`, which is not pedantry: the global is genuinely absent in
+ * the SSG build and in the client bundle, so every call site guards with
+ * `typeof requestContext !== 'undefined' && …` and the type must keep them
+ * honest.
  */
 declare const requestContext: {
-  /** Read a request cookie by name. Absent in SSG and on the client. */
-  cookie: (name: string) => string | undefined
-  /** Read a request header by name. */
-  header?: (name: string) => string | undefined
-  /** The full request URL. */
-  url?: string
+  /** Read a request cookie by name. `null` when absent. */
+  cookie: (name: string) => string | null
+  cookies: () => Record<string, string>
+  /** The full request URL. An ACCESSOR, not a string. */
+  url: () => string
+  path: () => string
+  search: () => string
+  query: () => Record<string, string>
+  params: () => Record<string, string>
+  locale: () => string
+  ip: () => string
+  host: () => string
 } | undefined
 
 /**
