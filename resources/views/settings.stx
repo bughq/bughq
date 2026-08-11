@@ -23,6 +23,11 @@ const INGEST_BASE = ingestUrl()
 
 const query = new URLSearchParams((typeof globalThis !== 'undefined' && globalThis.__stxServeSearch) || '')
 const requestedProject = query.get('project')
+// Set by the reload that follows a successful rotation. The reload is what
+// keeps the key field, the masked view and both copies in the install snippet
+// telling the same story; this flag is only how the confirmation and the
+// revealed key survive it.
+const justRotated = query.get('rotated') === '1'
 const cookieProject = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_project')) || ''
 
 const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
@@ -175,7 +180,7 @@ const projectName = activeProject?.name || ''
 // bridge escapes `<` to < on the way out (see the long note above) — and
 // naming them makes it explicit which values carry that hazard rather than
 // leaving it to whoever next reads the client block.
-defineClientPayload({ channelEnabled, codeText, installText, keyFull, keyMask, projectId, projectName })
+defineClientPayload({ channelEnabled, codeText, installText, justRotated, keyFull, keyMask, projectId, projectName })
 </script>
 
 <script client>
@@ -233,9 +238,12 @@ function switchProject(e: Event): void {
 // ---- API key -------------------------------------------------------------
 const currentKey = state(keyFull)
 const maskedKey = state(keyMask)
-const revealed = state(false)
+// Seeded from the server flag so a rotation's confirmation survives the reload
+// that carries it: the new key is shown, not masked, because you have just been
+// told to go and update your SDK config with it.
+const revealed = state(justRotated)
 const rotating = state(false)
-const keyNote = state(null)
+const keyNote = state(justRotated ? { text: 'New key generated. Update your SDK config with it.', ok: true } : null)
 
 function keyDisplay() {
   return revealed() ? currentKey() : maskedKey()
@@ -264,9 +272,26 @@ function rotateKey() {
           keyNote.set({ text: res.b.error || 'Rotate failed.', ok: false })
           return
         }
-        currentKey.set(res.b.ingest_key)
-        revealed.set(true)
-        keyNote.set({ text: 'New key generated. Update your SDK config with it.', ok: true })
+        // Reload rather than patch the key into the page, for the same reason
+        // the invite flow does: the key is rendered into more places than the
+        // field you are looking at. It is also in the masked view behind Hide
+        // and, twice, in the install snippet — once as text and once as what
+        // the snippet's Copy button puts on your clipboard. Updating only the
+        // field left the rest showing the dead key, so rotating and then
+        // copying the snippet handed you a key guaranteed to 401, which is the
+        // exact thing the success note tells you to go and do.
+        //
+        // Patching them client-side was tried and reverted. The install snippet
+        // for a browser project IS an sdk.js script tag, and making it reactive
+        // took the whole client block down with it — every control on this page,
+        // not just the snippet. The server already renders all four surfaces
+        // correctly from one value; asking it again is cheaper and cannot drift.
+        //
+        // ?rotated=1 carries the confirmation across the reload so the note and
+        // the revealed key survive it.
+        const url = new URL(window.location.href)
+        url.searchParams.set('rotated', '1')
+        window.location.replace(url.toString())
       })
       .catch(() => {
         rotating.set(false)
