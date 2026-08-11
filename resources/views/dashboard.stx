@@ -16,7 +16,11 @@ const { db } = await import('@stacksjs/database')
 // Query params (project/status) come from globalThis.__stxServeSearch (the dev
 // server stashes url.search there).
 const query = new URLSearchParams((typeof globalThis !== 'undefined' && globalThis.__stxServeSearch) || '')
-const statusFilter = ['unresolved', 'resolved', 'all'].includes(query.get('status')) ? query.get('status') : 'unresolved'
+// Read once. `query.get` returns `string | null`, and calling it twice made the
+// checker treat the tested value and the used value as unrelated — which is
+// also true at runtime if the two calls ever disagree.
+const statusParam = query.get('status')
+const statusFilter: DashboardStatus = statusParam === 'resolved' || statusParam === 'all' ? statusParam : 'unresolved'
 
 // The active project is a browsing preference, not shareable filter state, so
 // it lives in a cookie and stays out of the URL. `?project=` still works as a
@@ -36,8 +40,15 @@ const RANGES = [
   { key: '90d', label: '90d', interval: '90 days' },
   { key: 'all', label: 'All time', interval: null },
 ]
-const rangeFilter = RANGES.some(r => r.key === query.get('range')) ? query.get('range') : 'all'
-const activeRange = RANGES.find(r => r.key === rangeFilter)
+const rangeParam = query.get('range')
+const rangeFilter: string = RANGES.some(r => r.key === rangeParam) && rangeParam ? rangeParam : 'all'
+// Non-optional by construction. `.find` is `T | undefined`, and every use here
+// then had to be guarded or asserted — eight reported errors for a lookup that
+// cannot miss, because rangeFilter is either a key from RANGES or the literal
+// 'all', which is itself a key. The fallback makes that guarantee explicit
+// rather than leaving it as a fact you have to reconstruct from two lines up.
+const ALL_RANGE = RANGES[RANGES.length - 1]
+const activeRange: DashboardRange = RANGES.find(r => r.key === rangeFilter) ?? ALL_RANGE
 
 const PAGE_SIZE = 25
 const pageParam = Number.parseInt(query.get('page') || '1', 10)
@@ -58,7 +69,7 @@ if (token) {
 }
 
 // Load the user's OWN projects and pick the active one (owner-scoped).
-let projects = []
+let projects: DashboardProject[] = []
 let activeProject = null
 let needsOnboarding = false
 let pendingInvites = []
@@ -119,7 +130,7 @@ const statusTabs = [
 ].map(f => ({ ...f, href: pageUrl({ status: f.key, page: 1 }) }))
 const rangeTabs = RANGES.map(r => ({ ...r, href: pageUrl({ range: r.key, page: 1 }) }))
 
-let issues = []
+let issues: DashboardIssue[] = []
 let counts = { total: 0, unresolved: 0, events: 0 }
 // The project's most recently seen release. An issue whose events all carry
 // this one release has only ever happened since that deploy, which is what
@@ -335,7 +346,7 @@ const pro = state(false)
 // Invite banner. The rows are server-rendered, so each one's token is baked
 // into its own directives; these signals only track which rows are hidden and
 // which is mid-request. Dismiss hides for this view only - it does not decline.
-const dismissed = state([])
+const dismissed = state<string[]>([])
 const joining = state('')
 
 // Switching project writes the browsing-preference cookie and reloads onto the
@@ -522,7 +533,12 @@ summary::-webkit-details-marker { display: none; }
             @endforeach
           </select>
         @else
-          <span class="mono text-sm text-muted">{{ activeProject.name }}{{ activeProject.is_active === false ? ' (archived)' : '' }}</span>
+          {{-- Optional-chained because the checker cannot see that this branch
+               only renders when a project resolved. It is inside @if (projectId),
+               and projectId is derived from activeProject, so the guard is real
+               — but it is two hops away and template expressions are checked in
+               isolation. Cheaper than asserting non-null and lying about it. --}}
+          <span class="mono text-sm text-muted">{{ activeProject?.name }}{{ activeProject?.is_active === false ? ' (archived)' : '' }}</span>
         @endif
         <StxLink to="/projects" class="pill px-3 py-1.5 text-sm font-medium border text-muted border-line">All apps</StxLink>
         <StxLink to="/projects/new" class="pill px-3 py-1.5 text-sm font-medium border text-muted border-line">+ New app</StxLink>
@@ -703,8 +719,12 @@ summary::-webkit-details-marker { display: none; }
   // choice into the cookie and scrub the param so the address bar stays a
   // clean /dashboard.
   var qs = new URLSearchParams(window.location.search)
-  if (qs.get('project')) {
-    document.cookie = 'bughq_project=' + encodeURIComponent(qs.get('project')) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
+  // Bound once. Calling qs.get twice let the truthiness test and the value that
+  // gets written come from separate reads, which is why the second was still
+  // `string | null` to the checker.
+  var deepLinkProject = qs.get('project')
+  if (deepLinkProject) {
+    document.cookie = 'bughq_project=' + encodeURIComponent(deepLinkProject) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
     qs.delete('project')
     var rest = qs.toString()
     window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''))

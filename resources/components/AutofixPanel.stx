@@ -14,7 +14,7 @@ const { issueId, projectId } = defineProps<AutofixPanelProps>()
 // and every request this panel makes 404'd on an id no route could match.
 const autofixIssueId = {{ issueId }}
 const autofixProjectId = {{ projectId }}
-const autofixState = state(null)
+const autofixState = state<AutofixState | null>(null)
 const autofixLoading = state(true)
 const autofixStarting = state(false)
 const repositorySaving = state(false)
@@ -29,15 +29,15 @@ function authHeaders(): AuthHeaders {
   return useStore('session').authHeaders()
 }
 
-function activeRun(run: AutofixRun | null): boolean {
-  return !!run && ['queued', 'analyzing', 'planning', 'editing', 'creating_pr'].includes(run.status)
+function activeRun(run: Partial<AutofixRunView> | null | undefined): boolean {
+  return !!run?.status && ['queued', 'analyzing', 'planning', 'editing', 'creating_pr'].includes(run.status)
 }
 
 function currentAutofix(): AutofixState {
   return autofixState() || {}
 }
 
-function currentRun(): AutofixRun | null {
+function currentRun(): Partial<AutofixRunView> | null {
   return currentAutofix().run || null
 }
 
@@ -86,8 +86,11 @@ function currentBranchName() {
 }
 
 function autofixProgressStyle() {
-  const progress = { analyzing: '.18', planning: '.42', editing: '.7' }
-  return `transform:scaleX(${progress[currentRunStatus()] || '.9'})`
+  // Partial<Record<…>> because only three of the seven statuses have a bar
+  // width; the rest deliberately fall through to the .9 default.
+  const progress: Partial<Record<AutofixStatus, string>> = { analyzing: '.18', planning: '.42', editing: '.7' }
+  const status = currentRunStatus()
+  return `transform:scaleX(${(status && progress[status]) || '.9'})`
 }
 
 function loadingClass() {
@@ -168,8 +171,8 @@ function stepClass(stage: number): string {
 }
 
 function stageReached(stage: number): boolean {
-  const order = { queued: 0, analyzing: 0, planning: 1, editing: 2, creating_pr: 3, completed: 4, failed: -1 }
-  const status = autofixState()?.run?.status || 'queued'
+  const order: Record<AutofixStatus, number> = { queued: 0, analyzing: 0, planning: 1, editing: 2, creating_pr: 3, completed: 4, failed: -1 }
+  const status: AutofixStatus = autofixState()?.run?.status || 'queued'
   return (order[status] ?? -1) >= stage
 }
 
@@ -199,7 +202,7 @@ function cancelPoll(): void {
 
 onDestroy(cancelPoll)
 
-async function loadAutofix(schedule: boolean = true): void {
+async function loadAutofix(schedule: boolean = true): Promise<void> {
   try {
     const response = await fetch(`/api/issues/${encodeURIComponent(autofixIssueId)}/autofix`, { headers: authHeaders() })
     if (response.status === 401)
@@ -242,10 +245,19 @@ async function startAutofix() {
   }
 }
 
-function updateRepository(event: Event): void { repositoryInput.set(event.target.value) }
-function updateBranch(event: Event): void { branchInput.set(event.target.value) }
+// `event.target` is `EventTarget | null` and carries no `value`. Both handlers
+// are bound to <input>, so narrowing to HTMLInputElement is accurate rather than
+// a cast for the checker's benefit — and it makes a future rebind to a
+// non-input fail here instead of reading undefined at runtime.
+function inputValue(event: Event): string {
+  const target = event.target
+  return target instanceof HTMLInputElement ? target.value : ''
+}
 
-async function saveRepository(disconnect: boolean = false): void {
+function updateRepository(event: Event): void { repositoryInput.set(inputValue(event)) }
+function updateBranch(event: Event): void { branchInput.set(inputValue(event)) }
+
+async function saveRepository(disconnect: boolean = false): Promise<void> {
   if (repositorySaving()) return
   repositorySaving.set(true)
   autofixError.set('')

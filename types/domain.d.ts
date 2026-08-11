@@ -145,6 +145,42 @@ declare type AutofixStatus =
   | 'completed' | 'failed'
 
 /** A row of `autofix_runs` (migration 0000000024). */
+/**
+ * The parsed `plan` an autofix run stores. Written by app/Autofix/workflow.ts as
+ * `json({ confidence, steps, tests, requestedFiles })`.
+ */
+declare interface AutofixPlan {
+  confidence?: 'low' | 'medium' | 'high'
+  steps?: Array<{ title: string, detail: string }>
+  tests?: string[]
+  requestedFiles?: string[]
+}
+
+/** The parsed `changes` an autofix run stores — the proposed fix. */
+declare interface AutofixChanges {
+  summary?: string
+  prTitle?: string
+  prBody?: string
+  files?: Array<{ path: string, content: string, explanation?: string }>
+  tests?: string[]
+  risks?: string[]
+}
+
+/**
+ * An autofix run as the API sends it, which is NOT the row shape below.
+ *
+ * `plan` and `changes` are `text` in Postgres and stay strings on AutofixRun,
+ * but routes/autofix.ts runs both through parseStored() before answering, so a
+ * client receives objects. AutofixPanel reads `plan.steps` and `changes.files`
+ * and is right to — it was the row type being applied to a wire value that made
+ * that look like a mistake.
+ */
+declare interface AutofixRunView extends Omit<AutofixRun, 'plan' | 'changes'> {
+  plan: AutofixPlan | null
+  changes: AutofixChanges | null
+}
+
+/** A row of `autofix_runs`, exactly as stored. See AutofixRunView for the wire shape. */
 declare interface AutofixRun {
   id: string
   issue_id: string
@@ -168,7 +204,15 @@ declare interface AutofixRun {
 
 /** What GET /api/…/autofix returns and the panel holds in a signal. */
 declare interface AutofixState {
-  run?: AutofixRun | null
+  /**
+   * The wire shape, not the row: plan and changes arrive parsed.
+   *
+   * Partial because the panel optimistically holds `{ status: 'queued' }` the
+   * moment you press Run, before the server has a run to describe. That stub is
+   * a real state the UI renders, so the type admits it rather than being
+   * asserted away at the one call site that creates it.
+   */
+  run?: Partial<AutofixRunView> | null
   repository?: string | null
   branch?: string | null
   [key: string]: unknown
@@ -181,6 +225,60 @@ declare interface DashboardQuery {
   status?: string
   range?: string
   page?: number
+}
+
+/** The status tabs. Anything else in `?status=` falls back to 'unresolved'. */
+declare type DashboardStatus = 'unresolved' | 'resolved' | 'all'
+
+/**
+ * One entry in the dashboard's RANGES whitelist. `interval` is the Postgres
+ * interval string and is the ONLY part ever interpolated into SQL — `key` comes
+ * from the URL and never reaches a query. `null` means all time, i.e. no date
+ * predicate at all, which is why it is nullable rather than an empty string.
+ */
+declare interface DashboardRange {
+  key: string
+  label: string
+  interval: string | null
+}
+
+/**
+ * A project as the dashboard and /projects select it: the columns those pages
+ * read, plus `is_owner`, which is computed per-viewer (`p.owner_id = $1`) and
+ * therefore is not a column on Project.
+ */
+declare interface DashboardProject {
+  id: string
+  name: string
+  platform: string | null
+  ingest_key: string | null
+  created_at: string | null
+  is_active: boolean | null
+  is_owner?: boolean
+}
+
+/**
+ * An issue row as the dashboard renders it: the columns selected from `issues`,
+ * plus the per-issue facets folded on from `error_events` afterwards.
+ *
+ * `users_affected` is deliberately NOT the `issues.users_affected` column —
+ * ingest writes that as a literal 0 and never updates it. Both this page and
+ * the issue detail page compute it live from the events' distinct users.
+ */
+declare interface DashboardIssue {
+  id: string
+  title: string
+  culprit: string | null
+  error_type: string | null
+  level: IssueLevel | null
+  status: IssueStatus | null
+  count: number | null
+  last_seen: string | null
+  users_affected: number
+  release: string | null
+  environment: string | null
+  environmentCount: number
+  newInRelease: boolean
 }
 
 /** What installGuide() returns for a project's platform. */
@@ -197,7 +295,14 @@ declare interface FormNote {
 }
 
 /** Auth headers for a bearer-token fetch. */
-declare interface AuthHeaders {
+/**
+ * A `type`, not an `interface`, and that is load-bearing. These headers are
+ * handed straight to `fetch`, whose HeadersInit wants a Record<string, string>.
+ * An interface has no implicit index signature so it does not satisfy that, and
+ * every `fetch(url, { headers: authHeaders() })` call failed to match an
+ * overload. A type alias does get the index signature.
+ */
+declare type AuthHeaders = {
   'Authorization': string
   'Content-Type': string
 }
