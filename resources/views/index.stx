@@ -49,9 +49,17 @@ useSeoMeta({
 @endpush
 
 @section('content')
-    <!-- Bare <main>, .shell on each section below: the SPA router keeps this
-         outer element across a fragment swap, so a class here would leak into
-         the next marketing page and nest .shell inside .shell (48px narrower). -->
+    {{-- Bare main element, .shell on each section below: the SPA router keeps
+         this outer element across a fragment swap, so a class here would leak
+         into the next marketing page and nest .shell inside .shell (48px
+         narrower).
+
+         Prose, and an stx comment rather than an HTML one, because the server
+         counts main tags as plain strings when it extracts a fragment and does
+         not skip comments. Naming the tag here made the count 2-open-1-close,
+         and arriving at this page from another marketing page nested a main
+         inside the live one. Caught by tests/unit/view-comments.test.ts, which
+         exists for exactly this and found this instance on its first run. --}}
     <main>
 
       <section class="hero shell">
