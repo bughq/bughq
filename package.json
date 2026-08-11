@@ -70,6 +70,7 @@
     "sqlite": "^3.47.2"
   },
   "dependencies": {
+    "@stacksjs/stx": "^0.2.176",
     "bun-plugin-auto-imports": "^0.4.1",
     "stacks": "^0.70.362"
   },

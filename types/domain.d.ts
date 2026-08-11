@@ -202,3 +202,49 @@ declare interface AuthHeaders {
   'Content-Type': string
 }
 
+
+/* ---------------------------------------------------------------------------
+ * Ambient globals live in this same file, not a sibling, because `stx typecheck
+ * --lib` does NOT accumulate: `--lib a --lib b` behaves exactly like `--lib b`
+ * alone, verified by measurement, even though `--help` calls the flag
+ * repeatable. Splitting these across two files silently drops whichever is not
+ * last. Filed as stacksjs/stx#1926. Split back out when it accumulates.
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Ambient globals that a `.stx` script block can reach without an import.
+ *
+ * `requestContext` is the SSR request accessor. It is injected by the renderer
+ * and has no declaration anywhere in the framework — filed upstream as
+ * stacksjs/stacks#2232 ("two divergent requestContext globals, none typed").
+ * Every page that authenticates reads a cookie through it, which is why it was
+ * the single largest source of type errors here once the checker started
+ * working: 78 of the first 407.
+ *
+ * Declared optional-shaped on purpose. Every call site already guards with
+ * `typeof requestContext !== 'undefined' && requestContext.cookie && …` because
+ * the global is absent in the SSG build and in the client bundle, and the type
+ * should not tempt anyone into dropping that guard.
+ *
+ * Local rather than upstream because the app cannot wait for the framework to
+ * describe its own global, and a wrong-but-guarded shape here is still better
+ * than `any`. Delete this when #2232 lands and the framework ships the type.
+ */
+declare const requestContext: {
+  /** Read a request cookie by name. Absent in SSG and on the client. */
+  cookie: (name: string) => string | undefined
+  /** Read a request header by name. */
+  header?: (name: string) => string | undefined
+  /** The full request URL. */
+  url?: string
+} | undefined
+
+/**
+ * The query string the serve path hands a page, set by the renderer before the
+ * server block runs. Read via `new URLSearchParams(globalThis.__stxServeSearch)`
+ * in dashboard.stx and settings.stx.
+ */
+declare namespace globalThis {
+  // eslint-disable-next-line vars-on-top, no-var
+  var __stxServeSearch: string | undefined
+}

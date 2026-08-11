@@ -102,7 +102,7 @@ jobs:
       - name: Typecheck .stx (bridge warnings)
         run: |
           set -o pipefail
-          bunx --bun stx typecheck 'resources/**/*.stx' | tee /tmp/stx-typecheck.log
+          bunx --bun stx typecheck 'resources/**/*.stx' --lib types/domain.d.ts | tee /tmp/stx-typecheck.log
           if ! grep -qE '0 warning\(s\)' /tmp/stx-typecheck.log; then
             echo "::error::stx typecheck reported warnings — declare bridge values with defineClientPayload"
             exit 1
