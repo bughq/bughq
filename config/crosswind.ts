@@ -213,6 +213,23 @@ export default {
     // Raised surface. Three copies, byte-identical.
     panel: 'bg-panel border border-solid border-line rounded-[12px]',
 
+    // Metadata chip on an issue row: environment, release, "new in this
+    // release". Quiet by default — this sits under the title and must not
+    // compete with it or with the level colour on the same row.
+    //
+    // Colours come from the registered theme keys, not `border-[color-mix(…)]`.
+    // This crosswind emits the arbitrary value for `bg-` but silently drops it
+    // for `border-`, so a color-mixed border produced a rule with the text
+    // colour and no border at all — visible only by reading the generated CSS,
+    // since the chip still had `.tag`'s border underneath.
+    tag: 'inline-flex items-center px-1.5 py-0.5 rounded-[5px] border border-solid '
+      + 'border-line text-subtle leading-none whitespace-nowrap',
+    // Production is the environment worth spotting at a glance; staging and the
+    // rest stay in the default grey rather than each earning a colour.
+    'tag-prod': 'text-muted',
+    // The one chip that is a finding rather than a label, so it gets the accent.
+    'tag-new': 'text-accent border-accent',
+
     // Square icon button — theme toggle, copy, row actions. dashboard.stx,
     // settings.stx and issue/[id].stx declare this identically.
     //

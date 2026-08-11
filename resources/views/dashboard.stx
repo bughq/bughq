@@ -117,12 +117,88 @@ const rangeTabs = RANGES.map(r => ({ ...r, href: pageUrl({ range: r.key, page: 1
 
 let issues = []
 let counts = { total: 0, unresolved: 0, events: 0 }
+// The project's most recently seen release. An issue whose events all carry
+// this one release has only ever happened since that deploy, which is what
+// earns the "new in" badge on its row.
+let latestRelease: string | null = null
+// How many distinct releases this project has ever reported. Below two, the
+// "new in this release" badge is true of everything and worth showing on nothing.
+let releasesSeen = 0
+
+// Fold per-issue facets from error_events onto the page's issues.
+//
+// Release order is decided by DISTINCT COUNT, not by sorting: release strings
+// are free-form ("2.14.0", "2024-06-01", a git sha), so nothing can rank them,
+// and the newest TIMESTAMP only tells us which release was seen last, not which
+// is newer. "Only ever seen in the current release" needs no ordering at all.
+async function attachEventFacets(): Promise<void> {
+  const ids = issues.map((i: any) => String(i.id))
+  if (!ids.length)
+    return
+
+  const slots = ids.map((_, n) => `$${n + 1}`).join(', ')
+  const rows = (await db.unsafe(
+    `SELECT issue_id,
+       COUNT(DISTINCT CASE WHEN user_context ~ '^\\s*\\{'
+         THEN COALESCE(user_context::jsonb ->> 'id', user_context::jsonb ->> 'email', user_context::jsonb ->> 'username', user_context)
+       END) AS users_affected,
+       COUNT(DISTINCT NULLIF(release, '')) AS release_count,
+       (ARRAY_AGG(NULLIF(release, '') ORDER BY timestamp DESC) FILTER (WHERE NULLIF(release, '') IS NOT NULL))[1] AS release,
+       (ARRAY_AGG(NULLIF(environment, '') ORDER BY timestamp DESC) FILTER (WHERE NULLIF(environment, '') IS NOT NULL))[1] AS environment,
+       COUNT(DISTINCT NULLIF(environment, '')) AS environment_count
+     FROM error_events WHERE issue_id IN (${slots}) GROUP BY issue_id`,
+    ids,
+  )) ?? []
+
+  // The cast is guarded by the object-shaped regex rather than left bare: one
+  // malformed row would otherwise abort the whole query and take the list down
+  // with it. Ingest only ever writes JSON.stringify(body.user) or NULL, so the
+  // guard should never fire — it is there so a hand-edited row cannot blank the
+  // dashboard. Falling back to the raw text keeps a user object with no id,
+  // email or username counted as one person instead of nobody.
+  const facets = new Map(rows.map((r: any) => [String(r.issue_id), r]))
+  issues = issues.map((issue: any) => {
+    const f: any = facets.get(String(issue.id))
+    const release = f?.release ?? null
+    return {
+      ...issue,
+      users_affected: Number(f?.users_affected ?? 0),
+      release,
+      environment: f?.environment ?? null,
+      environmentCount: Number(f?.environment_count ?? 0),
+      // Only ever seen in the release the project is currently shipping, and
+      // only worth saying once there is an earlier release it could have
+      // predated.
+      newInRelease: Boolean(releasesSeen > 1 && release && latestRelease && release === latestRelease && Number(f?.release_count ?? 0) === 1),
+    }
+  })
+}
 let live = false
 let pager = { from: 0, to: 0, total: 0, page: 1, pages: 1, hasPrev: false, hasNext: false, prevHref: '', nextHref: '' }
 
 async function loadData() {
   if (!projectId)
     return
+
+  // Whichever release sent the most recent event, plus how many distinct
+  // releases this project has ever reported. Deliberately not filtered by the
+  // range tabs: "what are we shipping right now" is a property of the project,
+  // and looking at last quarter should not rewrite it.
+  //
+  // The count is what stops the badge being noise. Until a project has shipped
+  // twice, every issue it has is trivially "new in this release" — the phrase
+  // only carries information once there is an earlier release to contrast with.
+  const rel: any = (await db.unsafe(
+    `SELECT
+       (SELECT NULLIF(release, '') FROM error_events
+        WHERE project_id = $1 AND NULLIF(release, '') IS NOT NULL
+        ORDER BY timestamp DESC LIMIT 1) AS latest,
+       (SELECT COUNT(DISTINCT NULLIF(release, '')) FROM error_events
+        WHERE project_id = $1) AS seen`,
+    [projectId],
+  ))?.[0]
+  latestRelease = rel?.latest ?? null
+  releasesSeen = Number(rel?.seen ?? 0)
   // WHERE for the list: project + status + date range. The interval string is
   // from the RANGES whitelist above, never from user input.
   const conds = ['project_id = $1']
@@ -145,9 +221,21 @@ async function loadData() {
   const offset = (page - 1) * PAGE_SIZE
 
   issues = (await db.unsafe(
-    `SELECT id, title, culprit, error_type, level, status, count, users_affected, last_seen FROM issues WHERE ${where} ORDER BY last_seen DESC, id DESC LIMIT ${PAGE_SIZE} OFFSET ${offset}`,
+    `SELECT id, title, culprit, error_type, level, status, count, last_seen FROM issues WHERE ${where} ORDER BY last_seen DESC, id DESC LIMIT ${PAGE_SIZE} OFFSET ${offset}`,
     params,
   )) ?? []
+
+  // Release, environment and the affected-user tally all live on error_events,
+  // not on issues, so they need a second pass. Deliberately not a join on the
+  // query above: this one is bounded to the ids already on screen (at most
+  // PAGE_SIZE) and rides the ee_issue index, where a join would aggregate the
+  // project's entire event history to render twenty rows.
+  //
+  // issues.users_affected is NOT read. Ingest writes it as a literal 0 and
+  // never updates it (routes/errors.ts), so the column has always reported
+  // nobody affected no matter how many people hit an issue. Counting distinct
+  // users here makes the number mean what the UI has always claimed.
+  await attachEventFacets()
 
   pager = {
     from: filteredTotal === 0 ? 0 : offset + 1,
@@ -464,12 +552,32 @@ summary::-webkit-details-marker { display: none; }
               <span aria-hidden="true">/</span>
               <span class="mono truncate">{{ issue.culprit || issue.error_type }}</span>
             </div>
+            @if (issue.environment || issue.release || issue.newInRelease)
+              <div class="flex flex-wrap items-center gap-1.5 mt-1.5 text-xs">
+                @if (issue.environment)
+                  <span class="tag {{ issue.environment === 'production' ? 'tag-prod' : '' }}">
+                    {{ issue.environment }}{{ issue.environmentCount > 1 ? ` +${issue.environmentCount - 1}` : '' }}
+                  </span>
+                @endif
+                @if (issue.release)
+                  <span class="tag mono">{{ issue.release }}</span>
+                @endif
+                @if (issue.newInRelease)
+                  <span class="tag tag-new" title="Every event for this issue carries the release you are shipping now">new in this release</span>
+                @endif
+              </div>
+            @endif
           </div>
           <div class="text-right shrink-0">
             <div class="mono font-semibold tabular-nums">{{ Number(issue.count).toLocaleString() }}</div>
-            <div class="text-xs mt-0.5 text-subtle">
-              <span class="mono">{{ Number(issue.users_affected || 0).toLocaleString() }}</span> users
-            </div>
+            {{-- No "0 users" line. Zero here does not mean nobody was hit, it
+                 means the SDK sent no user context, and printing it as a count
+                 stated a fact we never measured. --}}
+            @if (issue.users_affected > 0)
+              <div class="text-xs mt-0.5 text-subtle">
+                <span class="mono">{{ Number(issue.users_affected).toLocaleString() }}</span> {{ issue.users_affected === 1 ? 'user' : 'users' }}
+              </div>
+            @endif
           </div>
           <div class="hidden sm:block text-right shrink-0 w-20">
             <div class="text-xs text-subtle">{{ fromNow(issue.last_seen) }}</div>
