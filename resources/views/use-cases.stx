@@ -31,7 +31,7 @@ useSeoMeta({
           <article class="usecase">
             <img src="https://picsum.photos/seed/bughq-frontend-browser/720/340" alt="A web application open in a browser" width="720" height="340" loading="lazy">
             <div class="usecase-body">
-              <h3>Frontend</h3>
+              <h2>Frontend</h2>
               <p>Catch the errors your users actually hit in the browser. Upload a source map and every minified frame resolves back to the component and line that threw.</p>
               <StxLink class="textlink" to="/use-cases/frontend">How teams use bughq for frontend</StxLink>
             </div>
@@ -40,7 +40,7 @@ useSeoMeta({
           <article class="usecase">
             <img src="https://picsum.photos/seed/bughq-backend-api/720/340" alt="Server and API infrastructure" width="720" height="340" loading="lazy">
             <div class="usecase-body">
-              <h3>Backend</h3>
+              <h2>Backend</h2>
               <p>Server, edge, and job failures arrive with the request, release, and environment attached, so a 500 names the route and the deploy that broke it.</p>
               <StxLink class="textlink" to="/use-cases/backend">How teams use bughq for backend</StxLink>
             </div>
@@ -49,7 +49,7 @@ useSeoMeta({
           <article class="usecase">
             <img src="https://picsum.photos/seed/bughq-mobile-app/720/340" alt="A mobile app on a phone" width="720" height="340" loading="lazy">
             <div class="usecase-body">
-              <h3>Mobile</h3>
+              <h2>Mobile</h2>
               <p>Native crashes and JavaScript errors fold into one issue per build, so you see which release regressed and how many devices it reached.</p>
               <StxLink class="textlink" to="/use-cases/mobile">How teams use bughq for mobile</StxLink>
             </div>
@@ -58,7 +58,7 @@ useSeoMeta({
           <article class="usecase">
             <img src="https://picsum.photos/seed/bughq-oncall-sre/720/340" alt="An on-call engineer reviewing alerts" width="720" height="340" loading="lazy">
             <div class="usecase-body">
-              <h3>On-call and SRE</h3>
+              <h2>On-call and SRE</h2>
               <p>Alerts fire for new and spiking issues, not for every known warning. Triage by release and affected-user count instead of scrolling a raw log.</p>
               <StxLink class="textlink" to="/use-cases/on-call">How on-call teams use bughq</StxLink>
             </div>
@@ -67,7 +67,7 @@ useSeoMeta({
           <article class="usecase">
             <img src="https://picsum.photos/seed/bughq-agency-clients/720/340" alt="Multiple client projects on a board" width="720" height="340" loading="lazy">
             <div class="usecase-body">
-              <h3>Agencies</h3>
+              <h2>Agencies</h2>
               <p>Keep each client site as its own project with its own issues, releases, and members, so you know exactly which build on which site started erroring.</p>
               <StxLink class="textlink" to="/use-cases/agencies">How agencies use bughq</StxLink>
             </div>

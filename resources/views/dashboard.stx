@@ -526,7 +526,7 @@ summary::-webkit-details-marker { display: none; }
                literal source text and switching apps navigated to that and
                404'd. Every other href on this page is precomputed the same way
                (pager.prevHref, f.href); this attribute was the exception. --}}
-          <select @change="switchProject" data-target="{{ switchTarget }}"
+          <select @change="switchProject" aria-label="Switch project" data-target="{{ switchTarget }}"
                   class="panel mono px-3 py-1.5 text-sm text-muted">
             @foreach (projects as p)
               <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}{{ p.is_active === false ? ' (archived)' : '' }}</option>

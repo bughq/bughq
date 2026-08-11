@@ -233,7 +233,9 @@ a.cell:hover .cell-more { color: var(--accent); gap: 0.55rem; }
 .usecase { border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; background: var(--surface); }
 .usecase img { display: block; width: 100%; height: 168px; object-fit: cover; }
 .usecase-body { padding: 1.4rem 1.5rem 1.6rem; }
-.usecase-body h3 { margin: 0; font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; }
+/* h2, not h3: these card titles are the only headings under the page h1,
+   so h3 skipped a level. The element selector follows the markup. */
+.usecase-body h2 { margin: 0; font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; }
 .usecase-body p { margin: 0.55rem 0 0; color: var(--text-2); font-size: 0.94rem; line-height: 1.6; }
 .usecase-body .textlink { margin-top: 0.9rem; display: inline-block; }
 

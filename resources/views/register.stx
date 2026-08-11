@@ -138,16 +138,16 @@ input[readonly].field { opacity: 0.85; }
       @endif
 
       <div>
-        <label class="block text-xs font-medium mb-1.5 text-muted">Name</label>
-        <input name="name" type="text" required autocomplete="name" placeholder="Ada Lovelace" class="field w-full px-3.5 py-2.5 text-sm">
+        <label for="register-name" class="block text-xs font-medium mb-1.5 text-muted">Name</label>
+        <input name="name" id="register-name" type="text" required autocomplete="name" placeholder="Ada Lovelace" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
       <div>
-        <label class="block text-xs font-medium mb-1.5 text-muted">Email</label>
-        <input name="email" type="email" required autocomplete="email" placeholder="you@example.com" class="field w-full px-3.5 py-2.5 text-sm" value="{{ inviteEmail }}" @if (inviteEmail) readonly @endif>
+        <label for="register-email" class="block text-xs font-medium mb-1.5 text-muted">Email</label>
+        <input name="email" id="register-email" type="email" required autocomplete="email" placeholder="you@example.com" class="field w-full px-3.5 py-2.5 text-sm" value="{{ inviteEmail }}" @if (inviteEmail) readonly @endif>
       </div>
       <div>
-        <label class="block text-xs font-medium mb-1.5 text-muted">Password</label>
-        <input name="password" type="password" required autocomplete="new-password" placeholder="At least 8 characters" class="field w-full px-3.5 py-2.5 text-sm">
+        <label for="register-password" class="block text-xs font-medium mb-1.5 text-muted">Password</label>
+        <input name="password" id="register-password" type="password" required autocomplete="new-password" placeholder="At least 8 characters" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
 
       <button type="submit" :disabled="loading()" class="btn-accent w-full py-2.5 text-sm font-semibold">

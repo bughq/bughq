@@ -484,14 +484,19 @@ const stackText = stack
 const copyLabel = state('Copy')
 
 function copyStack() {
-  const restore = () => {
-    copyLabel.set('Copied')
+  // The failure branch says so. This was `.then(restore, restore)` — the same
+  // handler for resolve and reject — so a denied clipboard permission, an
+  // insecure origin, or a browser without the API all reported "Copied" and the
+  // user walked away believing they had the stack trace. Nothing was on the
+  // clipboard.
+  const flash = (label: string) => {
+    copyLabel.set(label)
     setTimeout(() => copyLabel.set('Copy'), 1200)
   }
   if (navigator.clipboard && navigator.clipboard.writeText)
-    navigator.clipboard.writeText(stackText).then(restore, restore)
+    navigator.clipboard.writeText(stackText).then(() => flash('Copied'), () => flash('Press ⌘C'))
   else
-    restore()
+    flash('Press ⌘C')
 }
 </script>
 

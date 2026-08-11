@@ -816,7 +816,7 @@ html { scroll-behavior: smooth; }
         <div class="flex items-center gap-3 flex-wrap">
           <h2 class="text-xl font-semibold" style="letter-spacing:-0.02em">Settings</h2>
           @if (projects.length > 1)
-            <select @change="switchProject" class="panel mono px-3 py-1.5 text-sm text-muted">
+            <select @change="switchProject" aria-label="Switch project" class="panel mono px-3 py-1.5 text-sm text-muted">
               @foreach (projects as p)
                 <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}</option>
               @endforeach
@@ -929,7 +929,7 @@ html { scroll-behavior: smooth; }
           <div class="text-sm font-semibold mb-3">Invite a teammate</div>
           <form @submit="inviteMember">
             <div class="flex items-center gap-2 flex-wrap">
-              <input name="email" type="email" class="field flex-1 min-w-[220px] px-3.5 py-2.5 text-sm" placeholder="teammate@company.com" autocomplete="off">
+              <input name="email" type="email" aria-label="Teammate email address" class="field flex-1 min-w-[220px] px-3.5 py-2.5 text-sm" placeholder="teammate@company.com" autocomplete="off">
               <button type="submit" :disabled="inviting()" :text="inviting() ? 'Inviting…' : 'Invite'" class="btn px-4 py-2.5 text-sm font-semibold">Invite</button>
             </div>
           </form>
@@ -980,8 +980,8 @@ html { scroll-behavior: smooth; }
               <button type="button" @click="chType.set('slack')" :data-sel="chType() === 'slack' ? '1' : '0'" class="seg seg-slack px-3 py-2.5 text-sm font-medium" data-sel="1">Slack</button>
               <button type="button" @click="chType.set('discord')" :data-sel="chType() === 'discord' ? '1' : '0'" class="seg seg-discord px-3 py-2.5 text-sm font-medium" data-sel="0">Discord</button>
             </div>
-            <input name="webhook_url" type="url" class="field w-full px-3.5 py-2.5 text-sm mono mb-2" :placeholder="urlPlaceholder()" placeholder="https://hooks.slack.com/services/…" autocomplete="off" spellcheck="false">
-            <input name="label" type="text" class="field w-full px-3.5 py-2.5 text-sm mb-3" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
+            <input name="webhook_url" type="url" aria-label="Webhook URL" class="field w-full px-3.5 py-2.5 text-sm mono mb-2" :placeholder="urlPlaceholder()" placeholder="https://hooks.slack.com/services/…" autocomplete="off" spellcheck="false">
+            <input name="label" type="text" aria-label="Channel label (optional)" class="field w-full px-3.5 py-2.5 text-sm mb-3" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
             <div class="flex items-center gap-3">
               <button type="submit" :disabled="adding()" :text="adding() ? 'Adding…' : 'Add channel'" class="btn px-4 py-2.5 text-sm font-semibold">Add channel</button>
               @if (whNote() && whNote().ok)
@@ -1050,11 +1050,18 @@ html { scroll-behavior: smooth; }
         <div class="dz-card panel" role="dialog" aria-modal="true" aria-labelledby="dz-title">
           <div id="dz-title" class="text-base font-semibold mb-1" :text="dzCopy().title"></div>
           <p class="text-sm mb-4 text-muted" :text="dzCopy().desc"></p>
-          <label class="block text-xs mb-1.5 text-subtle">Type <span class="mono text-muted">{{ activeProject?.name }}</span> to confirm</label>
-          <input ref="dzInput" type="text" class="field w-full px-3.5 py-2.5 text-sm mono mb-4" :value="dzTyped()" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <label for="dz-confirm" class="block text-xs mb-1.5 text-subtle">Type <span class="mono text-muted">{{ activeProject?.name }}</span> to confirm</label>
+          <input ref="dzInput" id="dz-confirm" type="text" class="field w-full px-3.5 py-2.5 text-sm mono mb-4" :value="dzTyped()" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
           <div class="flex items-center justify-end gap-2">
             <button @click="dzClose" type="button" class="btn-ghost px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :text="dzConfirmLabel()" type="button" class="btn-danger px-4 py-2.5 text-sm font-semibold" disabled></button>
+            {{-- Static text as well as :text. The dialog markup is always in the
+                 document, and :text only fills this in once the runtime binds —
+                 so the HTML actually served carried a button with no content and
+                 no accessible name at all, which is what an assistive
+                 technology reads if it gets there first. "Confirm" is a safe
+                 default because the dialog cannot be open before that binding
+                 has run, and :text owns the label from then on. --}}
+            <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :text="dzConfirmLabel()" type="button" class="btn-danger px-4 py-2.5 text-sm font-semibold" disabled>Confirm</button>
           </div>
           @if (dzNote())
             <span class="note show note-err text-xs mt-2.5" :text="noteText(dzNote())"></span>

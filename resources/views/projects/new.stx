@@ -101,12 +101,12 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       @endif
 
       <div>
-        <label class="block text-xs font-medium mb-1.5 text-muted">App name</label>
-        <input name="name" type="text" required autofocus placeholder="Acme Web" class="field w-full px-3.5 py-2.5 text-sm">
+        <label for="new-app-name" class="block text-xs font-medium mb-1.5 text-muted">App name</label>
+        <input name="name" id="new-app-name" type="text" required autofocus placeholder="Acme Web" class="field w-full px-3.5 py-2.5 text-sm">
       </div>
       <div>
-        <label class="block text-xs font-medium mb-1.5 text-muted">Platform</label>
-        <select name="platform" class="field w-full px-3.5 py-2.5 text-sm">
+        <label for="new-app-platform" class="block text-xs font-medium mb-1.5 text-muted">Platform</label>
+        <select name="platform" id="new-app-platform" class="field w-full px-3.5 py-2.5 text-sm">
           <option value="javascript">JavaScript / Browser</option>
           <option value="node">Node.js</option>
           <option value="react">React</option>
