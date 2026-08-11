@@ -1,5 +1,5 @@
 import { mail } from '@stacksjs/email'
-import { appUrl } from '../Support/urls'
+import { ingestUrl } from '../Support/urls'
 
 /**
  * Project invitations. An owner invites a teammate by email; we store a pending
@@ -12,10 +12,16 @@ import { appUrl } from '../Support/urls'
  * returns the join URL so the owner can copy/share it directly.
  */
 
-const DASHBOARD_BASE = appUrl()
+// The base that actually serves `/join/{token}` — the route is registered in
+// routes/projects.ts, which is the API server. In production this is APP_URL,
+// the same origin the web app is on, so this is identical to what it was; in
+// local dev it is the API port, where appUrl() pointed at the web port and the
+// link 404'd. Every invite link the UI copied out, and every one emailed, was
+// dead locally: the recipient could never open what they were sent.
+const JOIN_BASE = ingestUrl()
 
 export function joinUrl(token: string): string {
-  return `${DASHBOARD_BASE}/join/${encodeURIComponent(token)}`
+  return `${JOIN_BASE}/join/${encodeURIComponent(token)}`
 }
 
 /** A hard-to-guess invite token that backs the join link. */

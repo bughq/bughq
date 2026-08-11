@@ -51,6 +51,13 @@ if (token) {
   catch { user = null }
 }
 
+// A cookie that no longer authenticates is a dead session, not a missing issue.
+// Without this the page fell through to the not-found branch and told the user
+// "No issue matches <id>" — so an alert-email deep link opened weeks later read
+// as "we lost your error" rather than "sign in again". The token itself is the
+// evidence: it was sent, and it did not resolve to anyone.
+const sessionExpired = Boolean(token) && !user
+
 let issue = null
 let events = []
 let live = false
@@ -496,7 +503,14 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
       </div>
     </div>
 
-    @if (!issue)
+    @if (sessionExpired)
+      <div class="card px-5 py-16 text-center">
+        <div class="text-4xl mb-3">🔒</div>
+        <div class="font-semibold mb-1">Your session expired</div>
+        <div class="text-sm text-subtle">Sign in again and this link will take you straight to the issue.</div>
+        <StxLink to="/login" class="btn-accent inline-block px-4 py-2 mt-5 text-sm font-medium">Sign in</StxLink>
+      </div>
+    @elseif (!issue)
       <div class="card px-5 py-16 text-center">
         <div class="text-4xl mb-3">🔍</div>
         <div class="font-semibold mb-1">Issue not found</div>

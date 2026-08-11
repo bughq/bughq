@@ -92,7 +92,13 @@ const channelView = channels.map(c => ({
   enabled: !!c.enabled,
   mask: maskWebhook(c.webhook_url),
 }))
-const JOIN_BASE = `${APP_BASE}/join/`
+// INGEST_BASE, not APP_BASE: `/join/{token}` is registered in routes/projects.ts,
+// which the API server owns. Same origin in production, so this is unchanged
+// there — but in local dev APP_BASE is the web port, where the route does not
+// exist, and every link this button copied 404'd. app/Invites/invites.ts builds
+// the emailed link and had the identical bug; both now use the base that serves
+// the route.
+const JOIN_BASE = `${INGEST_BASE}/join/`
 const memberView = members.map(m => ({ id: m.id, email: m.email }))
 const inviteView = invites.map(i => ({ id: i.id, email: i.email, registered: !!i.registered, join: JOIN_BASE + i.token }))
 const keyFull = activeProject ? String(activeProject.ingest_key || '') : ''
