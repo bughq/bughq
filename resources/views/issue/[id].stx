@@ -69,6 +69,18 @@ async function loadData() {
     [issueId, Number(user.id), userEmail],
   ))?.[0] ?? null
   if (issue) {
+    // Count the affected users off the events, exactly as the dashboard does.
+    // i.* carries issues.users_affected, which ingest writes as a literal 0 and
+    // never updates, so reading the column had this page reporting "Users 0"
+    // for an issue the dashboard row said had hit three people. Same expression
+    // on both surfaces, so the two cannot drift apart again.
+    issue.users_affected = Number((await db.unsafe(
+      `SELECT COUNT(DISTINCT CASE WHEN user_context ~ '^\\s*\\{'
+         THEN COALESCE(user_context::jsonb ->> 'id', user_context::jsonb ->> 'email', user_context::jsonb ->> 'username', user_context)
+       END) AS n FROM error_events WHERE issue_id = $1`,
+      [issueId],
+    ))?.[0]?.n ?? 0)
+
     events = (await db.unsafe(
       'SELECT * FROM error_events WHERE issue_id = $1 ORDER BY timestamp DESC LIMIT 25',
       [issueId],

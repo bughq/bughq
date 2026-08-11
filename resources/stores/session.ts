@@ -71,11 +71,26 @@ export const useSession = defineStore('session', () => {
   }
 
   /**
-   * Clear both cookies. Setting a cookie signal to '' makes useCookie emit
-   * `max-age=0` (`signals.js:3585`), which is the delete, so there is no
-   * separate removal path to keep in step.
+   * Revoke the token server-side, then clear both cookies. Setting a cookie
+   * signal to '' makes useCookie emit `max-age=0` (`signals.js:3585`), which is
+   * the delete, so there is no separate removal path to keep in step.
+   *
+   * The POST is what makes this a sign-out rather than a hide. Without it the
+   * token stayed valid after "Log out" — anyone holding a copy (a shared
+   * machine's history, a proxy log, a synced clipboard) could keep using it for
+   * the full 30-day expiry. account.stx always called /logout; the header
+   * button on every app page called this, which only dropped the cookie.
+   *
+   * Fire-and-forget and errors swallowed on purpose: a failed revoke must not
+   * strand someone signed in on the client, and the local clear below is what
+   * they can see. Read the token before clearing it — the request needs it.
    */
   function signOut(): void {
+    const bearer = token()
+    if (bearer) {
+      fetch('/logout', { method: 'POST', headers: { Authorization: `Bearer ${bearer}` }, keepalive: true })
+        .catch(() => {})
+    }
     token.set('')
     project.set('')
   }

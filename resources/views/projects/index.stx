@@ -24,9 +24,21 @@ if (token) {
 
 let projects = []
 if (user) {
+  // Owned OR joined, which is the same scope dashboard.stx uses. This asked for
+  // owner_id alone, so an invited member who had accepted was told "No apps yet"
+  // on the very page their own dashboard header links to as "All apps" — while
+  // the dashboard beside it listed the shared project. is_active comes along so
+  // an archived app can be marked as one here too; without it this page showed
+  // an app whose ingest returns 403 as though it were live.
+  const userEmail = String(user.email ?? '').toLowerCase()
   projects = (await db.unsafe(
-    'SELECT id, name, platform, ingest_key, created_at FROM projects WHERE owner_id = $1 ORDER BY created_at DESC NULLS LAST, id',
-    [Number(user.id)],
+    `SELECT DISTINCT p.id, p.name, p.platform, p.ingest_key, p.created_at, p.is_active,
+            (p.owner_id = $1) AS is_owner
+     FROM projects p
+     LEFT JOIN project_members m ON m.project_id = p.id AND lower(m.email) = $2
+     WHERE p.owner_id = $1 OR m.email IS NOT NULL
+     ORDER BY p.created_at DESC NULLS LAST, p.id`,
+    [Number(user.id), userEmail],
   )) ?? []
 }
 
@@ -117,10 +129,20 @@ function logout() {
           <span class="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center font-semibold" style="background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--accent)">{{ (p.name || '?').charAt(0).toUpperCase() }}</span>
           <div class="min-w-0 flex-1">
             <div class="font-semibold truncate">{{ p.name }}</div>
-            <div class="text-xs mt-0.5 flex items-center gap-2 text-subtle">
+            <div class="text-xs mt-0.5 flex flex-wrap items-center gap-2 text-subtle">
               <span class="mono">{{ p.platform || 'app' }}</span>
               <span aria-hidden="true">·</span>
               <span class="mono truncate">{{ p.id }}</span>
+              {{-- An archived app rejects every event with 403. Unlabelled it
+                   read as live, so the page that exists to survey your apps was
+                   the one place that would not tell you one had stopped
+                   collecting. The dashboard selector has always said so. --}}
+              @if (p.is_active === false)
+                <span class="tag">archived</span>
+              @endif
+              @if (p.is_owner === false)
+                <span class="tag">shared with you</span>
+              @endif
             </div>
           </div>
           <span class="text-xs shrink-0 text-subtle">{{ fromNow(p.created_at) }}</span>

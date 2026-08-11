@@ -127,8 +127,19 @@ async function userFromRequest(request: any): Promise<any | null> {
   const authHeader = request.headers?.get?.('authorization') ?? ''
   let token = request.bearerToken?.() ?? authHeader.replace(/^Bearer\s+/i, '')
   if (!token) {
+    // `bughq_token`, which is the only session cookie this app has ever set
+    // (resources/stores/session.ts). This read `token=` and could never match:
+    // the pattern anchors on start-of-string or `;`, and in `bughq_token=…` the
+    // character before `token=` is `_`. Nothing anywhere writes a bare `token`
+    // cookie, so the cookie branch was dead.
+    //
+    // It only showed on /issue/{id}/status, the one caller with no other way in
+    // — a plain HTML form POST carries no Authorization header — so Resolve,
+    // Ignore and Reopen answered 401 on every click and dropped the user on a
+    // raw JSON error page. The other callers are fetches that send a bearer
+    // token, which is why the dead branch stayed invisible.
     const cookie = request.headers?.get?.('cookie') ?? ''
-    const m = cookie.match(/(?:^|;)\s*token=([^;]+)/)
+    const m = cookie.match(/(?:^|;)\s*bughq_token=([^;]+)/)
     if (m)
       token = decodeURIComponent(m[1])
   }

@@ -108,6 +108,10 @@ function pageUrl(overrides: DashboardQuery): string {
   return s ? `/dashboard?${s}` : '/dashboard'
 }
 
+// Where the project selector sends you: the current filters, back to page 1,
+// because page 7 of the app you just left means nothing in the app you picked.
+const switchTarget = pageUrl({ page: 1 })
+
 const statusTabs = [
   { key: 'unresolved', label: 'Unresolved' },
   { key: 'resolved', label: 'Resolved' },
@@ -439,16 +443,28 @@ summary::-webkit-details-marker { display: none; }
 .theme-btn[data-t="dark"] .ic-moon { display: block; }
 </style>
 
-<!-- The pre-paint theme guard now lives in config/ui.ts `app.head.script`, so
-     it lands in <head> on every page — including the 23 marketing pages, which
-     never had one despite marketing.css shipping data-theme tokens.
+{{-- The pre-paint theme guard now lives in config/ui.ts `app.head.script`, so
+     it lands in the document head on every page — including the 23 marketing
+     pages, which never had one despite marketing.css shipping data-theme tokens.
 
      The old comment here argued the guard could not be extracted. It was right
      about @include (stx rewrites any page script into a scoped client script,
      and the include renders to nothing in the SSG path) and right about a store
      (the theme already lives in the html attribute and localStorage; a third
      copy fixes nothing). It simply never considered app.head.script, which is
-     the one mechanism that puts a raw inline script in <head> before paint. -->
+     the one mechanism that puts a raw inline script in the head before paint.
+
+     An stx comment, not an HTML one, and every tag and delimiter below is
+     named in prose. As an HTML comment this leaked: the fragment swap re-scans
+     the incoming markup, a literal head tag written here closed the comment
+     early, and ten lines of commentary painted as body text above the header on
+     every SPA arrival at the dashboard. An stx comment is stripped server-side
+     and never reaches the browser, so it cannot.
+
+     The same rule applies to the stx delimiters themselves. Spelling the
+     closing brace-dash sequence inside this block ends it right there and
+     spills the remainder onto the page — which is exactly what the first
+     attempt at this comment did. Describe the delimiters; never type them. --}}
 
 <div class="min-h-[100dvh] px-5 py-10 md:px-10">
   <div class="max-w-5xl mx-auto">
@@ -486,7 +502,13 @@ summary::-webkit-details-marker { display: none; }
       <div class="flex items-center gap-3">
         <StxLink to="/projects" class="wordmark-link"><h1 class="wordmark text-2xl md:text-[28px] leading-none">bughq</h1></StxLink>
         @if (projects.length > 1)
-          <select @change="switchProject" data-target="{{ pageUrl({ page: 1 }) }}"
+          {{-- data-target is a precomputed string, not a call. Written as an
+               inline pageUrl(...) invocation the braces of its object argument
+               closed the interpolation early, so the attribute rendered as the
+               literal source text and switching apps navigated to that and
+               404'd. Every other href on this page is precomputed the same way
+               (pager.prevHref, f.href); this attribute was the exception. --}}
+          <select @change="switchProject" data-target="{{ switchTarget }}"
                   class="panel mono px-3 py-1.5 text-sm text-muted">
             @foreach (projects as p)
               <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}{{ p.is_active === false ? ' (archived)' : '' }}</option>
