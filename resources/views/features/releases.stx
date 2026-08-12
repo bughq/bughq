@@ -30,7 +30,7 @@ useSeoMeta({
         <div class="code" style="max-width: 700px">
           <div class="code-bar"><span class="chart-cap">Tag events with a release and environment</span></div>
           <pre class="code-body"><code>bughq.init({
-  dsn: 'https://ingest.bughq.org/p_9f2c',
+  key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',
   release: 'checkout@2.14.0',   // git sha or version
   environment: 'production',    // vs staging, preview
 })

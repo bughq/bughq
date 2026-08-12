@@ -32,7 +32,7 @@ useSeoMeta({
           <pre class="code-body"><code>import { bughq } from '@bughq/sdk'
 
 bughq.init({
-  dsn: 'https://ingest.bughq.org/p_9f2c',
+  key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',
   release: 'api@2.14.0',
   environment: 'production',
 })
