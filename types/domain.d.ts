@@ -324,7 +324,11 @@ declare type AuthHeaders = {
  * --lib` does NOT accumulate: `--lib a --lib b` behaves exactly like `--lib b`
  * alone, verified by measurement, even though `--help` calls the flag
  * repeatable. Splitting these across two files silently drops whichever is not
- * last. Filed as stacksjs/stx#1926. Split back out when it accumulates.
+ * last. Filed as stacksjs/stx#1926 and FIXED upstream by 65c070cf30, which is
+ * not in a release yet — 0.2.176 is the newest tag and still drops all but the
+ * last (re-measured on the clean install: two --lib flags gave 167 errors where
+ * one gives 0). Split these back into their own file on the release that
+ * carries that commit.
  * ------------------------------------------------------------------------- */
 
 /**
