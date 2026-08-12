@@ -58,12 +58,20 @@ const requestedPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 
 // login/register). requestContext works in server scripts as of the framework
 // fix; a project the user does not own is never resolved, so no tenant can read
 // another tenant's issues by guessing a project id.
-const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
+// `__token`, not `token`: the double underscore is the one prefix stx never
+// bridges into the client. This holds the live 30-day session bearer, and the
+// bridge was publishing it into the page body — two copies of it in the served
+// HTML, which is a document that reaches browser disk cache, view-source, a
+// screen-share and anything that captures page context. The client block never
+// wanted it: every `token` in there is a function parameter for an INVITE
+// token. It was bridged because the names collide, and then I made that
+// explicit by naming it in defineClientPayload, which was the wrong call.
+const __token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
 let user = null
-if (token) {
+if (__token) {
   try {
     const { Auth } = await import('@stacksjs/auth')
-    user = await Auth.getUserFromToken(token)
+    user = await Auth.getUserFromToken(__token)
   }
   catch { user = null }
 }
@@ -340,7 +348,7 @@ const inviteTokens: string[] = pendingInvites.map(i => i.token)
 // a wrong assumption there is only found at runtime. Declaring the set makes it
 // checked, and makes the set itself reviewable: anything not listed and not
 // declared client-side is an accident.
-defineClientPayload({ inviteTokens, token })
+defineClientPayload({ inviteTokens })
 </script>
 
 <script client>
