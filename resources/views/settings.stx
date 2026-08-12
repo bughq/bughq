@@ -116,7 +116,7 @@ const channelView = channels.map(c => ({
 // exist, and every link this button copied 404'd. app/Invites/invites.ts builds
 // the emailed link and had the identical bug; both now use the base that serves
 // the route.
-const JOIN_BASE = `${INGEST_BASE}/join/`
+const JOIN_BASE = `${INGEST_BASE}/api/join/`
 const memberView = members.map(m => ({ id: m.id, email: m.email }))
 const inviteView = invites.map(i => ({ id: i.id, email: i.email, registered: !!i.registered, join: JOIN_BASE + i.token }))
 const keyFull = activeProject ? String(activeProject.ingest_key || '') : ''
@@ -127,7 +127,7 @@ const keyMask = maskKey(keyFull)
 // TEMPORARY: the snippet src points at the local ingest; switch to https://bughq.org/sdk.js at launch.
 function installGuide(platform: string | null, key: string): InstallGuide {
   const p = String(platform || 'javascript').toLowerCase()
-  const scriptTag = `<script src="${INGEST_BASE}/sdk.js"\n        data-key="${key}"><\/script>`
+  const scriptTag = `<script src="${INGEST_BASE}/api/sdk.js"\n        data-key="${key}"><\/script>`
   if (p === 'vue')
     return { label: 'Vue', install: 'bun add @bughq/vue', code: `import BugHQ from '@bughq/vue'\n\napp.use(BugHQ, { key: '${key}' })` }
   if (p === 'nuxt')

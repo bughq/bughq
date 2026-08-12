@@ -160,7 +160,17 @@ jobs:
           AWS_DYNAMODB_ENDPOINT: http://localhost:8000
         run: bun run test
 
-  publish-commit:
+  # Was `publish-commit`, which ran ./storage/framework/scripts/publish-commit —
+  # a path inside the gitignored vendored tree. `git ls-files storage/framework`
+  # returns nothing, so that script cannot exist in a checkout and the step could
+  # only ever fail. It never has, purely because it is pull_request-only and this
+  # repo works direct-to-main; the first PR would have hit it.
+  #
+  # Publishing commit-tagged packages is framework scaffolding anyway: bughq is an
+  # application and publishes nothing. The Build step below is the part worth
+  # keeping — it is the only thing that runs `buddy build` on a PR, and a build
+  # break is exactly what a PR should catch.
+  build:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
@@ -183,6 +193,3 @@ jobs:
 
       - name: Build
         run: bun run build
-
-      - name: Publish Commit
-        run: ./storage/framework/scripts/publish-commit

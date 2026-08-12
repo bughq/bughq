@@ -367,7 +367,13 @@ route.post('/api/invites/accept', async (request: any) => {
 // visitor: signed-in users go to the dashboard (where the banner offers Join);
 // signed-out users go to register with the email prefilled so they sign up as
 // the invited person. A short-lived cookie carries the token through auth.
-route.get('/join/{token}', async (request: any) => {
+// Registered under /api/ as well, and that alias is the one that works in
+// production: the public origin routes /api/* here and everything else to the
+// web app, so a bare GET /join/<token> answered the 404 page. Every invite link
+// this app has ever handed out — copied from settings or emailed — pointed at a
+// path that could not resolve on the public origin. See the note in
+// routes/errors.ts for the same split on /sdk.js and /health.
+async function joinHandler(request: any): Promise<Response> {
   const token = String(request.params.token ?? '')
   const invite = (await db.unsafe(
     'SELECT email FROM project_invites WHERE token = $1 LIMIT 1',
@@ -387,7 +393,10 @@ route.get('/join/{token}', async (request: any) => {
     ? '/dashboard'
     : `/register?email=${encodeURIComponent(invite.email)}&invite=${encodeURIComponent(token)}`
   return new Response(null, { status: 302, headers: { Location: location, 'Set-Cookie': cookie } })
-})
+}
+
+route.get('/join/{token}', joinHandler)
+route.get('/api/join/{token}', joinHandler)
 
 // ---------------------------------------------------------------------------
 // Alert channels (Slack / Discord webhooks)

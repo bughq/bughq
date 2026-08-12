@@ -457,7 +457,23 @@ route.post('/issue/{issueId}/status', async (request: any) => {
 // SDK + health
 // ---------------------------------------------------------------------------
 
-route.get('/sdk.js', (request: any) => {
+// Registered twice, and both are load-bearing.
+//
+// The public origin routes `/api/*` to this server and EVERYTHING else to the
+// web app, so a bare GET like `/sdk.js` never arrives here in production — it
+// reaches the page handler, finds no page, and answers the 404 HTML document.
+// Verified against bughq.org: `GET /sdk.js` returned `text/html` where a
+// customer's browser expected JavaScript, so every snippet this app generates
+// for a `javascript` project has been loading an error page. `/health` and
+// `/join/{token}` were unreachable the same way.
+//
+// POSTs are unaffected, which is why ingest itself was fine: `POST /errors`
+// answers correctly on the public origin today.
+//
+// The bare paths stay for direct access to this server (local dev, the health
+// probe on the box, anything talking to :3108) — they cost nothing and removing
+// them would break those.
+function sdkScript(request: any): Response {
   const origin = new URL(request.url).origin
   // eslint-disable pickier/no-unused-vars -- the string below is the browser SDK source (a template literal), not real declarations; pickier's token scan misreads its `var`/`function` tokens.
   const script = `(function(){
@@ -479,6 +495,12 @@ route.get('/sdk.js', (request: any) => {
   return new Response(script, {
     headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=3600', ...CORS },
   })
-})
+}
 
+route.get('/sdk.js', sdkScript)
+route.get('/api/sdk.js', sdkScript)
+
+// Same reachability split as /sdk.js above: /api/health is the one an uptime
+// check on the public origin can actually see.
 route.get('/health', () => response.json({ status: 'ok', app: 'bughq' }))
+route.get('/api/health', () => response.json({ status: 'ok', app: 'bughq' }))

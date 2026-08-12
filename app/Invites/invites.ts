@@ -21,7 +21,11 @@ import { ingestUrl } from '../Support/urls'
 const JOIN_BASE = ingestUrl()
 
 export function joinUrl(token: string): string {
-  return `${JOIN_BASE}/join/${encodeURIComponent(token)}`
+  // /api/join, not /join. The public origin routes /api/* to the API server and
+  // everything else to the web app, so the bare path answered the 404 page —
+  // measured against bughq.org. Every invite ever sent pointed at a URL the
+  // recipient could not open.
+  return `${JOIN_BASE}/api/join/${encodeURIComponent(token)}`
 }
 
 /** A hard-to-guess invite token that backs the join link. */
