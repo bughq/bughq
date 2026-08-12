@@ -604,17 +604,23 @@ summary::-webkit-details-marker { display: none; }
         </StxLink>
         @endif
       </div>
+      {{-- StxLink, not a plain anchor. interceptAllLinks is false, so an
+           unmarked anchor is a full document load — these tabs and the pager
+           were reloading the whole page to change a query parameter, which is
+           the one interaction on this page you use repeatedly. They are in-app
+           navigations to /dashboard, and they live inside <main>, so the swap
+           re-renders them with their own active state. --}}
       <nav class="flex flex-wrap items-center gap-1.5">
         @foreach (statusTabs as f)
-          <a href="{{ f.href }}"
+          <StxLink to="{{ f.href }}"
              class="pill px-3.5 py-1.5 text-sm font-medium border"
-             style="{{ f.key === statusFilter ? 'color: #fff; background: var(--accent); border-color: var(--accent)' : 'color: var(--text-2); border-color: var(--border)' }}">{{ f.label }}</a>
+             style="{{ f.key === statusFilter ? 'color: #fff; background: var(--accent); border-color: var(--accent)' : 'color: var(--text-2); border-color: var(--border)' }}">{{ f.label }}</StxLink>
         @endforeach
         <span class="w-px h-4 mx-1.5 shrink-0 bg-line" aria-hidden="true"></span>
         @foreach (rangeTabs as r)
-          <a href="{{ r.href }}"
+          <StxLink to="{{ r.href }}"
              class="pill mono px-3 py-1.5 text-xs font-medium border"
-             style="{{ r.key === rangeFilter ? 'color: var(--accent); border-color: var(--accent)' : 'color: var(--text-3); border-color: var(--border)' }}">{{ r.label }}</a>
+             style="{{ r.key === rangeFilter ? 'color: var(--accent); border-color: var(--accent)' : 'color: var(--text-3); border-color: var(--border)' }}">{{ r.label }}</StxLink>
         @endforeach
       </nav>
     </header>
@@ -700,13 +706,13 @@ summary::-webkit-details-marker { display: none; }
           <span class="mono text-xs text-subtle">{{ pager.from }}-{{ pager.to }} of {{ pager.total.toLocaleString() }}</span>
           <div class="flex items-center gap-2">
             @if (pager.hasPrev)
-              <a href="{{ pager.prevHref }}" class="pill px-3 py-1.5 text-xs font-medium border text-muted border-line">&larr; Prev</a>
+              <StxLink to="{{ pager.prevHref }}" class="pill px-3 py-1.5 text-xs font-medium border text-muted border-line">&larr; Prev</StxLink>
             @else
               <span class="pill px-3 py-1.5 text-xs font-medium border text-subtle border-line" style="opacity: 0.45">&larr; Prev</span>
             @endif
             <span class="mono text-xs tabular-nums text-subtle">{{ pager.page }} / {{ pager.pages }}</span>
             @if (pager.hasNext)
-              <a href="{{ pager.nextHref }}" class="pill px-3 py-1.5 text-xs font-medium border text-muted border-line">Next &rarr;</a>
+              <StxLink to="{{ pager.nextHref }}" class="pill px-3 py-1.5 text-xs font-medium border text-muted border-line">Next &rarr;</StxLink>
             @else
               <span class="pill px-3 py-1.5 text-xs font-medium border text-subtle border-line" style="opacity: 0.45">Next &rarr;</span>
             @endif
