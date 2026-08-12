@@ -14,6 +14,7 @@ import { dispatchAlerts } from '../app/Errors/alerts'
 import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, randomId } from '../app/Errors/fingerprint'
 import { authorizeIngest } from '../app/Errors/ingest'
 import { allowAlert, rateLimit } from '../app/Errors/limits'
+import { ingestUrl } from '../app/Support/urls'
 
 // Ingest abuse bounds. The public key gate is not enough on its own - a script
 // with the key (readable from any bundle) could flood the ingest.
@@ -474,7 +475,14 @@ route.post('/issue/{issueId}/status', async (request: any) => {
 // probe on the box, anything talking to :3108) — they cost nothing and removing
 // them would break those.
 function sdkScript(request: any): Response {
-  const origin = new URL(request.url).origin
+  // The PUBLIC origin, not the request's. Behind the reverse proxy `request.url`
+  // is the loopback address the proxy dialled, so this baked
+  // `fetch('http://127.0.0.1:3023/errors')` into the script served to real
+  // browsers — verified on bughq.org, which is a URL a customer's machine can
+  // only ever fail to reach. ingestUrl() is APP_URL in production and the local
+  // ingest port in dev; the request origin stays as the last resort for a
+  // deployment that configures neither.
+  const origin = ingestUrl() || new URL(request.url).origin
   // eslint-disable pickier/no-unused-vars -- the string below is the browser SDK source (a template literal), not real declarations; pickier's token scan misreads its `var`/`function` tokens.
   const script = `(function(){
   var s=document.currentScript,project=s&&s.getAttribute('data-project'),key=s&&s.getAttribute('data-key');
