@@ -64,7 +64,7 @@ const INSPECT = `(() => {
     .filter(u => u && u.origin === location.origin)
     .map(u => u.pathname)
   return JSON.stringify({
-    at: location.pathname,
+    at: location.pathname + location.search,
     mains: document.querySelectorAll('main').length,
     nestedMains: document.querySelectorAll('main main').length,
     mainClass: (document.querySelector('main') || {}).className || '',
@@ -152,10 +152,22 @@ async function auditNavs(base: string, pairs: string[]): Promise<void> {
         // router's document listener identically, and it works for links below the
         // fold or inside hover-only menus. Coordinate clicks silently miss those and
         // report a false DID_NOT_NAVIGATE.
+        // Match on pathname+search when the target carries a query string, and on
+        // pathname alone otherwise. Pathname-only matching cannot express a
+        // same-path navigation — a filter tab going to /dashboard?status=resolved
+        // reduced to the pathname '/dashboard', matched nothing, and reported
+        // NO_LINK. That reads as "no such link", not "this probe cannot see it",
+        // so a whole class of full-reload bug on query-only links passed silently.
+        // Query-only navigations are exactly where interceptAllLinks:false bites,
+        // since they are the links most likely to be written as plain anchors.
         const clicked = await evalJson(cdp, `(() => {
           const target = ${JSON.stringify(to)}
+          const withQuery = target.includes('?')
           const a = [...document.querySelectorAll('a[href]')].find(x => {
-            try { return new URL(x.getAttribute('href'), location.href).pathname === target }
+            try {
+              const u = new URL(x.getAttribute('href'), location.href)
+              return (withQuery ? u.pathname + u.search : u.pathname) === target
+            }
             catch { return false }
           })
           if (!a) return JSON.stringify({ found: false })
@@ -175,7 +187,10 @@ async function auditNavs(base: string, pairs: string[]): Promise<void> {
           return JSON.stringify(o)
         })()`)
 
-        const arrived = after.at === to
+        // `at` is pathname+search, so a pathname-only target has to be compared
+        // against the pathname half or every navigation to a page that keeps a
+        // query string reports a false DID_NOT_NAVIGATE.
+        const arrived = to.includes('?') ? after.at === to : after.at.split('?')[0] === to
         out.push({
           from,
           to,
