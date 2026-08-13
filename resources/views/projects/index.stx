@@ -115,6 +115,12 @@ function logout() {
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
         <StxLink to="/projects/new" class="btn px-4 py-2 text-sm font-semibold">+ New app</StxLink>
+        {{-- The other half of the /account link on the dashboard. This is the
+             page a user with no project at all lands on, and the dashboard
+             chrome never renders for them, so without this the account and its
+             plan stay unreachable for exactly the people most likely to be
+             looking for them. --}}
+        <StxLink to="/account" class="btn-ghost px-3.5 py-2 text-sm font-medium bg-panel">Account</StxLink>
         <button @click="logout" class="btn-ghost px-3.5 py-2 text-sm font-medium bg-panel">Log out</button>
       </div>
     </header>

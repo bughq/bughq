@@ -30,13 +30,36 @@ export default new Action({
       pro = false
     }
 
-    // Enrich with profile fields the account page shows (avatar + which
-    // provider the account signed in with). Tolerate columns not existing yet.
+    // Two selects, not one, and the split is the whole point.
+    //
+    // `avatar` and `provider` do not exist on the users table in this schema.
+    // A select naming a missing column fails as a statement, so the catch below
+    // threw away `created_at` too — a NOT NULL column that is always present and
+    // was being read in the same breath. The account page rendered "Member
+    // since --" for every user who ever loaded it: not a date-formatting bug,
+    // a column that never actually reached the client.
+    //
+    // The original comment said "tolerate columns not existing yet", which was
+    // the right intent implemented as all-or-nothing. Tolerance has to be per
+    // column, so the guaranteed field gets its own statement.
+    let createdAt: unknown = null
+    try {
+      const row = await db.selectFrom('users')
+        .where('id', '=', (user as any).id)
+        .select(['created_at'])
+        .executeTakeFirst()
+      createdAt = (row as any)?.created_at ?? null
+    }
+    catch {
+      createdAt = null
+    }
+
+    // Still optional, still tolerated — these genuinely may not be there.
     let profile: any = {}
     try {
       profile = await db.selectFrom('users')
         .where('id', '=', (user as any).id)
-        .select(['avatar', 'provider', 'created_at'])
+        .select(['avatar', 'provider'])
         .executeTakeFirst() ?? {}
     }
     catch {
@@ -50,7 +73,7 @@ export default new Action({
         email: (user as any).email,
         avatar: profile.avatar ?? (user as any).avatar ?? null,
         provider: profile.provider ?? null,
-        created_at: profile.created_at ?? null,
+        created_at: createdAt ?? null,
       },
       pro,
       plan: pro ? 'pro' : 'free',

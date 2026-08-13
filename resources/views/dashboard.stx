@@ -367,10 +367,6 @@ function signOut() {
   window.location.assign('/login')
 }
 
-// Drives the Upgrade/Pro chrome. Only the plan is client-resolved; everything
-// else on this page is already rendered by the server block above.
-const pro = state(false)
-
 // Invite banner. The rows are server-rendered, so each one's token is baked
 // into its own directives; these signals only track which rows are hidden and
 // which is mid-request. Dismiss hides for this view only - it does not decline.
@@ -427,21 +423,19 @@ function joinInvite(token: string): void {
     .catch(() => joining.set(''))
 }
 
+// Kept for the 401 alone, not for the body. A token the server has since revoked
+// still renders this whole page from the cookie, and every action on it then
+// fails silently — so the session is revalidated on load and a dead one signs
+// out rather than wedging. The response used to also carry `pro`, which drove the
+// Upgrade/Pro chrome; that chrome is gone and the body is no longer read.
 const authToken = useStore('session').token()
 if (authToken) {
   fetch('/api/me', { headers: { Authorization: `Bearer ${authToken}` } })
     .then((r) => {
-      if (r.status === 401) {
+      if (r.status === 401)
         signOut()
-        return null
-      }
-      return r.ok ? r.json() : null
     })
-    .then((d) => {
-      if (d && d.pro)
-        pro.set(true)
-    })
-    .catch(() => { /* leave the Upgrade button as-is */ })
+    .catch(() => { /* offline or transient — do not sign a valid session out */ })
 }
 </script>
 
@@ -473,7 +467,7 @@ select.panel {
 :root[data-theme="dark"] select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
 :root[data-theme="light"] select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2397a1b2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
 select.panel:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
-/* Fixed chrome (Log out / Upgrade). These used to be built with createElement
+/* Fixed chrome (Account / Log out). These used to be built with createElement
    and positioned with an inline cssText string, which is why the position and
    typography were split from the colors. They are ordinary markup now, so the
    whole rule lives here. */
@@ -482,12 +476,12 @@ select.panel:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--b
 .chrome-logout { right: 18px; font-weight: 500; cursor: pointer;
   border: 1px solid var(--border); background: var(--panel); color: var(--text-2); transition: color 0.15s ease, border-color 0.15s ease; }
 .chrome-logout:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
-.chrome-upgrade { right: 112px; font-weight: 600; text-decoration: none;
-  background: var(--accent); color: #fff; transition: filter 0.15s ease, transform 0.12s ease; }
-.chrome-upgrade:hover { filter: brightness(1.12); }
-.chrome-upgrade:active { transform: translateY(1px); }
-.chrome-pro { right: 112px; font-weight: 600; text-decoration: none;
-  background: transparent; color: var(--accent); border: 1px solid var(--accent); cursor: default; }
+/* Ghost, matching Log out rather than the accent fill the Upgrade pill used to
+   carry. It is navigation to a settings page, not a call to action, and 112px is
+   the offset that was already measured to clear Log out at this font size. */
+.chrome-account { right: 112px; font-weight: 500; text-decoration: none;
+  border: 1px solid var(--border); background: var(--panel); color: var(--text-2); transition: color 0.15s ease, border-color 0.15s ease; }
+.chrome-account:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .reveal { opacity: 0; transform: translateY(10px); animation: reveal 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
 @keyframes reveal { to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .reveal { animation: none; opacity: 1; transform: none; } }
@@ -521,15 +515,18 @@ summary::-webkit-details-marker { display: none; }
      spills the remainder onto the page — which is exactly what the first
      attempt at this comment did. Describe the delimiters; never type them. --}}
 
-{{-- The top padding clears the fixed chrome, it is not taste. Upgrade and Log
+{{-- The top padding clears the fixed chrome, it is not taste. Account and Log
      out are position:fixed at top 16px and 31px tall, so they own the page's
      top 47px on the right — while py-10 started the content at 40, seven pixels
      INSIDE them. Nothing showed it until the invite banner arrived: a bordered,
-     full-width panel first in the flow, whose top-right corner the Upgrade pill
+     full-width panel first in the flow, whose top-right corner the second pill
      then painted over. The header that normally sits there overlaps the same
      band and gets away with it only because its right-hand column wraps to a
      second line. Below 1406px viewport the chrome reaches into this column at
-     every width, so the room has to be reserved rather than hoped for. --}}
+     every width, so the room has to be reserved rather than hoped for.
+
+     Still two pills wide after the Upgrade pill was retired: Account took the
+     same slot at the same offset, so the reserved band is unchanged. --}}
 <div class="min-h-[100dvh] px-5 pt-16 pb-10 md:px-10">
   <div class="max-w-5xl mx-auto">
 
@@ -738,13 +735,20 @@ summary::-webkit-details-marker { display: none; }
     {{-- Fixed chrome. Markup rather than createElement, which means it belongs
          to the fragment and leaves with it on a swap - no stale-node cleanup,
          no re-appending on every visit. Both are position:fixed, so sitting
-         here in the tree does not affect where they paint. --}}
-    @if (pro())
-      <span class="chrome-btn chrome-pro">Pro</span>
-    @endif
-    @if (!pro())
-      <StxLink to="/pricing" class="chrome-btn chrome-upgrade">Upgrade</StxLink>
-    @endif
+         here in the tree does not affect where they paint.
+
+         The plan pill used to sit in the Account slot: an accent Upgrade button
+         for free users, a Pro badge for subscribers. Both are gone. A billing
+         CTA pinned to the surface you stare at all day is an ad for our own
+         product wearing the costume of a control, and the plan is not something
+         you change from a triage view. It is account state, so it lives with the
+         rest of the account.
+
+         Account is also what makes that page reachable at all — /account was
+         orphaned, linked from nowhere, and the Upgrade pill was the only route
+         into anything plan-shaped. Removing the pill without this link would
+         have made the plan unmanageable rather than relocated. --}}
+    <StxLink to="/account" class="chrome-btn chrome-account">Account</StxLink>
     <button @click="signOut" class="chrome-btn chrome-logout">Log out</button>
     @endif
 
@@ -755,9 +759,9 @@ summary::-webkit-details-marker { display: none; }
   </div>
 </div>
 
-<!-- Client guard: enforce the bearer token, mirror it into the cookie the
-     server authenticates from, and add the logout / plan chrome. The server
-     already resolved the user's projects and active project. -->
+<!-- Client guard: enforce the bearer token and mirror it into the cookie the
+     server authenticates from. The server already resolved the user's projects
+     and active project, and the chrome is plain markup in the fragment. -->
 <script>
 (function () {
   // The bughq_token cookie is the single source of truth: it is what every
