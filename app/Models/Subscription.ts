@@ -11,14 +11,21 @@ export default defineModel({
     useUuid: true,
   },
   attributes: {
+    // 65535, not 512, for the same reason as Issue.title: the generator maps
+    // max() to a column type and 512 lands on `varchar(512)`, while the table has
+    // always been `text` (0000000004). That mismatch was the second of the two
+    // "possible data loss" changes that made every production migrate run abort
+    // before applying anything. The value is not a real length limit — a Stripe
+    // subscription type is a short slug — it is the device this codebase uses to
+    // pin a column to text.
     type: {
       fillable: true,
       validation: {
-        rule: schema.string().required().max(512),
+        rule: schema.string().required().max(65535),
         message: {
           string: 'type must be a string',
           required: 'type is required',
-          max: 'type must have a maximum of 512 characters',
+          max: 'type must have a maximum of 65535 characters',
         },
       },
       factory: faker => faker.lorem.lines(1),

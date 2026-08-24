@@ -148,5 +148,13 @@ jobs:
           # already-decrypted shared/.env (+ .env.keys) first so the plaintext
           # config is in the shell env before buddy loads.
           # Y = run migrations, n = do NOT apply destructive drops (two_factor_* etc.)
-          $SSH "cd ${APP_DIR}/current && set -a && . ${APP_DIR}/shared/.env && . ${APP_DIR}/shared/.env.keys && set +a && printf 'Y\nn\n' | bun node_modules/@stacksjs/buddy/dist/cli.js migrate" \
-            || echo "::warning::migrate returned non-zero — inspect the output above"
+          # NOT `|| echo "::warning::"`. That swallowed the exit code, and between
+          # 11 Aug and 24 Aug fourteen consecutive deploys reported success while
+          # migrate refused to apply anything — the destructive pre-flight aborts
+          # the ENTIRE run, so a single unresolved type drift silently froze the
+          # production schema. The visible cost was every login returning 500
+          # (users had no two_factor_* columns for the framework's login path) and
+          # a members endpoint reading columns that were never created. A failed
+          # schema change must fail the job: the release is already live by this
+          # point, so a red step here is a loud alarm, not a broken deploy.
+          $SSH "cd ${APP_DIR}/current && set -a && . ${APP_DIR}/shared/.env && . ${APP_DIR}/shared/.env.keys && set +a && printf 'Y\nn\n' | bun node_modules/@stacksjs/buddy/dist/cli.js migrate"
