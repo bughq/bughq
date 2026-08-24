@@ -99,3 +99,14 @@ storage/framework/cache/
 # Local backups of env files (may contain secrets) — never commit
 .env*.bak
 .env.corrupted*
+
+# Emails rendered to disk by the `log` mail driver (MAIL_MAILER=log), which
+# writes every outgoing message here as HTML instead of sending it. Local dev
+# artifacts: never source, and each password-reset copy embeds a live reset
+# token, so they must not reach a commit.
+#
+# The driver resolves this path from its own package location, NOT the working
+# directory — node_modules/@stacksjs/email/dist/drivers/../../../../../logs/mail
+# — so any app borrowing this project's node_modules writes its mail here too.
+# That is how a dozen loghq password resets ended up in bughq's logs/mail.
+/logs/
