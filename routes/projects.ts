@@ -11,13 +11,23 @@ import { Auth } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
 import { type ChannelType, sendTestAlert, validateWebhook } from '../app/Errors/channels'
-import { joinUrl, newInviteToken, sendInviteEmail } from '../app/Invites/invites'
+import type { InviteDelivery } from '../app/Invites/invites'
+import { deliverInvite, joinUrl, newInviteToken } from '../app/Invites/invites'
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
 const CHANNEL_TYPES = new Set<ChannelType>(['slack', 'discord'])
+
+/**
+ * How long the invite endpoint waits for the mail transport before answering
+ * anyway. Long enough for a healthy SMTP handshake, short enough that a wedged
+ * one does not hold the owner's browser open. Losing the race is not an error:
+ * the delivery result is written to the invite row regardless, so the Members
+ * list corrects itself on the next load.
+ */
+const INVITE_DELIVERY_TIMEOUT_MS = 8000
 
 /** True when `user` owns the project. Channels inherit the project's owner. */
 async function ownsProject(user: any, projectId: string): Promise<boolean> {
@@ -246,14 +256,24 @@ route.get('/api/projects/{projectId}/members', async (request: any) => {
     [projectId],
   )) ?? []
   const invites = (await db.unsafe(
-    `SELECT i.id, i.email, i.created_at, (u.id IS NOT NULL) AS registered
+    `SELECT i.id, i.email, i.created_at, i.delivery_status, i.delivery_error, (u.id IS NOT NULL) AS registered
      FROM project_invites i LEFT JOIN users u ON lower(u.email) = lower(i.email)
      WHERE i.project_id = $1 ORDER BY i.created_at ASC NULLS LAST, i.email`,
     [projectId],
   )) ?? []
   return json({
     members: members.map((m: any) => ({ id: m.id, email: m.email, role: m.role, kind: 'member' })),
-    invites: invites.map((i: any) => ({ id: i.id, email: i.email, kind: 'invite', registered: !!i.registered })),
+    invites: invites.map((i: any) => ({
+      id: i.id,
+      email: i.email,
+      kind: 'invite',
+      registered: !!i.registered,
+      // Whether the join link actually reached them. Without this the owner
+      // cannot tell a teammate who has not got round to accepting from one who
+      // was never emailed at all.
+      delivery_status: i.delivery_status ?? 'pending',
+      delivery_error: i.delivery_error ?? null,
+    })),
   })
 }).skipCsrf()
 
@@ -290,23 +310,53 @@ route.post('/api/projects/{projectId}/members', async (request: any) => {
   if (already)
     return json({ error: 'That person is already a member.' }, 409)
   const pending = (await db.unsafe(
-    'SELECT token FROM project_invites WHERE project_id = $1 AND lower(email) = $2 LIMIT 1',
+    'SELECT id, token FROM project_invites WHERE project_id = $1 AND lower(email) = $2 LIMIT 1',
     [projectId, email],
   ))?.[0]
 
-  // Re-inviting reuses the existing token (idempotent); otherwise mint one.
+  // Re-inviting reuses the existing token and row (idempotent), which is also
+  // what makes this endpoint the Resend button — the UI posts the same address
+  // again and the recipient gets another copy of the same link.
   const token = pending?.token ?? newInviteToken()
+  let inviteId = pending?.id
   if (!pending) {
+    inviteId = newMemberId()
     await db.unsafe(
       'INSERT INTO project_invites (id, project_id, email, token, invited_by) VALUES ($1, $2, $3, $4, $5)',
-      [newMemberId(), projectId, email, token, Number(user.id)],
+      [inviteId, projectId, email, token, Number(user.id)],
+    )
+  }
+  else {
+    // A resend is a fresh attempt, so clear the previous verdict rather than
+    // leaving a stale "failed" next to a link that has just been sent again.
+    await db.unsafe(
+      `UPDATE project_invites SET delivery_status = 'pending', delivery_error = NULL WHERE id = $1`,
+      [inviteId],
     )
   }
   const projectName = project?.name || projectId
-  // Best-effort email; never let a slow/failing transport break the invite.
-  sendInviteEmail(email, projectName, token, user.name ?? undefined)
-    .catch(err => console.error('[invite] email failed:', err instanceof Error ? err.message : err))
-  return json({ invite: { email, kind: 'invite', join_url: joinUrl(token), resent: !!pending } }, 201)
+
+  // Wait for the transport, but not indefinitely. Telling the owner whether the
+  // email actually left is the whole point, and that answer only exists once the
+  // send returns — but a wedged SMTP connection must not hold the request open
+  // for its socket timeout. `deliverInvite` records the outcome on the row
+  // itself, so when the race is lost the write still lands and the Members list
+  // shows the real state on the next load; the response just says 'pending'.
+  const delivery = await Promise.race([
+    deliverInvite({ inviteId: String(inviteId), email, projectName, token, inviterName: user.name ?? undefined }),
+    new Promise<InviteDelivery>(resolve => setTimeout(() => resolve({ status: 'pending', error: null }), INVITE_DELIVERY_TIMEOUT_MS)),
+  ])
+
+  return json({
+    invite: {
+      email,
+      kind: 'invite',
+      join_url: joinUrl(token),
+      resent: !!pending,
+      delivery_status: delivery.status,
+      delivery_error: delivery.error,
+    },
+  }, 201)
 }).skipCsrf()
 
 // Remove a person (owner-only): an active member or a pending invite. Ids are

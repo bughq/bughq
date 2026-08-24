@@ -90,6 +90,15 @@ declare interface ProjectInvite {
   token: string
   invited_by: number | null
   created_at: string
+  /**
+   * Whether the join link actually reached them. `pending` means no verdict
+   * yet — the row is written before the transport answers, and the invite
+   * endpoint stops waiting after a timeout.
+   */
+  delivery_status: 'pending' | 'sent' | 'failed'
+  /** The provider's reason, when `delivery_status` is `failed`. */
+  delivery_error: string | null
+  delivered_at: string | null
 }
 
 declare interface AlertChannel {

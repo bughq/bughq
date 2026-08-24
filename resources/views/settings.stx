@@ -49,7 +49,7 @@ interface ProjectRow extends Pick<Project, 'id' | 'name' | 'platform' | 'ingest_
 interface ChannelRow extends Pick<AlertChannel, 'id' | 'type' | 'label' | 'webhook_url' | 'enabled' | 'created_at'> {}
 interface MemberRow extends Pick<ProjectMember, 'id' | 'email' | 'role'> {}
 /** `registered` is computed per row (`u.id IS NOT NULL`), not a project_invites column. */
-interface InviteRow extends Pick<ProjectInvite, 'id' | 'email' | 'token'> {
+interface InviteRow extends Pick<ProjectInvite, 'id' | 'email' | 'token' | 'delivery_status' | 'delivery_error'> {
   registered: boolean
 }
 
@@ -82,7 +82,7 @@ if (user) {
       [activeProject.id],
     )) ?? []
     invites = (await db.unsafe(
-      `SELECT i.id, i.email, i.token, (u.id IS NOT NULL) AS registered
+      `SELECT i.id, i.email, i.token, i.delivery_status, i.delivery_error, (u.id IS NOT NULL) AS registered
        FROM project_invites i LEFT JOIN users u ON lower(u.email) = lower(i.email)
        WHERE i.project_id = $1 ORDER BY i.created_at ASC NULLS LAST, i.email`,
       [activeProject.id],
@@ -118,7 +118,38 @@ const channelView = channels.map(c => ({
 // the route.
 const JOIN_BASE = `${INGEST_BASE}/api/join/`
 const memberView = members.map(m => ({ id: m.id, email: m.email }))
-const inviteView = invites.map(i => ({ id: i.id, email: i.email, registered: !!i.registered, join: JOIN_BASE + i.token }))
+/**
+ * What each pending invite's second line says. The three states are genuinely
+ * different situations for the owner and used to be collapsed into one
+ * reassuring sentence: an invite whose email bounced looked exactly like one
+ * the recipient simply had not accepted yet.
+ */
+function deliveryNote(i: InviteRow): string {
+  if (i.delivery_status === 'failed')
+    return `Email could not be delivered${i.delivery_error ? ` — ${i.delivery_error}` : ''}. Copy the link and send it yourself.`
+  // 'pending' covers two cases: a send still in flight (the endpoint stops
+  // waiting after 8s), and every invite created before delivery was tracked at
+  // all. Backfilling those to 'sent' would be inventing the exact data this
+  // feature exists to stop inventing, so the wording is honest about not
+  // knowing and points at the button that settles it.
+  if (i.delivery_status === 'pending')
+    return 'Delivery not confirmed yet — resend to check.'
+  return i.registered ? 'Has an account — pending accept' : 'Invite sent — awaiting sign-up'
+}
+const inviteView = invites.map(i => ({
+  id: i.id,
+  email: i.email,
+  registered: !!i.registered,
+  join: JOIN_BASE + i.token,
+  failed: i.delivery_status === 'failed',
+  note: deliveryNote(i),
+}))
+// Resend posts the address back to the invite endpoint, which is idempotent per
+// (project, email) and reuses the existing token — so a resend is literally the
+// same call as the original invite and needs no endpoint of its own. Keyed by
+// invite id rather than interpolating the address into an @click handler: an
+// apostrophe is legal in an email local-part and would close the handler string.
+const inviteEmails: Record<string, string> = Object.fromEntries(inviteView.map((i): [string, string] => [i.id, i.email]))
 const keyFull = activeProject ? String(activeProject.ingest_key || '') : ''
 const keyMask = maskKey(keyFull)
 
@@ -196,7 +227,7 @@ const projectName = activeProject?.name || ''
 // bridge escapes `<` to < on the way out (see the long note above) — and
 // naming them makes it explicit which values carry that hazard rather than
 // leaving it to whoever next reads the client block.
-defineClientPayload({ channelEnabled, codeText, installText, justRotated, keyFull, keyMask, projectId, projectName })
+defineClientPayload({ channelEnabled, codeText, installText, inviteEmails, justRotated, keyFull, keyMask, projectId, projectName })
 </script>
 
 <script client>
@@ -402,6 +433,44 @@ function removeMember(id: string): void {
     })
     .catch(() => {
       removing.set('')
+      inviteNote.set({ text: 'Network error.', ok: false })
+    })
+}
+
+const resending = state('')
+
+function resendLabel(id: string): string {
+  return resending() === id ? 'Sending…' : 'Resend'
+}
+
+/**
+ * Send the invite email again. Posts the same address to the invite endpoint,
+ * which reuses the existing row and token — so the recipient gets another copy
+ * of the link they already have, not a second competing invite.
+ */
+function resendInvite(id: string): void {
+  if (resending())
+    return
+  const email = inviteEmails[id]
+  if (!email)
+    return
+  resending.set(id)
+  inviteNote.set(null)
+  fetch(memberApi(), { method: 'POST', headers: authHeaders(), body: JSON.stringify({ email }) })
+    .then(r => r.json().then(b => ({ ok: r.ok, b })))
+    .then((res) => {
+      resending.set('')
+      if (!res.ok) {
+        inviteNote.set({ text: res.b.error || 'Could not resend that invite.', ok: false })
+        return
+      }
+      // Reload for the same reason the invite form does: the row's delivery
+      // state is server-rendered, and the point of resending is to see whether
+      // it changed.
+      window.location.reload()
+    })
+    .catch(() => {
+      resending.set('')
       inviteNote.set({ text: 'Network error.', ok: false })
     })
 }
@@ -784,6 +853,11 @@ html { scroll-behavior: smooth; }
 .badge-soft { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--accent); }
 .badge-owner { background: color-mix(in srgb, var(--accent) 16%, var(--panel)); color: var(--accent); }
 .badge-pending { background: color-mix(in srgb, var(--text-3) 18%, var(--panel)); color: var(--text-2); }
+/* Undelivered invites. --warn is the palette's danger colour (btn-danger uses
+   it too); a distinct class name rather than `text-warn` so this can never
+   collide with a generated utility of the same name. */
+.badge-failed { background: color-mix(in srgb, var(--warn) 16%, var(--panel)); color: var(--warn); }
+.note-failed { color: var(--warn); }
 .tgl { width: 38px; height: 22px; border-radius: 999px; background: var(--border); position: relative; transition: background 0.15s ease; cursor: pointer; flex: none; }
 .tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 999px; background: #fff; transition: transform 0.15s ease; }
 .tgl[data-on="1"] { background: var(--ok); }
@@ -961,9 +1035,15 @@ html { scroll-behavior: smooth; }
               <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold text-subtle" style="background: color-mix(in srgb, var(--text-3) 12%, var(--panel))">{{ (i.email || '?').charAt(0).toUpperCase() }}</span>
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium truncate">{{ i.email }}</div>
-                <div class="text-xs mt-0.5 text-subtle">{{ i.registered ? 'Has an account — pending accept' : 'Invite sent — awaiting sign-up' }}</div>
+                <div class="text-xs mt-0.5 {{ i.failed ? 'note-failed' : 'text-subtle' }}">{{ i.note }}</div>
               </div>
-              <span class="badge badge-pending" title="Pending — becomes a member once they accept">Invited</span>
+              @if (i.failed)
+                <span class="badge badge-failed" title="The invite email was not delivered — the join link still works if you share it">Undelivered</span>
+              @endif
+              @if (!i.failed)
+                <span class="badge badge-pending" title="Pending — becomes a member once they accept">Invited</span>
+              @endif
+              <button @click="resendInvite('{{ i.id }}')" :disabled="resending() === '{{ i.id }}'" :text="resendLabel('{{ i.id }}')" class="btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Send the invite email again">Resend</button>
               <button @click="copyText('join-{{ i.id }}', '{{ i.join }}')" :text="copyLabel('join-{{ i.id }}', 'Copied ✓', 'Copy link')" class="btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Copy join link">Copy link</button>
               <button @click="removeMember('{{ i.id }}')" :disabled="removing() === '{{ i.id }}'" :text="removeLabel('{{ i.id }}')" class="btn-danger px-2.5 py-1.5 text-xs font-medium" title="Revoke invite">Remove</button>
             </div>
@@ -984,7 +1064,7 @@ html { scroll-behavior: smooth; }
             <span class="note show note-err text-xs mt-2.5" :text="noteText(inviteNote())"></span>
           @endif
           <p class="text-xs mt-3.5 leading-relaxed text-subtle">
-            We email them a join link. They sign up (or log in) with that email, then accept from a banner in the app. Members can view and triage issues; only you can manage keys, members, and deletion.
+            We email them a join link. They sign up (or log in) with that email, then accept from a banner in the app. Members can view and triage issues and are emailed about new issues and regressions, the same as you; only you can manage keys, members, and deletion.
           </p>
         </div>
       </section>
