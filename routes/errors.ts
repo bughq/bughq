@@ -285,67 +285,90 @@ route.post('/errors', async (request: any) => {
     : null
   const fp = fpOverride ? fingerprintFromParts(fpOverride) : fingerprint(errorType, message, stack)
 
-  // Roll the occurrence into its Issue: bump an existing group (reopening it if
-  // it was resolved — a regression), or open a new one. Reads go through
-  // db.unsafe (parameterized) so they're schema-independent and skip the global
-  // soft-delete filter these tables don't participate in.
-  const existing = (await db.unsafe(
-    'SELECT id, count, status FROM issues WHERE project_id = $1 AND fingerprint = $2 LIMIT 1',
-    [String(projectId), fp],
+  // Roll the occurrence into its Issue in ONE atomic statement.
+  //
+  // This used to be a SELECT followed by either an UPDATE that computed
+  // `count = read + 1` in application code, or an INSERT with no ON CONFLICT.
+  // Four defects fell out of that shape, and all four are fixed by making it
+  // one statement:
+  //
+  //   - Lost increments. Read-then-write is not atomic, so concurrent events
+  //     overwrote each other's count. Measured on live data: one issue stored 3
+  //     against 21 real error_events rows, another 2 against 11 — and `count` is
+  //     the number the dashboard, the alerts and the issue page all display.
+  //   - Ignore never stuck. The UPDATE wrote the literal 'unresolved' on every
+  //     repeat, so the next occurrence silently un-ignored an ignored issue.
+  //     The CASE below reopens only what was RESOLVED — which is the regression
+  //     the alert exists for — and leaves 'ignored' alone.
+  //   - last_seen could move BACKWARDS, because the last write to COMMIT won
+  //     rather than the one carrying the latest timestamp. That corrupts the
+  //     ordering the issue list is sorted by (ORDER BY last_seen DESC), so a
+  //     recurring error could fail to rise. GREATEST fixes it: the timestamps
+  //     are fixed-width ISO-8601 UTC, so lexical order is chronological order.
+  //   - Two concurrent FIRST sightings of one fingerprint raced the unique index
+  //     (project_id, fingerprint). The loser threw, the request 500'd, and the
+  //     event was lost outright — the error_events insert below is never
+  //     reached. ON CONFLICT turns the loser into an update.
+  //
+  // `prev` reads the pre-upsert status in the same snapshot; once the CASE has
+  // rewritten the row there is no other way to tell a regression from an
+  // ordinary repeat. `xmax = 0` is the standard way to ask an upsert whether it
+  // inserted or updated.
+  const title = issueTitle(errorType, message)
+  const where = culprit(stack)
+  const rolled = (await db.unsafe(
+    `WITH prev AS (
+       SELECT status AS prev_status FROM issues
+        WHERE project_id = $2 AND fingerprint = $3
+     ), up AS (
+       INSERT INTO issues (
+         id, project_id, fingerprint, title, culprit, error_type, level,
+         status, count, users_affected, first_seen, last_seen
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'unresolved', 1, 0, $8, $8)
+       ON CONFLICT (project_id, fingerprint) DO UPDATE SET
+         count      = COALESCE(issues.count, 0) + 1,
+         last_seen  = GREATEST(issues.last_seen, EXCLUDED.last_seen),
+         first_seen = COALESCE(issues.first_seen, EXCLUDED.first_seen),
+         status     = CASE
+                        WHEN issues.status IS NULL      THEN 'unresolved'
+                        WHEN issues.status = 'resolved' THEN 'unresolved'
+                        ELSE issues.status
+                      END
+       RETURNING id, count, (xmax = 0) AS inserted
+     )
+     SELECT up.id, up.count, up.inserted, (SELECT prev_status FROM prev) AS prev_status
+       FROM up`,
+    // title is a text column; culprit/error_type/level are varchar(255), so
+    // those three stay capped or an oversized value aborts the insert.
+    [randomId(), String(projectId), fp, title, col255(where), col255(errorType), col255(body.level ?? 'error'), now],
   ))?.[0]
 
-  let issueId: string
-  if (existing) {
-    issueId = existing.id
-    await db.unsafe(
-      'UPDATE issues SET count = $1, last_seen = $2, status = $3 WHERE id = $4',
-      [Number(existing.count ?? 0) + 1, now, 'unresolved', issueId],
-    )
-    // A resolved issue coming back is a regression — the one repeat occurrence
-    // worth an email. Fire-and-forget: mail transport must never slow ingest.
-    // Gated by the per-project alert throttle so a flood can't email-bomb.
-    if (String(existing.status) === 'resolved' && await allowAlert(String(projectId))) {
-      dispatchAlerts(String(projectId), {
-        id: issueId,
-        title: issueTitle(errorType, message),
-        culprit: culprit(stack),
-        level: body.level ?? 'error',
-        environment: body.environment ?? null,
-        count: Number(existing.count ?? 0) + 1,
-      }, 'regression').catch(err => console.error('[alerts] regression alert failed:', err instanceof Error ? err.message : err))
-    }
-  }
-  else {
-    issueId = randomId()
-    const title = issueTitle(errorType, message)
-    const where = culprit(stack)
-    await db.insertInto('issues').values({
+  // A statement that cannot fail silently: without a row there is no issue id to
+  // attach the event to, and attaching it to a fabricated one would corrupt the
+  // grouping this whole endpoint exists to do.
+  if (!rolled?.id)
+    return json({ error: 'could not record issue' }, 500)
+
+  const issueId = String(rolled.id)
+  const isNewIssue = rolled.inserted === true
+  // Only a RESOLVED issue coming back is a regression. An ignored one recurring
+  // is expected — that is what ignoring it meant — and must not alert.
+  const isRegression = !isNewIssue && String(rolled.prev_status ?? '') === 'resolved'
+
+  // The two moments worth a human's attention. Fire-and-forget: mail and webhook
+  // transports must never slow or break the ingest path. Gated by the per-project
+  // throttle so a flood of unique errors cannot email-bomb.
+  if ((isNewIssue || isRegression) && await allowAlert(String(projectId))) {
+    const kind = isNewIssue ? 'new' : 'regression'
+    dispatchAlerts(String(projectId), {
       id: issueId,
-      project_id: String(projectId),
-      fingerprint: fp,
       title,
-      culprit: col255(where),
-      // varchar(255) columns — cap so an oversized value can't abort the insert.
-      error_type: col255(errorType),
-      level: col255(body.level ?? 'error'),
-      status: 'unresolved',
-      count: 1,
-      users_affected: 0,
-      first_seen: now,
-      last_seen: now,
-    }).execute()
-    // First occurrence of a brand-new issue: alert the project owner, unless
-    // the per-project alert throttle has already fired too many this hour
-    // (a flood of unique messages would otherwise be an email bomb).
-    if (await allowAlert(String(projectId))) {
-      dispatchAlerts(String(projectId), {
-        id: issueId,
-        title,
-        culprit: where,
-        level: body.level ?? 'error',
-        environment: body.environment ?? null,
-      }, 'new').catch(err => console.error('[alerts] new-issue alert failed:', err instanceof Error ? err.message : err))
-    }
+      culprit: where,
+      level: body.level ?? 'error',
+      environment: body.environment ?? null,
+      count: Number(rolled.count ?? 1),
+    }, kind).catch(err => console.error(`[alerts] ${kind} alert failed:`, err instanceof Error ? err.message : err))
   }
 
   await db.insertInto('error_events').values({
@@ -416,6 +439,13 @@ route.get('/api/issues/{issueId}', async (request: any) => {
   return json({ issue, events: events ?? [] })
 })
 
+/**
+ * The only statuses an issue may hold. Both the JSON endpoint and the form
+ * endpoint validate against this, and the ingest's regression branch depends on
+ * 'resolved' being spelled exactly this way.
+ */
+const ISSUE_STATUSES = new Set(['unresolved', 'resolved', 'ignored'])
+
 route.post('/api/issues/{issueId}/resolve', async (request: any) => {
   if (!sameOrigin(request))
     return json({ error: 'forbidden' }, 403)
@@ -425,7 +455,16 @@ route.post('/api/issues/{issueId}/resolve', async (request: any) => {
     return json({ error: 'unauthorized' }, 401)
   if (!(await ownsIssue(user, issueId)))
     return json({ error: 'not found' }, 404)
+  // Validated against the same whitelist as the form endpoint below. This one
+  // wrote request.jsonBody.status straight into the column: any string at all
+  // became an issue's status, and since every filter tab queries `status = ...`
+  // (dashboard.stx) a typo or a probe silently removed the issue from
+  // Unresolved, Resolved AND the ingest's regression check, which only reopens
+  // rows reading exactly 'resolved'. Unreachable from any tab, and no longer
+  // able to alert.
   const status = request.jsonBody?.status ?? 'resolved'
+  if (!ISSUE_STATUSES.has(status))
+    return json({ error: 'invalid status' }, 400)
   await db.unsafe('UPDATE issues SET status = $1 WHERE id = $2', [status, issueId])
   return json({ ok: true, status })
 }).skipCsrf()
@@ -433,8 +472,6 @@ route.post('/api/issues/{issueId}/resolve', async (request: any) => {
 // Form-friendly status change used by the issue detail page's Resolve/Ignore/
 // Reopen buttons. Plain HTML form POST (no JS) -> 302 back to the issue, so the
 // page reflects the new status on reload.
-const ISSUE_STATUSES = new Set(['unresolved', 'resolved', 'ignored'])
-
 route.post('/issue/{issueId}/status', async (request: any) => {
   if (!sameOrigin(request))
     return json({ error: 'forbidden' }, 403)
