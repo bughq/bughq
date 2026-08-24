@@ -20,7 +20,7 @@ const query = new URLSearchParams((typeof globalThis !== 'undefined' && globalTh
 // checker treat the tested value and the used value as unrelated — which is
 // also true at runtime if the two calls ever disagree.
 const statusParam = query.get('status')
-const statusFilter: DashboardStatus = statusParam === 'resolved' || statusParam === 'all' ? statusParam : 'unresolved'
+const statusFilter: DashboardStatus = statusParam === 'resolved' || statusParam === 'ignored' || statusParam === 'all' ? statusParam : 'unresolved'
 
 // The active project is a browsing preference, not shareable filter state, so
 // it lives in a cookie and stays out of the URL. `?project=` still works as a
@@ -134,6 +134,11 @@ const switchTarget = pageUrl({ page: 1 })
 const statusTabs = [
   { key: 'unresolved', label: 'Unresolved' },
   { key: 'resolved', label: 'Resolved' },
+  // Ignoring an issue used to be indistinguishable from deleting it: the ingest
+  // no longer alerts on it (by design) and there was nowhere to see it, since
+  // ?status=ignored silently fell back to Unresolved. A tab makes it a place
+  // rather than a void.
+  { key: 'ignored', label: 'Ignored' },
   { key: 'all', label: 'All' },
 ].map(f => ({ ...f, href: pageUrl({ status: f.key, page: 1 }) }))
 const rangeTabs = RANGES.map(r => ({ ...r, href: pageUrl({ range: r.key, page: 1 }) }))
@@ -315,8 +320,9 @@ function levelLabel(level: IssueLevel | null): string {
 // standing on, and a chip on each would just repeat it. Unresolved earns no
 // chip even here — it is the state an issue is born in and the one the list is
 // otherwise entirely about, so it is the exceptions that are worth marking.
-// Ignored counts as an exception too: there is no Ignored tab, so All is the
-// only place such a row ever appears, and unmarked it reads as still open.
+// Only on All. Every other tab is already a single status, so a chip repeating
+// it on every row is noise. (This used to say there was no Ignored tab, which
+// was the reason ignored issues were invisible; there is one now.)
 function showsStatus(issue: DashboardIssue): boolean {
   return statusFilter === 'all' && !!issue.status && issue.status !== 'unresolved'
 }
@@ -348,7 +354,13 @@ const inviteTokens: string[] = pendingInvites.map(i => i.token)
 // a wrong assumption there is only found at runtime. Declaring the set makes it
 // checked, and makes the set itself reviewable: anything not listed and not
 // declared client-side is an accident.
-defineClientPayload({ inviteTokens })
+// The status each row was rendered with. Undo needs to know what to put back,
+// and reading it off the DOM would mean a querySelector in a file that does not
+// do those.
+const issueStatuses: Record<string, string> = Object.fromEntries(
+  issues.map((i): [string, string] => [String(i.id), String(i.status || 'unresolved')]),
+)
+defineClientPayload({ inviteTokens, issueStatuses, statusFilter })
 </script>
 
 <script client>
@@ -428,6 +440,84 @@ function joinInvite(token: string): void {
 // fails silently — so the session is revalidated on load and a dead one signs
 // out rather than wedging. The response used to also carry `pro`, which drove the
 // Upgrade/Pro chrome; that chrome is gone and the body is no longer read.
+// ---- Triage from the list -------------------------------------------------
+//
+// The list is server-rendered, so a status change cannot re-render it. Instead
+// the row is hidden when its NEW status no longer matches the active tab, which
+// is the same thing the server would have done on a reload — and an undo strip
+// appears so the change is recoverable without hunting for the row on another
+// tab.
+//
+// All of this is signals and directives. No DOM calls: `rowHidden` is read by
+// the row's @if, the labels by :text, the buttons by :disabled.
+const triaging = state('')
+/** issue id -> the status we just set it to. Drives hiding and the chip. */
+const triaged = state<Record<string, string>>({})
+const undoable = state<{ id: string, from: string, to: string } | null>(null)
+const triageError = state('')
+
+/**
+ * Has this row left the current tab?
+ *
+ * On All nothing ever leaves, because every status is welcome there. On a
+ * single-status tab a row whose status no longer equals it has moved somewhere
+ * else and showing it would be a lie about what the tab contains.
+ */
+function rowHidden(id: string): boolean {
+  const to = triaged()[id]
+  if (!to)
+    return false
+  return statusFilter !== 'all' && to !== statusFilter
+}
+
+function triage(id: string, to: string): void {
+  if (triaging())
+    return
+  const from = triaged()[id] || issueStatuses[id] || 'unresolved'
+  if (from === to)
+    return
+  triaging.set(id)
+  triageError.set('')
+  fetch(`/api/issues/${encodeURIComponent(id)}/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...useStore('session').authHeaders() },
+    body: JSON.stringify({ status: to }),
+  })
+    .then((r) => {
+      triaging.set('')
+      if (!r.ok) {
+        // Deliberately not optimistic-then-revert: the row is only moved once
+        // the server has agreed, so the list never shows a state the database
+        // does not hold.
+        triageError.set('Could not update that issue.')
+        return
+      }
+      triaged.set({ ...triaged(), [id]: to })
+      undoable.set({ id, from, to })
+    })
+    .catch(() => {
+      triaging.set('')
+      triageError.set('Network error.')
+    })
+}
+
+function undoTriage(): void {
+  const u = undoable()
+  if (!u)
+    return
+  undoable.set(null)
+  triage(u.id, u.from)
+}
+
+function undoLabel(): string {
+  const u = undoable()
+  return u ? `Marked ${u.to}.` : ''
+}
+
+function dismissUndo(): void {
+  undoable.set(null)
+}
+
 const authToken = useStore('session').token()
 if (authToken) {
   fetch('/api/me', { headers: { Authorization: `Bearer ${authToken}` } })
@@ -446,8 +536,25 @@ if (authToken) {
 .mono { font-feature-settings: 'tnum' 1; }
 .wordmark-link { color: inherit; text-decoration: none; transition: opacity 0.15s ease; }
 .wordmark-link:hover { opacity: 0.75; }
-.row-link { transition: background-color 0.15s ease; }
-.row-link:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.row-wrap { transition: background-color 0.15s ease; }
+.row-wrap:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.row-link { text-decoration: none; color: inherit; }
+/* The controls only materialise on hover or keyboard focus, so a list at rest
+   reads as a list rather than a wall of buttons. focus-within keeps them
+   reachable by tab, which display:none or opacity alone would not. */
+.row-actions { opacity: 0; transition: opacity 0.12s ease; }
+.row-wrap:hover .row-actions, .row-wrap:focus-within .row-actions { opacity: 1; }
+@media (hover: none) { .row-actions { opacity: 1; } }
+.act { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); color: var(--text-3); font-size: 13px; line-height: 1; cursor: pointer; transition: color .12s ease, border-color .12s ease; }
+.act:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.act:disabled { opacity: .5; cursor: default; }
+.act-resolve:hover { color: #22c55e; border-color: rgba(34,197,94,.5); }
+.act-ignore:hover { color: var(--text-2); }
+.undo-strip { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--text-2); }
+.undo-err { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
+.undo-btn { border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 8px; background: transparent; color: var(--accent); cursor: pointer; }
+.undo-btn:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.undo-x { border: 0; background: transparent; color: var(--text-3); cursor: pointer; }
 .pill { border-radius: 999px; transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease; }
 /* Idle pills respond to hover; the ACTIVE tab carries inline accent styles
    which outrank these rules, so it stays put. Disabled pager pills are spans
@@ -638,6 +745,19 @@ summary::-webkit-details-marker { display: none; }
       @endforeach
     </div>
 
+    {{-- Undo strip. Triage moves a row off the tab it is on, so without this the
+         only way back from a misclick is to work out which tab it went to. --}}
+    <div class="undo-strip flex items-center justify-between gap-3 px-4 py-2.5 mb-3 text-sm" @if="undoable()">
+      <span :text="undoLabel()"></span>
+      <span class="flex items-center gap-2">
+        <button @click="undoTriage" class="undo-btn px-3 py-1 text-xs font-semibold">Undo</button>
+        <button @click="dismissUndo" class="undo-x px-2 py-1 text-xs" title="Dismiss">&times;</button>
+      </span>
+    </div>
+    <div class="undo-strip undo-err flex items-center px-4 py-2.5 mb-3 text-sm" @if="triageError()">
+      <span :text="triageError()"></span>
+    </div>
+
     <section class="panel overflow-hidden reveal">
       <div class="flex items-center justify-between px-5 py-3.5 border-b border-line">
         <span class="text-xs font-semibold uppercase tracking-wider text-subtle">Issues</span>
@@ -645,9 +765,14 @@ summary::-webkit-details-marker { display: none; }
       </div>
 
       @forelse (issues as issue)
-        <StxLink to="/issue/{{ issue.id }}" class="row-link flex items-center gap-4 px-5 py-4 border-b border-line">
+        {{-- The row used to be one StxLink wrapping everything, which made
+             in-row triage impossible: a button inside an anchor is invalid
+             markup and its click bubbles into an SPA navigation to the issue
+             page. The link now covers only the text block; the rail, counts and
+             controls are siblings, so a button click stays a button click. --}}
+        <div class="row-wrap flex items-center gap-4 px-5 py-4 border-b border-line" @if="!rowHidden('{{ issue.id }}')">
           <span class="w-1 h-11 rounded-full shrink-0" style="background: {{ levelColor(issue.level) }}"></span>
-          <div class="min-w-0 flex-1">
+          <StxLink to="/issue/{{ issue.id }}" class="row-link min-w-0 flex-1 block">
             <div class="font-medium truncate" style="letter-spacing: -0.01em">{{ issue.title }}</div>
             <div class="flex items-center gap-2 mt-1 text-xs text-subtle">
               <span class="font-semibold uppercase tracking-wide" style="color: {{ levelColor(issue.level) }}">{{ levelLabel(issue.level) }}</span>
@@ -675,7 +800,7 @@ summary::-webkit-details-marker { display: none; }
                 @endif
               </div>
             @endif
-          </div>
+          </StxLink>
           <div class="text-right shrink-0">
             <div class="mono font-semibold tabular-nums">{{ Number(issue.count).toLocaleString() }}</div>
             {{-- No "0 users" line. Zero here does not mean nobody was hit, it
@@ -690,7 +815,24 @@ summary::-webkit-details-marker { display: none; }
           <div class="hidden sm:block text-right shrink-0 w-20">
             <div class="text-xs text-subtle">{{ fromNow(issue.last_seen) }}</div>
           </div>
-        </StxLink>
+          {{-- Triage without opening the issue. Which controls appear depends on
+               where the row currently sits, so the same row never offers an
+               action that would be a no-op. --}}
+          <div class="row-actions flex items-center gap-1.5 shrink-0">
+            @if (issue.status !== 'resolved')
+              <button @click="triage('{{ issue.id }}', 'resolved')" :disabled="triaging() === '{{ issue.id }}'"
+                class="act act-resolve" title="Resolve — alerts again only if it comes back">&#10003;</button>
+            @endif
+            @if (issue.status !== 'ignored')
+              <button @click="triage('{{ issue.id }}', 'ignored')" :disabled="triaging() === '{{ issue.id }}'"
+                class="act act-ignore" title="Ignore — stays counted, never alerts">&#8856;</button>
+            @endif
+            @if (issue.status !== 'unresolved')
+              <button @click="triage('{{ issue.id }}', 'unresolved')" :disabled="triaging() === '{{ issue.id }}'"
+                class="act act-reopen" title="Reopen">&#8617;</button>
+            @endif
+          </div>
+        </div>
       @empty
         <div class="px-5 py-16 text-center">
           <div class="text-base font-medium mb-1">No {{ statusFilter === 'all' ? '' : statusFilter }} issues{{ activeRange.interval ? ` in the last ${activeRange.interval}` : '' }}</div>

@@ -237,7 +237,7 @@ declare interface DashboardQuery {
 }
 
 /** The status tabs. Anything else in `?status=` falls back to 'unresolved'. */
-declare type DashboardStatus = 'unresolved' | 'resolved' | 'all'
+declare type DashboardStatus = 'unresolved' | 'resolved' | 'ignored' | 'all'
 
 /**
  * One entry in the dashboard's RANGES whitelist. `interval` is the Postgres
