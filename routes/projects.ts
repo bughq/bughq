@@ -12,6 +12,8 @@ import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
 import { type ChannelType, sendTestAlert, validateWebhook } from '../app/Errors/channels'
 import type { InviteDelivery } from '../app/Invites/invites'
+import { FREE_PROJECTS } from '../app/Billing/plans'
+import { isPro } from '../app/Billing/pro'
 import { deliverInvite, joinUrl, newInviteToken } from '../app/Invites/invites'
 
 function json(data: unknown, status = 200): Response {
@@ -164,6 +166,25 @@ route.post('/api/projects', async (request: any) => {
     return json({ error: 'Project name is required.' }, 400)
   if (name.length > 255)
     return json({ error: 'Project name is too long.' }, 400)
+
+  // Free is one project. Checked on CREATE, not on access, so an account that
+  // already has several keeps every one of them and simply cannot add another.
+  //
+  // Fails OPEN: isPro() returns true when billing is unconfigured (self-hosted)
+  // or when the lookup itself errors. A billing hiccup must never stop someone
+  // creating a project they are entitled to.
+  if (!(await isPro(Number(user.id)))) {
+    const owned = Number((await db.unsafe(
+      'SELECT COUNT(*) AS n FROM projects WHERE owner_id = $1',
+      [Number(user.id)],
+    ))?.[0]?.n ?? 0)
+    if (owned >= FREE_PROJECTS) {
+      return json({
+        error: `Free includes ${FREE_PROJECTS} project. Upgrade to Pro for unlimited projects.`,
+        upgrade: '/pricing',
+      }, 402)
+    }
+  }
 
   const platform = String(body.platform ?? 'javascript').slice(0, 60)
   const id = newProjectId(name)
@@ -320,6 +341,16 @@ route.post('/api/projects/{projectId}/members', async (request: any) => {
   const token = pending?.token ?? newInviteToken()
   let inviteId = pending?.id
   if (!pending) {
+    // Inviting is Pro. Deliberately inside this branch: resending an invite that
+    // already exists stays available, so a Free owner who invited someone before
+    // upgrading — or before this gate existed — can still get the link to them.
+    // Existing members are untouched; nothing here revokes access.
+    if (!(await isPro(Number(user.id)))) {
+      return json({
+        error: 'Inviting teammates is part of Pro.',
+        upgrade: '/pricing',
+      }, 402)
+    }
     inviteId = newMemberId()
     await db.unsafe(
       'INSERT INTO project_invites (id, project_id, email, token, invited_by) VALUES ($1, $2, $3, $4, $5)',

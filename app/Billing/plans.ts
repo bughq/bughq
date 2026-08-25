@@ -16,27 +16,19 @@ export const FREE_PROJECTS = 1
 /**
  * Free's teammate allowance. Zero: teams are a Pro feature.
  *
- * This does NOT retroactively remove anyone. Memberships that already exist
- * keep working — the gate is on creating new ones, and it is computed from
- * created_at rather than a stored grandfathering flag, which would drift and
- * outlive everyone who agreed to it.
+ * This does NOT retroactively remove anyone: see the note below.
  */
 export const FREE_MEMBERS = 0
 
 /**
- * When creation gates begin refusing. Before this instant every gate measures
- * and permits; after it, the caps above are enforced for resources created
- * from this date onward.
+ * Nothing you already have is ever taken away.
  *
- * Set once. Moving it later would re-gate accounts that had already adapted,
- * and moving it earlier would refuse things people were told were fine.
+ * The caps above are checked when you CREATE a project or send an invite, not
+ * when you use one. An account with three projects keeps all three and simply
+ * cannot make a fourth; a project with two members keeps both and cannot add a
+ * third. That falls out of gating creation rather than access, so there is no
+ * grandfathering flag to store, drift, or explain.
  */
-export const ENFORCED_FROM = '2026-10-01T00:00:00.000Z'
-
-/** True when creation gates should refuse rather than merely record. */
-export function enforcing(now: Date = new Date()): boolean {
-  return now.toISOString() >= ENFORCED_FROM
-}
 
 /**
  * The fraction of the allowance at which a customer is warned. Warning only
