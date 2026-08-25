@@ -684,6 +684,12 @@ if (authToken) {
 .undo-x { border: 0; background: transparent; color: var(--text-3); cursor: pointer; }
 .tag-snoozed { color: var(--text-2); background: color-mix(in srgb, var(--text-3) 14%, var(--panel)); }
 .unread-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--accent); }
+/* Column headers, matching the "Issues" label's weight so the row reads as one
+   header rather than a title with decorations after it. */
+.col-head { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+/* Icons sit at the text's own size and colour, so a number and its icon read as
+   one value rather than an illustration next to a figure. */
+.col-ic { width: 13px; height: 13px; color: var(--text-3); flex: none; }
 .new-since { font-size: 11px; padding: 1px 6px; border-radius: 999px; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
 /* Native <details> disclosure: no per-row open state to track, closes itself. */
 .snooze-wrap { position: relative; }
@@ -896,9 +902,17 @@ summary::-webkit-details-marker { display: none; }
     </div>
 
     <section class="panel overflow-hidden reveal">
-      <div class="flex items-center justify-between px-5 py-3.5 border-b border-line">
-        <span class="text-xs font-semibold uppercase tracking-wider text-subtle">Issues</span>
-        <span class="mono text-xs text-subtle">{{ pager.total === 0 ? 'none' : `${pager.from}-${pager.to} of ${pager.total.toLocaleString()}` }}</span>
+      <div class="flex items-center gap-4 px-5 py-3.5 border-b border-line">
+        <span class="w-1 shrink-0"></span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-subtle flex-1 min-w-0">Issues</span>
+        {{-- Aligned to the numeric columns below, with the same widths, so the
+             numbers are labelled rather than left to be guessed at. The count
+             was previously an unlabelled figure floating between the culprit
+             and the timestamp. --}}
+        <span class="col-head w-16 text-right">Events</span>
+        <span class="col-head w-14 text-right hidden sm:block">Users</span>
+        <span class="col-head w-20 text-right hidden sm:block">Last seen</span>
+        <span class="mono text-xs text-subtle w-24 text-right">{{ pager.total === 0 ? 'none' : `${pager.from}-${pager.to} of ${pager.total.toLocaleString()}` }}</span>
       </div>
 
       @forelse (issues as issue)
@@ -954,15 +968,25 @@ summary::-webkit-details-marker { display: none; }
               </div>
             @endif
           </StxLink>
-          <div class="text-right shrink-0">
-            <div class="mono font-semibold tabular-nums">{{ Number(issue.count).toLocaleString() }}</div>
-            {{-- No "0 users" line. Zero here does not mean nobody was hit, it
-                 means the SDK sent no user context, and printing it as a count
-                 stated a fact we never measured. --}}
+          {{-- Fixed widths, one value per column. These used to be a single
+               auto-width block with users stacked under the count, so the
+               numbers sat at a different x on every row and any row with a user
+               count was taller than its neighbours. --}}
+          <div class="w-16 shrink-0 flex items-center justify-end gap-1.5" title="{{ Number(issue.count).toLocaleString() }} {{ issue.count === 1 ? 'occurrence' : 'occurrences' }}">
+            <svg class="col-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <span class="mono font-semibold tabular-nums">{{ Number(issue.count).toLocaleString() }}</span>
+          </div>
+          {{-- No "0 users". Zero does not mean nobody was hit, it means the SDK
+               sent no user context, and printing it as a count would state a
+               fact we never measured. The column still reserves its width so
+               the rows either side stay aligned. --}}
+          <div class="w-14 shrink-0 hidden sm:flex items-center justify-end gap-1.5" title="{{ issue.users_affected > 0 ? `${Number(issue.users_affected).toLocaleString()} ${issue.users_affected === 1 ? 'user' : 'users'} affected` : 'No user context reported' }}">
             @if (issue.users_affected > 0)
-              <div class="text-xs mt-0.5 text-subtle">
-                <span class="mono">{{ Number(issue.users_affected).toLocaleString() }}</span> {{ issue.users_affected === 1 ? 'user' : 'users' }}
-              </div>
+              <svg class="col-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span class="mono tabular-nums text-subtle">{{ Number(issue.users_affected).toLocaleString() }}</span>
+            @endif
+            @if (issue.users_affected === 0)
+              <span class="text-subtle" style="opacity: .35">&mdash;</span>
             @endif
           </div>
           <div class="hidden sm:block text-right shrink-0 w-20">
@@ -971,7 +995,7 @@ summary::-webkit-details-marker { display: none; }
           {{-- Triage without opening the issue. Which controls appear depends on
                where the row currently sits, so the same row never offers an
                action that would be a no-op. --}}
-          <div class="row-actions flex items-center gap-1.5 shrink-0">
+          <div class="row-actions w-24 shrink-0 flex items-center justify-end gap-1.5">
             @if (issue.status !== 'resolved')
               <button @click="triage('{{ issue.id }}', 'resolved')" :disabled="triaging() === '{{ issue.id }}'"
                 class="act act-resolve" title="Resolve — alerts again only if it comes back">&#10003;</button>
