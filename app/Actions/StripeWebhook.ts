@@ -4,6 +4,7 @@ import { Action } from '@stacksjs/actions'
 import { services } from '@stacksjs/config'
 import { db } from '@stacksjs/database'
 import { Payment } from '@stacksjs/payments'
+import { forgetPro } from '../Billing/pro'
 import { response } from '@stacksjs/router'
 
 /**
@@ -38,9 +39,18 @@ async function syncSubscription(event: Stripe.Event): Promise<void> {
   const existing = await db.selectFrom('subscriptions').where('provider_id', '=', sub.id).selectAll().executeTakeFirst()
   if (existing) {
     await db.updateTable('subscriptions')
-      .set({ provider_status: sub.status, provider_price_id: providerPriceId, unit_price: unitPrice })
+      .set({
+        provider_status: sub.status,
+        provider_price_id: providerPriceId,
+        unit_price: unitPrice,
+        // Recorded so isPro() can honour a cancellation that has been scheduled
+        // but not yet taken effect. Without it, `cancel_at_period_end` looked
+        // identical to an immediate cancel and cut off service already paid for.
+        ends_at: periodEnd(sub),
+      })
       .where('provider_id', '=', sub.id)
       .execute()
+    forgetPro((user as { id: number }).id)
     return
   }
 
@@ -55,8 +65,23 @@ async function syncSubscription(event: Stripe.Event): Promise<void> {
       provider_price_id: providerPriceId,
       unit_price: unitPrice,
       quantity: item?.quantity ?? 1,
+      ends_at: periodEnd(sub),
     })
     .execute()
+  // Drop the cached verdict so an upgrade is visible immediately rather than
+  // after the TTL — the moment someone pays is exactly when they go looking for
+  // what they bought.
+  forgetPro((user as { id: number }).id)
+}
+
+/**
+ * When access actually ends: the current period's end if Stripe has scheduled a
+ * cancellation, otherwise null (an open-ended subscription). Stripe reports
+ * these in seconds.
+ */
+function periodEnd(sub: Stripe.Subscription): string | null {
+  const at = (sub as any).cancel_at ?? ((sub as any).cancel_at_period_end ? (sub as any).current_period_end : null)
+  return at ? new Date(Number(at) * 1000).toISOString() : null
 }
 
 // Register once at module load — keeps the local subscription state in sync
@@ -66,10 +91,12 @@ Payment.onSubscription({
   updated: syncSubscription,
   deleted: async (event) => {
     const sub = event.data.object as Stripe.Subscription
+    const row = await db.selectFrom('subscriptions').where('provider_id', '=', sub.id).selectAll().executeTakeFirst()
     await db.updateTable('subscriptions')
       .set({ provider_status: 'canceled' })
       .where('provider_id', '=', sub.id)
       .execute()
+    forgetPro((row as { user_id?: number } | undefined)?.user_id)
   },
 })
 

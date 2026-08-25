@@ -2,7 +2,7 @@ import type { RequestInstance } from '@stacksjs/types'
 import { Action } from '@stacksjs/actions'
 import { Auth } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
-import { Payment } from '@stacksjs/payments'
+import { isPro } from '../Billing/pro'
 import { response } from '@stacksjs/router'
 
 /**
@@ -22,13 +22,15 @@ export default new Action({
     if (!user)
       return response.unauthorized('Authentication required')
 
-    let pro = false
-    try {
-      pro = await Payment.hasActiveSubscription(user as any, 'default')
-    }
-    catch {
-      pro = false
-    }
+    // isPro(), not Payment.hasActiveSubscription(): that helper reads
+    // subscriptions with no ORDER BY against a table with no unique on
+    // (user_id, type), so a stale canceled row can shadow a live subscription
+    // and downgrade a paying customer. See app/Billing/pro.ts.
+    //
+    // It also fails OPEN, where this used to `catch { pro = false }` — a
+    // momentary database error rendered a paying customer as Free and hid the
+    // features they had paid for.
+    const pro = await isPro(Number((user as any).id))
 
     // Two selects, not one, and the split is the whole point.
     //
