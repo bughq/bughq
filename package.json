@@ -71,7 +71,8 @@
   },
   "dependencies": {
     "bun-plugin-auto-imports": "^0.4.1",
-    "stacks": "^0.70.366"
+    "stacks": "^0.70.366",
+    "stripe": "22.3.2"
   },
   "devDependencies": {
     "better-dx": "^0.2.15"
