@@ -10,6 +10,7 @@
 import { Auth } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
 import { response, route } from '@stacksjs/router'
+import { record as recordUsage } from '../app/Billing/usage'
 import { dispatchAlerts } from '../app/Errors/alerts'
 import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, randomId } from '../app/Errors/fingerprint'
 import { authorizeIngest } from '../app/Errors/ingest'
@@ -248,13 +249,15 @@ route.post('/errors', async (request: any) => {
   let project = null
   if (requestedProject) {
     project = (await db.unsafe(
-      'SELECT id, ingest_key, is_active FROM projects WHERE id = $1 LIMIT 1',
+      // owner_id rides along on a query that already runs, so metering the
+      // account costs nothing extra on the busiest endpoint in the app.
+      'SELECT id, ingest_key, is_active, owner_id FROM projects WHERE id = $1 LIMIT 1',
       [String(requestedProject)],
     ))?.[0] ?? null
   }
   else if (providedKey) {
     project = (await db.unsafe(
-      'SELECT id, ingest_key, is_active FROM projects WHERE ingest_key = $1 LIMIT 1',
+      'SELECT id, ingest_key, is_active, owner_id FROM projects WHERE ingest_key = $1 LIMIT 1',
       [String(providedKey)],
     ))?.[0] ?? null
   }
@@ -274,6 +277,24 @@ route.post('/errors', async (request: any) => {
     return json({ error: 'rate limited' }, 429, { 'Retry-After': String(projLimit.retryAfter) })
 
   const now = new Date().toISOString()
+
+  // Meter this event against the owning account.
+  //
+  // MEASURE ONLY: nothing is refused here yet, and `enforcing()` is what will
+  // later turn this into a gate. The cap has never been counted, so enforcing a
+  // number nobody has verified would drop real customer events on a guess —
+  // and a dropped event is invisible by definition, which makes it the worst
+  // possible thing to get wrong quietly.
+  //
+  // Placed here on purpose: authenticated, canonical projectId, the cheap
+  // flood-killer has already run, and NOTHING has been written. A check after
+  // the issue upsert would have already incremented issues.count for an event
+  // it then refused, corrupting the number the dashboard, the alerts and the
+  // issue page all render.
+  //
+  // Costs one Map mutation. No round-trip: see app/Billing/usage.ts.
+  recordUsage(project.owner_id, 'accepted')
+
   const errorType = clip(String(body.type ?? body.error_type ?? 'Error'), 255)
   // Bound stored strings server-side: never trust the SDK's client-side caps.
   const message = clip(String(body.message), MAX_MESSAGE)
