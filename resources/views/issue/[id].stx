@@ -129,6 +129,23 @@ async function loadData(): Promise<IssueData> {
     'SELECT * FROM error_events WHERE issue_id = $1 ORDER BY timestamp DESC LIMIT 25',
     [issueId],
   )) ?? []
+
+  // Opening the issue marks it read for THIS viewer, at the count they are
+  // actually looking at. Watermarking on the count rather than a timestamp is
+  // what makes the next occurrence re-bold it: `count` has moved past
+  // seen_count, with no clock comparison and nothing to write on the ingest
+  // path. A teammate's read state is untouched.
+  //
+  // Deliberately not awaited into the render: a failure here must never stop an
+  // issue being displayed, and the page does not read the row back.
+  db.unsafe(
+    `INSERT INTO issue_reads (user_id, issue_id, project_id, seen_at, seen_count)
+     VALUES ($1, $2, $3, NOW(), $4)
+     ON CONFLICT (user_id, issue_id) DO UPDATE
+       SET seen_at = NOW(), seen_count = GREATEST(issue_reads.seen_count, EXCLUDED.seen_count)`,
+    [Number(user.id), issueId, String(row.project_id), Number(row.count ?? 0)],
+  ).catch((err: unknown) => console.error('[issue] could not record read state:', err instanceof Error ? err.message : err))
+
   return { issue: row, events: rows }
 }
 

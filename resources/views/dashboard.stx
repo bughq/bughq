@@ -131,8 +131,23 @@ function pageUrl(overrides: DashboardQuery): string {
 // because page 7 of the app you just left means nothing in the app you picked.
 const switchTarget = pageUrl({ page: 1 })
 
+// Unread count for the Unresolved badge — Gmail's "Inbox (12)". Excludes
+// snoozed rows, so snoozing genuinely quietens the number rather than just
+// hiding the row.
+let unreadCount = 0
+if (projectId) {
+  unreadCount = Number((await db.unsafe(
+    `SELECT COUNT(*) AS n FROM issues i
+       LEFT JOIN issue_reads r ON r.issue_id = i.id AND r.user_id = $2
+      WHERE i.project_id = $1 AND i.status = 'unresolved'
+        AND (i.snoozed_until IS NULL OR i.snoozed_until <= NOW())
+        AND (r.user_id IS NULL OR i.count > r.seen_count)`,
+    [projectId, Number(user.id)],
+  ))?.[0]?.n ?? 0)
+}
+
 const statusTabs = [
-  { key: 'unresolved', label: 'Unresolved' },
+  { key: 'unresolved', label: unreadCount ? `Unresolved (${unreadCount})` : 'Unresolved' },
   // Between Unresolved and Resolved, because that is the order work moves in.
   { key: 'snoozed', label: 'Snoozed' },
   { key: 'resolved', label: 'Resolved' },
@@ -231,7 +246,11 @@ async function loadData() {
   releasesSeen = Number(rel?.seen ?? 0)
   // WHERE for the list: project + status + date range. The interval string is
   // from the RANGES whitelist above, never from user input.
-  const conds = ['project_id = $1']
+  // Aliased to `i` from the start: the list query LEFT JOINs issue_reads, so
+  // every column reference has to be qualified, and the count query below uses
+  // the same string. Rewriting it with a regex afterwards was the alternative
+  // and is the kind of thing that breaks on the first column added.
+  const conds = ['i.project_id = $1']
   const params = [projectId]
   // Snooze is a column, not a status, so the Snoozed tab is a time predicate
   // and every other tab has to EXCLUDE anything still snoozed — otherwise a
@@ -241,31 +260,37 @@ async function loadData() {
   // Expiry needs no job: the moment NOW() passes snoozed_until, the row leaves
   // this tab and rejoins Unresolved on the next render.
   if (statusFilter === 'snoozed') {
-    conds.push('snoozed_until IS NOT NULL AND snoozed_until > NOW()')
+    conds.push('i.snoozed_until IS NOT NULL AND i.snoozed_until > NOW()')
   }
   else {
-    conds.push('(snoozed_until IS NULL OR snoozed_until <= NOW())')
+    conds.push('(i.snoozed_until IS NULL OR i.snoozed_until <= NOW())')
     if (statusFilter !== 'all') {
       params.push(statusFilter)
-      conds.push(`status = $${params.length}`)
+      conds.push(`i.status = $${params.length}`)
     }
   }
   // last_seen is stored as an ISO-8601 varchar (the ingest writes
   // toISOString()), so cast before comparing against a real timestamp.
   if (activeRange.interval)
-    conds.push(`last_seen::timestamptz >= NOW() - INTERVAL '${activeRange.interval}'`)
+    conds.push(`i.last_seen::timestamptz >= NOW() - INTERVAL '${activeRange.interval}'`)
   const where = conds.join(' AND ')
 
   // Count first so an out-of-range ?page clamps to the last real page instead
   // of rendering an empty list.
-  const filteredTotal = Number((await db.unsafe(`SELECT COUNT(*) AS n FROM issues WHERE ${where}`, params))?.[0]?.n ?? 0)
+  const filteredTotal = Number((await db.unsafe(`SELECT COUNT(*) AS n FROM issues i WHERE ${where}`, params))?.[0]?.n ?? 0)
   const pages = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE))
   const page = Math.min(requestedPage, pages)
   const offset = (page - 1) * PAGE_SIZE
 
   issues = (await db.unsafe(
-    `SELECT id, title, culprit, error_type, level, status, count, last_seen, snoozed_until FROM issues WHERE ${where} ORDER BY last_seen DESC, id DESC LIMIT ${PAGE_SIZE} OFFSET ${offset}`,
-    params,
+    `SELECT i.id, i.title, i.culprit, i.error_type, i.level, i.status, i.count, i.last_seen, i.snoozed_until,
+            (r.user_id IS NULL OR i.count > r.seen_count) AS unread,
+            GREATEST(COALESCE(i.count, 0) - COALESCE(r.seen_count, 0), 0) AS new_since
+       FROM issues i
+       LEFT JOIN issue_reads r ON r.issue_id = i.id AND r.user_id = $${params.length + 1}
+      WHERE ${where}
+      ORDER BY i.last_seen DESC, i.id DESC LIMIT ${PAGE_SIZE} OFFSET ${offset}`,
+    [...params, Number(user.id)],
   )) ?? []
 
   // Release, environment and the affected-user tally all live on error_events,
@@ -296,7 +321,7 @@ async function loadData() {
   // selected window) but not the status tabs, which only slice the list.
   const cconds = ['project_id = $1']
   if (activeRange.interval)
-    cconds.push(`last_seen::timestamptz >= NOW() - INTERVAL '${activeRange.interval}'`) // varchar ISO column, see above
+    cconds.push(`i.last_seen::timestamptz >= NOW() - INTERVAL '${activeRange.interval}'`) // varchar ISO column, see above
   const c = (await db.unsafe(
     `SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE status = 'unresolved') AS unresolved, COALESCE(SUM(count),0) AS events FROM issues WHERE ${cconds.join(' AND ')}`,
     [projectId],
@@ -658,6 +683,8 @@ if (authToken) {
 .undo-btn:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .undo-x { border: 0; background: transparent; color: var(--text-3); cursor: pointer; }
 .tag-snoozed { color: var(--text-2); background: color-mix(in srgb, var(--text-3) 14%, var(--panel)); }
+.unread-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--accent); }
+.new-since { font-size: 11px; padding: 1px 6px; border-radius: 999px; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
 /* Native <details> disclosure: no per-row open state to track, closes itself. */
 .snooze-wrap { position: relative; }
 .snooze-wrap > summary { list-style: none; display: inline-flex; align-items: center; justify-content: center; }
@@ -883,7 +910,20 @@ summary::-webkit-details-marker { display: none; }
         <div class="row-wrap flex items-center gap-4 px-5 py-4 border-b border-line" @if="!rowHidden('{{ issue.id }}')">
           <span class="w-1 h-11 rounded-full shrink-0" style="background: {{ levelColor(issue.level) }}"></span>
           <StxLink to="/issue/{{ issue.id }}" class="row-link min-w-0 flex-1 block">
-            <div class="font-medium truncate" style="letter-spacing: -0.01em">{{ issue.title }}</div>
+            <div class="flex items-center gap-2 min-w-0">
+              {{-- The dot carries the same fact as the weight, for anyone who
+                   cannot see a 500-vs-600 difference. --}}
+              @if (issue.unread)
+                <span class="unread-dot shrink-0" aria-label="Unread"></span>
+              @endif
+              <div class="truncate {{ issue.unread ? 'font-bold' : 'font-medium' }}" style="letter-spacing: -0.01em">{{ issue.title }}</div>
+              {{-- A count, not just a boolean. In week four a chronically
+                   firing issue is permanently bold and plain boldness has
+                   decayed into "this is alive"; "+18" still says something. --}}
+              @if (issue.unread && issue.new_since > 0)
+                <span class="new-since shrink-0 mono">+{{ Number(issue.new_since).toLocaleString() }}</span>
+              @endif
+            </div>
             <div class="flex items-center gap-2 mt-1 text-xs text-subtle">
               <span class="font-semibold uppercase tracking-wide" style="color: {{ levelColor(issue.level) }}">{{ levelLabel(issue.level) }}</span>
               <span aria-hidden="true">/</span>

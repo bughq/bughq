@@ -310,6 +310,12 @@ declare interface DashboardIssue {
   environment: string | null
   environmentCount: number
   newInRelease: boolean
+  /** Snoozed until this instant, or null. See Issue.snoozed_until. */
+  snoozed_until: string | null
+  /** Derived per viewer: no read row, or the count has risen since they looked. */
+  unread: boolean
+  /** How many occurrences have landed since this viewer last opened it. */
+  new_since: number
 }
 
 /** What installGuide() returns for a project's platform. */
