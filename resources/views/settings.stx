@@ -90,6 +90,15 @@ if (user) {
   }
 }
 const projectId = activeProject?.id || null
+
+// Whether this owner can invite. Asked here so the form can say so before
+// anyone types an address; the API refuses it regardless
+// (routes/projects.ts, 402).
+let canInvite = true
+if (user) {
+  const { isPro } = await import('../../app/Billing/pro')
+  canInvite = await isPro(Number(user.id))
+}
 const ownerEmail = (user && user.email) || ''
 
 function maskWebhook(url: string): string {
@@ -1051,6 +1060,17 @@ html { scroll-behavior: smooth; }
         </div>
         <div class="panel px-5 py-5">
           <div class="text-sm font-semibold mb-3">Invite a teammate</div>
+          @if (!canInvite)
+            {{-- The form is replaced rather than disabled: a greyed-out field
+                 you can still focus and type into, that then refuses you, is
+                 worse than not offering it. Anyone already on the project keeps
+                 their access — this only affects adding someone new. --}}
+            <p class="text-sm text-subtle">
+              Inviting people is part of Pro, along with unlimited apps and errors.
+              <StxLink to="/pricing" class="text-accent">See what it costs</StxLink>.
+            </p>
+          @endif
+          @if (canInvite)
           <form @submit="inviteMember">
             <div class="flex items-center gap-2 flex-wrap">
               <input name="email" type="email" aria-label="Teammate email address" class="field flex-1 min-w-[220px] px-3.5 py-2.5 text-sm" placeholder="teammate@company.com" autocomplete="off">
@@ -1062,6 +1082,7 @@ html { scroll-behavior: smooth; }
           @endif
           @if (inviteNote() && !inviteNote().ok)
             <span class="note show note-err text-xs mt-2.5" :text="noteText(inviteNote())"></span>
+          @endif
           @endif
           <p class="text-xs mt-3.5 leading-relaxed text-subtle">
             Inviting people is part of Pro. We email them a join link, they sign up or log in with that address, then accept from a banner in the app. Members can view and triage issues and get the same new-issue and regression emails you do; keys, members and deletion stay with you.

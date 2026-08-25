@@ -28,6 +28,9 @@ if (token) {
 // "your apps", so the heading agrees with the page you arrived from. A count,
 // not the rows: nothing on this screen renders an app, only whether any exist.
 let projectCount = 0
+let ownedCount = 0
+let atProjectLimit = false
+let freeProjects = 1
 if (user) {
   const counted = (await db.unsafe(
     `SELECT COUNT(DISTINCT p.id) AS n
@@ -37,6 +40,23 @@ if (user) {
     [Number(user.id), String(user.email ?? '').toLowerCase()],
   ))?.[0]
   projectCount = Number(counted?.n ?? 0)
+
+  // OWNED projects, not accessible ones. The count above includes projects
+  // shared with you, which is right for the heading but wrong for the cap —
+  // being invited to someone else's project must not use up your own quota.
+  const ownedRow = (await db.unsafe(
+    'SELECT COUNT(*) AS n FROM projects WHERE owner_id = $1',
+    [Number(user.id)],
+  ))?.[0]
+  ownedCount = Number(ownedRow?.n ?? 0)
+
+  // Ask before the user fills the form in. The API refuses this anyway
+  // (routes/projects.ts, 402), but discovering a limit by having your work
+  // rejected is a worse way to learn it than being told up front.
+  const { isPro } = await import('../../../app/Billing/pro')
+  const { FREE_PROJECTS } = await import('../../../app/Billing/plans')
+  atProjectLimit = !(await isPro(Number(user.id))) && ownedCount >= FREE_PROJECTS
+  freeProjects = FREE_PROJECTS
 }
 </script>
 
@@ -111,6 +131,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 
 
 <style>
+.limit-note { border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--text-2); margin-bottom: 0.75rem; }
 .field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
 .err { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
 </style>
@@ -157,9 +178,26 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
         </select>
       </div>
 
-      <button type="submit" :disabled="loading()" class="btn-accent w-full py-2.5 text-sm font-semibold">
-        {{ loading() ? 'Creating…' : 'Create app' }}
-      </button>
+      @if (atProjectLimit)
+        <div class="limit-note text-sm rounded-[10px] px-4 py-3">
+          You already have {{ ownedCount === 1 ? 'an app' : `${ownedCount} apps` }} on Free, which covers {{ freeProjects === 1 ? 'one' : freeProjects }}.
+          <a href="/pricing" class="text-accent">Pro</a> lifts that, and brings your team with it.
+        </div>
+      @endif
+      {{-- Two buttons under a server @if, not one with a mixed expression.
+           The live button's label is a CLIENT expression (it reads the loading
+           signal), and a server value like atProjectLimit is not in that scope —
+           putting one inside it leaves the raw {{ }} in the HTML for the runtime
+           to choke on. Server decides which button exists; the client only ever
+           animates the one it owns. --}}
+      @if (atProjectLimit)
+        <a href="/pricing" class="btn-accent w-full py-2.5 text-sm font-semibold block text-center">Upgrade to add another app</a>
+      @endif
+      @if (!atProjectLimit)
+        <button type="submit" :disabled="loading()" class="btn-accent w-full py-2.5 text-sm font-semibold">
+          {{ loading() ? 'Creating…' : 'Create app' }}
+        </button>
+      @endif
     </form>
     @endif
   </div>
