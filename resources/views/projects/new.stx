@@ -95,8 +95,12 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       loading.set(false)
       return
     }
-    // Straight into the new project's Settings → Install, where the setup snippet lives.
-    window.location.assign(`/settings?project=${encodeURIComponent(data.project.id)}`)
+    // Straight into the new project's Settings → Install, where the setup snippet
+    // lives. navigate(), not location.assign: both pages are in the `default`
+    // layout group, so this is a fragment swap rather than a full document load.
+    // The target URL differs from the current one, so the router's same-URL
+    // no-op (the reason the project switchers still reload) does not apply.
+    navigate(`/settings?project=${encodeURIComponent(data.project.id)}`)
   }
   catch {
     error.set('Something went wrong. Please try again.')
