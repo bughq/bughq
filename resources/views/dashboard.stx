@@ -20,7 +20,7 @@ const query = new URLSearchParams((typeof globalThis !== 'undefined' && globalTh
 // checker treat the tested value and the used value as unrelated — which is
 // also true at runtime if the two calls ever disagree.
 const statusParam = query.get('status')
-const statusFilter: DashboardStatus = statusParam === 'resolved' || statusParam === 'ignored' || statusParam === 'all' ? statusParam : 'unresolved'
+const statusFilter: DashboardStatus = statusParam === 'resolved' || statusParam === 'ignored' || statusParam === 'snoozed' || statusParam === 'all' ? statusParam : 'unresolved'
 
 // The active project is a browsing preference, not shareable filter state, so
 // it lives in a cookie and stays out of the URL. `?project=` still works as a
@@ -133,6 +133,8 @@ const switchTarget = pageUrl({ page: 1 })
 
 const statusTabs = [
   { key: 'unresolved', label: 'Unresolved' },
+  // Between Unresolved and Resolved, because that is the order work moves in.
+  { key: 'snoozed', label: 'Snoozed' },
   { key: 'resolved', label: 'Resolved' },
   // Ignoring an issue used to be indistinguishable from deleting it: the ingest
   // no longer alerts on it (by design) and there was nowhere to see it, since
@@ -231,9 +233,22 @@ async function loadData() {
   // from the RANGES whitelist above, never from user input.
   const conds = ['project_id = $1']
   const params = [projectId]
-  if (statusFilter !== 'all') {
-    params.push(statusFilter)
-    conds.push(`status = $${params.length}`)
+  // Snooze is a column, not a status, so the Snoozed tab is a time predicate
+  // and every other tab has to EXCLUDE anything still snoozed — otherwise a
+  // snoozed issue keeps showing up in Unresolved, which is the one thing
+  // snoozing is supposed to prevent.
+  //
+  // Expiry needs no job: the moment NOW() passes snoozed_until, the row leaves
+  // this tab and rejoins Unresolved on the next render.
+  if (statusFilter === 'snoozed') {
+    conds.push('snoozed_until IS NOT NULL AND snoozed_until > NOW()')
+  }
+  else {
+    conds.push('(snoozed_until IS NULL OR snoozed_until <= NOW())')
+    if (statusFilter !== 'all') {
+      params.push(statusFilter)
+      conds.push(`status = $${params.length}`)
+    }
   }
   // last_seen is stored as an ISO-8601 varchar (the ingest writes
   // toISOString()), so cast before comparing against a real timestamp.
@@ -249,7 +264,7 @@ async function loadData() {
   const offset = (page - 1) * PAGE_SIZE
 
   issues = (await db.unsafe(
-    `SELECT id, title, culprit, error_type, level, status, count, last_seen FROM issues WHERE ${where} ORDER BY last_seen DESC, id DESC LIMIT ${PAGE_SIZE} OFFSET ${offset}`,
+    `SELECT id, title, culprit, error_type, level, status, count, last_seen, snoozed_until FROM issues WHERE ${where} ORDER BY last_seen DESC, id DESC LIMIT ${PAGE_SIZE} OFFSET ${offset}`,
     params,
   )) ?? []
 
@@ -357,6 +372,20 @@ const inviteTokens: string[] = pendingInvites.map(i => i.token)
 // The status each row was rendered with. Undo needs to know what to put back,
 // and reading it off the DOM would mean a querySelector in a file that does not
 // do those.
+/** "4h left" / "2d left" for a snoozed row. Empty when not snoozed. */
+function snoozeLeft(until: string | null): string {
+  if (!until)
+    return ''
+  const ms = new Date(until).getTime() - Date.now()
+  if (ms <= 0)
+    return ''
+  const mins = Math.round(ms / 60000)
+  if (mins < 60)
+    return `${mins}m left`
+  const hours = Math.round(mins / 60)
+  return hours < 48 ? `${hours}h left` : `${Math.round(hours / 24)}d left`
+}
+
 const issueStatuses: Record<string, string> = Object.fromEntries(
   issues.map((i): [string, string] => [String(i.id), String(i.status || 'unresolved')]),
 )
@@ -467,6 +496,10 @@ function rowHidden(id: string): boolean {
   const to = triaged()[id]
   if (!to)
     return false
+  // 'gone' is set by snooze/wake, which move a row off the current tab without
+  // it landing on a status this tab could be showing.
+  if (to === 'gone')
+    return true
   return statusFilter !== 'all' && to !== statusFilter
 }
 
@@ -501,17 +534,86 @@ function triage(id: string, to: string): void {
     })
 }
 
+/**
+ * Snooze an issue. Shares `triaging`/`triaged` with the status buttons so a row
+ * can only have one action in flight, and so the same rowHidden() logic moves it
+ * off whichever tab it no longer belongs to.
+ */
+function snooze(id: string, preset: string): void {
+  if (triaging())
+    return
+  triaging.set(id)
+  triageError.set('')
+  fetch(`/api/issues/${encodeURIComponent(id)}/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...useStore('session').authHeaders() },
+    body: JSON.stringify({ snooze: preset }),
+  })
+    .then((r) => {
+      triaging.set('')
+      if (!r.ok) {
+        triageError.set('Could not snooze that issue.')
+        return
+      }
+      // Snoozing always leaves the issue unresolved, so on every tab except
+      // Snoozed and All the row has left the view.
+      triaged.set({ ...triaged(), [id]: statusFilter === 'snoozed' ? 'snoozed' : 'gone' })
+      undoable.set({ id, from: issueStatuses[id] || 'unresolved', to: `snoozed for ${preset}` })
+    })
+    .catch(() => {
+      triaging.set('')
+      triageError.set('Network error.')
+    })
+}
+
+/** Clear a snooze immediately — the row returns to Unresolved. */
+function wake(id: string): void {
+  if (triaging())
+    return
+  triaging.set(id)
+  triageError.set('')
+  fetch(`/api/issues/${encodeURIComponent(id)}/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...useStore('session').authHeaders() },
+    body: JSON.stringify({ snooze: null }),
+  })
+    .then((r) => {
+      triaging.set('')
+      if (!r.ok) {
+        triageError.set('Could not wake that issue.')
+        return
+      }
+      triaged.set({ ...triaged(), [id]: statusFilter === 'snoozed' ? 'gone' : 'unresolved' })
+    })
+    .catch(() => {
+      triaging.set('')
+      triageError.set('Network error.')
+    })
+}
+
 function undoTriage(): void {
   const u = undoable()
   if (!u)
     return
   undoable.set(null)
-  triage(u.id, u.from)
+  // Undoing a snooze is clearing it, not setting a status — `from` is where the
+  // issue was, and for a snooze that is still 'unresolved', so replaying it
+  // through triage() would be a no-op and the row would stay hidden.
+  if (u.to.startsWith('snoozed'))
+    wake(u.id)
+  else
+    triage(u.id, u.from)
 }
+
+const SNOOZE_LABELS: Record<string, string> = { '1h': '1 hour', '4h': '4 hours', '1d': '1 day', '1w': '1 week' }
 
 function undoLabel(): string {
   const u = undoable()
-  return u ? `Marked ${u.to}.` : ''
+  if (!u)
+    return ''
+  // "Marked snoozed for 1h" reads like a status change, which is exactly what a
+  // snooze is not. Say what happened in the same words the menu used.
+  return u.to.startsWith('snoozed') ? `Snoozed for ${SNOOZE_LABELS[u.to.slice(12)] ?? u.to.slice(12)}.` : `Marked ${u.to}.`
 }
 
 function dismissUndo(): void {
@@ -555,6 +657,14 @@ if (authToken) {
 .undo-btn { border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 8px; background: transparent; color: var(--accent); cursor: pointer; }
 .undo-btn:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .undo-x { border: 0; background: transparent; color: var(--text-3); cursor: pointer; }
+.tag-snoozed { color: var(--text-2); background: color-mix(in srgb, var(--text-3) 14%, var(--panel)); }
+/* Native <details> disclosure: no per-row open state to track, closes itself. */
+.snooze-wrap { position: relative; }
+.snooze-wrap > summary { list-style: none; display: inline-flex; align-items: center; justify-content: center; }
+.snooze-wrap > summary::-webkit-details-marker { display: none; }
+.snooze-menu { position: absolute; right: 0; top: 34px; z-index: 20; min-width: 116px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); box-shadow: 0 8px 24px rgb(0 0 0 / 0.18); }
+.snooze-opt { display: block; width: 100%; padding: 6px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--text-2); font-size: 12px; text-align: left; cursor: pointer; }
+.snooze-opt:hover { color: var(--text); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .pill { border-radius: 999px; transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease; }
 /* Idle pills respond to hover; the ACTIVE tab carries inline accent styles
    which outrank these rules, so it stays put. Disabled pager pills are spans
@@ -787,6 +897,9 @@ summary::-webkit-details-marker { display: none; }
                 @if (showsStatus(issue))
                   <span class="tag {{ issue.status === 'resolved' ? 'tag-resolved' : '' }}">{{ issue.status }}</span>
                 @endif
+                @if (snoozeLeft(issue.snoozed_until))
+                  <span class="tag tag-snoozed" title="Hidden from Unresolved until this runs out. It keeps counting occurrences while snoozed.">&#9925; {{ snoozeLeft(issue.snoozed_until) }}</span>
+                @endif
                 @if (issue.environment)
                   <span class="tag {{ issue.environment === 'production' ? 'tag-prod' : '' }}">
                     {{ issue.environment }}{{ issue.environmentCount > 1 ? ` +${issue.environmentCount - 1}` : '' }}
@@ -830,6 +943,24 @@ summary::-webkit-details-marker { display: none; }
             @if (issue.status !== 'unresolved')
               <button @click="triage('{{ issue.id }}', 'unresolved')" :disabled="triaging() === '{{ issue.id }}'"
                 class="act act-reopen" title="Reopen">&#8617;</button>
+            @endif
+            {{-- Snooze. A <details> rather than a signal-driven popover: it is
+                 native disclosure, closes on its own, needs no open-state
+                 bookkeeping per row, and works before hydration. --}}
+            @if (issue.snoozed_until && snoozeLeft(issue.snoozed_until))
+              <button @click="wake('{{ issue.id }}')" :disabled="triaging() === '{{ issue.id }}'"
+                class="act act-wake" title="Wake now — back to Unresolved">&#9200;</button>
+            @endif
+            @if (!snoozeLeft(issue.snoozed_until))
+              <details class="snooze-wrap">
+                <summary class="act act-snooze" title="Snooze — hide until later, keeps counting">&#9925;</summary>
+                <div class="snooze-menu">
+                  <button @click="snooze('{{ issue.id }}', '1h')" class="snooze-opt">1 hour</button>
+                  <button @click="snooze('{{ issue.id }}', '4h')" class="snooze-opt">4 hours</button>
+                  <button @click="snooze('{{ issue.id }}', '1d')" class="snooze-opt">1 day</button>
+                  <button @click="snooze('{{ issue.id }}', '1w')" class="snooze-opt">1 week</button>
+                </div>
+              </details>
             @endif
           </div>
         </div>

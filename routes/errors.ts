@@ -446,6 +446,17 @@ route.get('/api/issues/{issueId}', async (request: any) => {
  */
 const ISSUE_STATUSES = new Set(['unresolved', 'resolved', 'ignored'])
 
+/**
+ * How long each snooze preset lasts. Server-side so the duration cannot be
+ * chosen by the caller — see the note at the snooze branch below.
+ */
+const SNOOZE_PRESETS = {
+  '1h': 60 * 60 * 1000,
+  '4h': 4 * 60 * 60 * 1000,
+  '1d': 24 * 60 * 60 * 1000,
+  '1w': 7 * 24 * 60 * 60 * 1000,
+} as const
+
 route.post('/api/issues/{issueId}/resolve', async (request: any) => {
   if (!sameOrigin(request))
     return json({ error: 'forbidden' }, 403)
@@ -462,10 +473,41 @@ route.post('/api/issues/{issueId}/resolve', async (request: any) => {
   // Unresolved, Resolved AND the ingest's regression check, which only reopens
   // rows reading exactly 'resolved'. Unreachable from any tab, and no longer
   // able to alert.
+  // Snooze branch. `{ snooze: '1h' }` hides the issue until then; `{ snooze:
+  // null }` wakes it now. Snooze is a COLUMN, not a status — a snoozed issue is
+  // still unresolved, so nothing has to remember what to restore it to, and
+  // expiry is a WHERE predicate rather than a job that could die and hide an
+  // issue forever.
+  if ('snooze' in (request.jsonBody ?? {})) {
+    const key = request.jsonBody.snooze
+    if (key === null) {
+      await db.unsafe('UPDATE issues SET snoozed_until = NULL WHERE id = $1', [issueId])
+      return json({ ok: true, snoozed_until: null })
+    }
+    const ms = SNOOZE_PRESETS[key as keyof typeof SNOOZE_PRESETS]
+    if (!ms)
+      return json({ error: 'invalid snooze duration' }, 400)
+    // Computed here rather than accepting a client timestamp: a caller could
+    // otherwise snooze an issue until the year 3000 and remove it from every
+    // tab permanently.
+    const until = new Date(Date.now() + ms).toISOString()
+    // Snoozing implies the issue is open. Doing this in one statement keeps a
+    // snoozed row from ever being simultaneously resolved or ignored, which is
+    // what lets the Snoozed and Ignored tabs stay disjoint without a constraint.
+    await db.unsafe(
+      `UPDATE issues SET snoozed_until = $1, status = 'unresolved' WHERE id = $2`,
+      [until, issueId],
+    )
+    return json({ ok: true, snoozed_until: until })
+  }
+
   const status = request.jsonBody?.status ?? 'resolved'
   if (!ISSUE_STATUSES.has(status))
     return json({ error: 'invalid status' }, 400)
-  await db.unsafe('UPDATE issues SET status = $1 WHERE id = $2', [status, issueId])
+  // Any status change clears the snooze. Without this a resolved issue could
+  // still carry a future snoozed_until and reappear on the Snoozed tab, which
+  // is meant to hold open work only.
+  await db.unsafe('UPDATE issues SET status = $1, snoozed_until = NULL WHERE id = $2', [status, issueId])
   return json({ ok: true, status })
 }).skipCsrf()
 

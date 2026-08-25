@@ -31,6 +31,13 @@ declare interface Issue {
   users_affected: number | null
   first_seen: string | null
   last_seen: string | null
+  /**
+   * Snoozed until this instant, or null. Orthogonal to `status` — a snoozed
+   * issue is still `unresolved`, and expiry is a WHERE predicate rather than a
+   * stored state, so nothing has to write it back when the timer runs out.
+   * A real timestamptz, unlike first_seen/last_seen which are ISO strings.
+   */
+  snoozed_until: string | null
   created_at: string
   updated_at: string | null
 }
@@ -237,7 +244,11 @@ declare interface DashboardQuery {
 }
 
 /** The status tabs. Anything else in `?status=` falls back to 'unresolved'. */
-declare type DashboardStatus = 'unresolved' | 'resolved' | 'ignored' | 'all'
+/**
+ * The status tabs. `snoozed` is not an issue status — it selects on
+ * `snoozed_until > NOW()` — but it is a tab, so it lives in the same union.
+ */
+declare type DashboardStatus = 'unresolved' | 'snoozed' | 'resolved' | 'ignored' | 'all'
 
 /**
  * One entry in the dashboard's RANGES whitelist. `interval` is the Postgres

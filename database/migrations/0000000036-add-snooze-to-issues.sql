@@ -1,0 +1,31 @@
+-- Snooze: "hide this from my inbox until T". A COLUMN, not a status.
+--
+-- `status` answers "is this a real bug?" (unresolved | resolved | ignored).
+-- Snooze answers "do I want to see it right now?". They compose: you snooze an
+-- issue that is still unresolved, and when the timer runs out it is still
+-- unresolved — nothing has to remember what to restore it to. ISSUE_STATUSES
+-- and IssueStatus are unchanged.
+--
+-- Expiry needs no cron job, because `snoozed_until > NOW()` is a predicate in
+-- the WHERE clause rather than a state someone has to write back. The instant
+-- the clock passes, the Snoozed tab drops the row and Unresolved picks it up.
+-- There is no job to monitor and none that can die and hide an issue forever.
+--
+-- The ingest path never reads or writes this column: a new occurrence does NOT
+-- wake a snoozed issue, because muting something you know is firing is the
+-- entire point. The counter and last_seen keep advancing underneath, so the
+-- issue resurfaces with its true count when the snooze expires.
+--
+-- Nullable with no default, so ADD COLUMN is metadata-only and rewrites no rows
+-- — this is the table the ingest writes to on every event.
+--
+-- Deliberately NO CHECK tying snoozed_until to status. Such a constraint would
+-- turn the existing UPDATE at routes/errors.ts into a 500 on the Resolve button
+-- for any snoozed issue. The invariant (a snoozed row is an unresolved row) is
+-- kept by the triage handler, which clears the snooze on every status change.
+ALTER TABLE "issues" ADD COLUMN IF NOT EXISTS "snoozed_until" timestamptz;
+-- The status tabs are (project_id, status) equality plus last_seen ordering.
+-- Neither existing (project_id, last_seen) index can satisfy the status leg, so
+-- Resolved and Ignored currently scan the whole project.
+CREATE INDEX IF NOT EXISTS "issues_project_status_lastseen"
+  ON "issues" ("project_id", "status", "last_seen" DESC);
