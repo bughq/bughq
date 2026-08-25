@@ -1064,7 +1064,7 @@ html { scroll-behavior: smooth; }
             <span class="note show note-err text-xs mt-2.5" :text="noteText(inviteNote())"></span>
           @endif
           <p class="text-xs mt-3.5 leading-relaxed text-subtle">
-            We email them a join link. They sign up (or log in) with that email, then accept from a banner in the app. Members can view and triage issues and are emailed about new issues and regressions, the same as you; only you can manage keys, members, and deletion.
+            Inviting people is part of Pro. We email them a join link, they sign up or log in with that address, then accept from a banner in the app. Members can view and triage issues and get the same new-issue and regression emails you do; keys, members and deletion stay with you.
           </p>
         </div>
       </section>

@@ -1,7 +1,7 @@
 <script server>
 useSeoMeta({
   title: "Pricing - bughq",
-  description: "Simple, honest pricing for bughq error tracking. Start free with one project, upgrade to Pro when you outgrow it, or self-host free forever.",
+  description: "Simple, honest pricing for bughq error tracking. Free for one project on your own, Pro for unlimited projects and your team, or self-host free forever.",
   canonical: "https://bughq.org/pricing",
 })
 </script>
@@ -76,11 +76,12 @@ useSeoMeta({
           <div class="card p-7">
             <div class="text-sm font-semibold uppercase tracking-wider text-subtle">Free</div>
             <div class="mt-3"><span class="wordmark text-4xl">$0</span><span class="text-sm text-subtle"> / forever</span></div>
-            <p class="text-sm mt-2 text-muted">Everything you need to get started.</p>
+            <p class="text-sm mt-2 text-muted">Enough to run one app properly.</p>
             <ul class="mt-6 space-y-2.5 text-sm">
               <li class="flex items-center gap-2"><span class="check">✓</span> 1 project</li>
-              <li class="flex items-center gap-2"><span class="check">✓</span> 5k errors / mo</li>
-              <li class="flex items-center gap-2"><span class="check">✓</span> 30-day retention</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> 5k errors a month</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> 30 days of history</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> Just you</li>
               <li class="flex items-center gap-2"><span class="check">✓</span> Community support</li>
             </ul>
             <StxLink to="/register" class="btn ghost w-full mt-7">Get started</StxLink>
@@ -91,11 +92,12 @@ useSeoMeta({
             <div class="mt-3">
               <span class="wordmark text-4xl">{{ interval() === 'yearly' ? '\$190' : '\$19' }}</span><span class="text-sm text-subtle">{{ interval() === 'yearly' ? ' / year' : ' / month' }}</span>
             </div>
-            <p class="text-sm mt-2 text-muted">For teams and sites that are growing.</p>
+            <p class="text-sm mt-2 text-muted">When one app and one person stops being the shape of it.</p>
             <ul class="mt-6 space-y-2.5 text-sm">
               <li class="flex items-center gap-2"><span class="check">✓</span> Unlimited projects</li>
               <li class="flex items-center gap-2"><span class="check">✓</span> Unlimited errors</li>
-              <li class="flex items-center gap-2"><span class="check">✓</span> Full retention</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> Full history</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> Invite your team</li>
               <li class="flex items-center gap-2"><span class="check">✓</span> Priority support</li>
             </ul>
             <button @click="upgrade" :disabled="loading()" class="btn primary w-full mt-7">{{ loading() ? 'Redirecting…' : 'Upgrade to Pro' }}</button>

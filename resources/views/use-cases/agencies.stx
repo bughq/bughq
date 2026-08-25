@@ -33,7 +33,7 @@ useSeoMeta({
         <div class="chips">
           <div class="chip">
             <h3>Isolated projects</h3>
-            <p>Each client site is its own project. Issues, releases, and quotas never bleed between one account and the next.</p>
+            <p>Each client site is its own project. Issues, releases, and quotas never bleed between one account and the next. Running more than one project, and bringing the rest of the studio in, is what Pro is for.</p>
           </div>
           <div class="chip">
             <h3>Scoped access</h3>
