@@ -29,7 +29,11 @@
 // `window.stx.useCookie` is a function.
 const { useCookie } = window.stx
 
-const THIRTY_DAYS = 60 * 60 * 24 * 30
+// Matches config/auth.ts tokenExpiry. The cookie must not outlive the token it
+// carries: a cookie that survives longer just means the browser keeps sending a
+// credential the server has already stopped accepting, which reads to the user
+// as a random 401 rather than a clean sign-out.
+const ONE_DAY = 60 * 60 * 24
 const ONE_YEAR = 60 * 60 * 24 * 365
 
 /** Only send `secure` over https — a secure cookie is dropped on http://localhost. */
@@ -47,7 +51,7 @@ function overHttps(): boolean {
 // authHeaders correct -> signOut clears both the signal and the cookie.
 export const useSession = defineStore('session', () => {
   const token = useCookie('bughq_token', {
-    maxAge: THIRTY_DAYS,
+    maxAge: ONE_DAY,
     sameSite: 'Lax',
     secure: overHttps(),
   })

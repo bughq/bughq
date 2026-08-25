@@ -110,7 +110,7 @@ export default new Action({
     return response.html(
       `<!doctype html><meta charset="utf-8"><title>Signing you in</title>`
       + `<script>try{localStorage.setItem('token', ${token});localStorage.setItem('user', ${user});`
-      + `document.cookie='bughq_token='+${token}+'; path=/; max-age=2592000; samesite=lax'+(location.protocol==='https:'?'; secure':'')}catch(e){}`
+      + `document.cookie='bughq_token='+${token}+'; path=/; max-age=86400; samesite=lax'+(location.protocol==='https:'?'; secure':'')}catch(e){}`
       + `location.replace('/dashboard')</script>Signing you in...`,
       200,
     )

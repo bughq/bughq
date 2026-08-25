@@ -54,15 +54,21 @@ export default {
    * paired refresh token (`refreshTokenExpiry`) carries the long-lived
    * session and is rotated on use, so UX is unaffected.
    */
-  // 30 days: the dashboard is a long-lived session (token kept in localStorage +
-  // a cookie). A 1h expiry logged users out mid-session.
-  tokenExpiry: env.AUTH_TOKEN_EXPIRY || 30 * 24 * 60 * 60 * 1000,
+  // 24 hours, absolute. Not a sliding window: the clock starts when the token is
+  // issued and is never extended by activity, so a session ends a day after
+  // sign-in whatever the user was doing. There is deliberately no idle expiry —
+  // being away from the keyboard does not end a session, reaching 24h does.
+  //
+  // The refresh token below carries the same 24h, so refreshing cannot outlive
+  // it either; a longer refresh window would make this number cosmetic.
+  tokenExpiry: env.AUTH_TOKEN_EXPIRY || 24 * 60 * 60 * 1000,
 
   /**
-   * Refresh-token expiry in milliseconds (default: 30 days). This is the
-   * long-lived credential exchanged for fresh access tokens.
+   * Refresh-token expiry in milliseconds. Held at 24h to match `tokenExpiry` —
+   * the refresh token is what a session's real length is measured by, so
+   * leaving it at 30 days would let a 24h access token be renewed for a month.
    */
-  refreshTokenExpiry: env.AUTH_REFRESH_TOKEN_EXPIRY || 30 * 24 * 60 * 60 * 1000,
+  refreshTokenExpiry: env.AUTH_REFRESH_TOKEN_EXPIRY || 24 * 60 * 60 * 1000,
 
   /**
    * The token rotation time in hours (default: 24 hours).
