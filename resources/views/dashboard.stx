@@ -146,6 +146,25 @@ if (projectId) {
   ))?.[0]?.n ?? 0)
 }
 
+// Has a client for this project ever identified itself, and has anything ever
+// been captured? Two facts, both cheap, and together they turn one ambiguous
+// empty panel into three honest ones. Without them "no issues" means either
+// "nothing is broken" or "the SDK never loaded", and nothing on screen tells
+// them apart — which is the single most misleading state this product had.
+let sdkSeenAt: string | null = null
+let everCaptured = false
+if (projectId) {
+  const hb = (await db.unsafe(
+    'SELECT last_sdk_at, last_sdk_name, last_environment FROM projects WHERE id = $1 LIMIT 1',
+    [projectId],
+  ))?.[0]
+  sdkSeenAt = hb?.last_sdk_at ? String(hb.last_sdk_at) : null
+  const any = (await db.unsafe('SELECT 1 FROM issues WHERE project_id = $1 LIMIT 1', [projectId]))?.[0]
+  everCaptured = !!any
+}
+/** Days since a client last checked in, or null if one never has. */
+const sdkQuietDays = sdkSeenAt ? Math.floor((Date.now() - new Date(sdkSeenAt).getTime()) / 86400000) : null
+
 const statusTabs = [
   { key: 'unresolved', label: unreadCount ? `Unresolved (${unreadCount})` : 'Unresolved' },
   // Between Unresolved and Resolved, because that is the order work moves in.
@@ -1030,8 +1049,36 @@ summary::-webkit-details-marker { display: none; }
         </div>
       @empty
         <div class="px-5 py-16 text-center">
-          <div class="text-base font-medium mb-1">No {{ statusFilter === 'all' ? '' : statusFilter }} issues{{ activeRange.interval ? ` in the last ${activeRange.interval}` : '' }}</div>
-          <div class="text-sm text-subtle">Nothing to triage right now. New errors land here as they are captured.</div>
+          {{-- Three states, not one. This panel used to say the same reassuring
+               sentence whether the app was healthy or the SDK had never loaded,
+               which made an empty dashboard impossible to trust. --}}
+          @if (!sdkSeenAt && !everCaptured)
+            <div class="text-base font-medium mb-1">No client has connected yet</div>
+            <div class="text-sm text-subtle mb-4">
+              Nothing from this app has ever reached bughq — not an error, not even a check-in.
+              That usually means the SDK has not shipped, or is running with a different key.
+            </div>
+            <StxLink to="/settings?project={{ projectId }}#install" class="pill px-4 py-1.5 text-sm font-medium border border-line text-accent">Installation instructions</StxLink>
+          @endif
+          @if (sdkSeenAt && sdkQuietDays !== null && sdkQuietDays <= 2)
+            <div class="text-base font-medium mb-1">Connected, and nothing is broken</div>
+            <div class="text-sm text-subtle">
+              A client checked in {{ sdkQuietDays === 0 ? 'today' : sdkQuietDays === 1 ? 'yesterday' : `${sdkQuietDays} days ago` }} and reported no {{ statusFilter === 'all' ? '' : statusFilter }} issues{{ activeRange.interval ? ` in the last ${activeRange.interval}` : '' }}. This is the good outcome.
+            </div>
+          @endif
+          @if (sdkSeenAt && sdkQuietDays !== null && sdkQuietDays > 2)
+            <div class="text-base font-medium mb-1">No check-in for {{ sdkQuietDays }} days</div>
+            <div class="text-sm text-subtle">
+              A client last identified itself {{ sdkQuietDays }} days ago. Either this app is not being used,
+              or a deploy dropped the bughq key. Silence from a live app is worth a look.
+            </div>
+          @endif
+          {{-- The SDK is older than the heartbeat, so a project can be reporting
+               errors while never having checked in. Say the true thing. --}}
+          @if (!sdkSeenAt && everCaptured)
+            <div class="text-base font-medium mb-1">No {{ statusFilter === 'all' ? '' : statusFilter }} issues{{ activeRange.interval ? ` in the last ${activeRange.interval}` : '' }}</div>
+            <div class="text-sm text-subtle">Nothing to triage right now. New errors land here as they are captured.</div>
+          @endif
         </div>
       @endforelse
 

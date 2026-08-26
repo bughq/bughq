@@ -608,6 +608,61 @@ function sdkScript(request: any): Response {
 route.get('/sdk.js', sdkScript)
 route.get('/api/sdk.js', sdkScript)
 
+/**
+ * SDK heartbeat. "A client for this project loaded and identified itself."
+ *
+ * This exists because an empty dashboard is otherwise unfalsifiable: a project
+ * with no issues looks identical whether the app is healthy or the SDK never
+ * ran — wrong key, blocked by CORS, module gated off, a build shipped without
+ * the env var. Every one of those reads as "nothing is broken".
+ *
+ * Deliberately NOT an event. It is not metered against the plan's event
+ * allowance, creates no issue, and carries no URL, user or session — only which
+ * SDK, which version, which environment and which release. At most one per
+ * browser per day, and the SDK ignores the response entirely.
+ *
+ * Authorised by ingest key alone, exactly like POST /errors, and answers 204 in
+ * every case including an unknown key: a heartbeat that told a caller whether a
+ * key was valid would be a free oracle for guessing keys.
+ */
+async function sdkHello(request: any): Promise<Response> {
+  const body = request.jsonBody ?? {}
+  const key = request.headers?.get('x-bughq-key') ?? body.key ?? null
+  const ip = clientIp(request)
+  // Same limiter as the ingest, its own bucket. Generous because a healthy
+  // fleet sends one per browser per day; tight enough that this cannot be used
+  // to enumerate keys.
+  const limit = await rateLimit(`hello:${ip}`, 60, RATE_WINDOW_MS)
+  if (!limit.ok)
+    return new Response(null, { status: 204, headers: CORS })
+
+  if (key) {
+    try {
+      await db.unsafe(
+        `UPDATE projects SET last_sdk_at = NOW(), last_sdk_name = $2, last_sdk_version = $3,
+                             last_environment = $4, last_release = $5
+          WHERE ingest_key = $1`,
+        [
+          String(key),
+          col255(String(body.sdk?.name ?? '')).slice(0, 64) || null,
+          col255(String(body.sdk?.version ?? '')).slice(0, 32) || null,
+          col255(String(body.environment ?? '')).slice(0, 64) || null,
+          col255(String(body.release ?? '')).slice(0, 128) || null,
+        ],
+      )
+    }
+    catch (err) {
+      // Bookkeeping must never fail a client's boot path.
+      console.error('[hello] could not record heartbeat:', err instanceof Error ? err.message : err)
+    }
+  }
+  // 204 regardless — see the note above about not confirming keys.
+  return new Response(null, { status: 204, headers: CORS })
+}
+
+route.post('/sdk/hello', sdkHello).skipCsrf()
+route.post('/api/sdk/hello', sdkHello).skipCsrf()
+
 // Same reachability split as /sdk.js above: /api/health is the one an uptime
 // check on the public origin can actually see.
 route.get('/health', () => response.json({ status: 'ok', app: 'bughq' }))
