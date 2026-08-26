@@ -1,0 +1,11 @@
+-- A server-side off switch for console-derived issues.
+--
+-- The apps most likely to need this are client-only SPAs, where turning a
+-- capture flag off means a rebuild and a redeploy — easyotc is `ssr: false`, so
+-- a config edit is a CI run away, not a click. If console capture ever floods a
+-- project, the owner needs to stop it from the dashboard in the meantime.
+--
+-- Muting drops the event at ingest rather than asking the client to stop: the
+-- client cannot be reached, and the point is to protect the issue list and the
+-- plan's event allowance immediately.
+ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "console_muted" boolean NOT NULL DEFAULT false;

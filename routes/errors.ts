@@ -251,13 +251,13 @@ route.post('/errors', async (request: any) => {
     project = (await db.unsafe(
       // owner_id rides along on a query that already runs, so metering the
       // account costs nothing extra on the busiest endpoint in the app.
-      'SELECT id, ingest_key, is_active, owner_id FROM projects WHERE id = $1 LIMIT 1',
+      'SELECT id, ingest_key, is_active, owner_id, console_muted FROM projects WHERE id = $1 LIMIT 1',
       [String(requestedProject)],
     ))?.[0] ?? null
   }
   else if (providedKey) {
     project = (await db.unsafe(
-      'SELECT id, ingest_key, is_active, owner_id FROM projects WHERE ingest_key = $1 LIMIT 1',
+      'SELECT id, ingest_key, is_active, owner_id, console_muted FROM projects WHERE ingest_key = $1 LIMIT 1',
       [String(providedKey)],
     ))?.[0] ?? null
   }
@@ -277,6 +277,16 @@ route.post('/errors', async (request: any) => {
     return json({ error: 'rate limited' }, 429, { 'Retry-After': String(projLimit.retryAfter) })
 
   const now = new Date().toISOString()
+
+  // Server-side off switch for console-derived issues.
+  //
+  // Checked here, before the meter and before anything is written, so a muted
+  // project costs nothing — not an issue, not a row, not an event against its
+  // plan. Accepted rather than rejected: the SDK would retry a 4xx forever and
+  // the client cannot be told to stop, since apps like this one are static
+  // builds where changing a flag means a redeploy.
+  if (project.console_muted === true && String(body.type ?? '') === 'ConsoleError')
+    return json({ ok: true, muted: true })
 
   // Meter this event against the owning account.
   //
