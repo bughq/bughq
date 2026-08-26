@@ -70,8 +70,7 @@
     "sqlite": "^3.47.2"
   },
   "dependencies": {
-    "bun-plugin-auto-imports": "^0.4.1",
-    "stacks": "^0.70.366",
+    "stacks": "^0.72.76",
     "stripe": "22.3.2"
   },
   "devDependencies": {

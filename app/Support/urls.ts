@@ -26,5 +26,12 @@ export function appUrl(): string {
  * `APP_URL` (same domain in prod), then the local ingest server.
  */
 export function ingestUrl(): string {
-  return abs(env.BUGHQ_INGEST_URL || env.APP_URL, 'http://localhost:3108')
+  // process.env, not the typed `env` helper. storage/framework/env.d.ts is
+  // generated from the .env FILE — which is untracked — so a key only present
+  // on one machine types there and nowhere else. This is an optional
+  // deployment override rather than part of the app's declared env schema, and
+  // reading it through the typed accessor stopped compiling the moment stacks
+  // 0.72 tightened StacksEnv. It was never promised; it just used to be
+  // tolerated.
+  return abs(process.env.BUGHQ_INGEST_URL || env.APP_URL, 'http://localhost:3108')
 }
