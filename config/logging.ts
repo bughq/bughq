@@ -1,4 +1,6 @@
 import type { LoggingConfig } from '@stacksjs/types'
+import { loghqTransport } from '@loghq/stacks'
+import { env } from '@stacksjs/env'
 import { storagePath } from '@stacksjs/path'
 
 /**
@@ -28,4 +30,28 @@ export default {
    * @default 'storage/logs/deployments.log'
    */
   deploymentsPath: storagePath('logs/deployments.log'),
+
+  /**
+   * **Transports**
+   *
+   * Destinations for log records, alongside the console and the log file. The
+   * framework calls each one for every `log.*` call, so nothing here changes a
+   * single call site.
+   *
+   * loghq is declared unconditionally. With no `LOGHQ_KEY` the client disables
+   * itself ("no ingest key, client disabled") and logging behaves exactly as it
+   * did before, so this is safe in local dev and in CI without any env setup.
+   *
+   * `captureStruct` also forwards the framework's own structured events, which
+   * is most of the value: `http.request`, `db.query`, `db.slow_query`, `job.*`
+   * and `cache.*` arrive correlated by request id without being logged by hand.
+   */
+  transports: [
+    loghqTransport({
+      key: env.LOGHQ_KEY,
+      host: env.LOGHQ_HOST || undefined,
+      environment: env.APP_ENV,
+      captureStruct: true,
+    }),
+  ],
 } satisfies LoggingConfig
