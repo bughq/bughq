@@ -42,9 +42,16 @@ export default {
    * itself ("no ingest key, client disabled") and logging behaves exactly as it
    * did before, so this is safe in local dev and in CI without any env setup.
    *
-   * `captureStruct` also forwards the framework's own structured events, which
-   * is most of the value: `http.request`, `db.query`, `db.slow_query`, `job.*`
-   * and `cache.*` arrive correlated by request id without being logged by hand.
+   * Correlation is already live and costs nothing: the router stamps an
+   * `x-request-id` (or a fresh uuid) into request storage, and the framework's
+   * `getLogContext()` puts it on every record as `trace_id`. So any `log.*`
+   * call made inside a request arrives at loghq already joinable, queryable
+   * there via `GET /api/projects/{id}/logs?trace=…`.
+   *
+   * `captureStruct` forwards the framework's own `log.struct` events —
+   * `http.request`, `db.query`, `job.*`, `cache.*`. Nothing in this app emits
+   * those yet, so today it is a forward-looking hook rather than a live
+   * feature. It is on because the cost is zero until something does emit.
    */
   transports: [
     loghqTransport({
