@@ -331,4 +331,11 @@ if (!skipAutoImports) {
   catch {
     // Discovery may fail during early bootstrap — not critical
   }
+
+  // Say once, in the boot log, whether this app's logs are actually reaching
+  // loghq. Deliberately not awaited: the answer is a diagnostic, so it must not
+  // sit on the critical path, and it cannot fail the boot even if it throws.
+  import('../../app/Support/loghq')
+    .then(m => m.reportLoghqAttachment())
+    .catch(() => {})
 }

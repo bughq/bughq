@@ -5,7 +5,7 @@
     "": {
       "name": "bughq",
       "dependencies": {
-        "@loghq/stacks": "^0.2.2",
+        "@loghq/stacks": "^0.2.5",
         "stacks": "^0.72.76",
         "stripe": "22.3.2",
       },
@@ -23,7 +23,7 @@
 
     "@iconify/types": ["@iconify/types@2.0.0", "", {}, "sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg=="],
 
-    "@loghq/stacks": ["@loghq/stacks@0.2.2", "", { "peerDependencies": { "@stacksjs/logging": ">=0.70.366" }, "optionalPeers": ["@stacksjs/logging"] }, "sha512-MoZnt9hh5ShuqPiJwSh3ps+juuMaEC6X5+Xbnp0TxwgIHZcdA9EQINR2oBNlHCCxKc2XsPOgPQneaN9q8H05xg=="],
+    "@loghq/stacks": ["@loghq/stacks@0.2.5", "", {}, "sha512-mH00dGJPu8DxmzNVJEtb2kewjzE1YNR6uLMvzSfx7Qa/hD0ohtHGUWRp50iBkvyglsNRLFlVQYYFXDaP2D4xxg=="],
 
     "@stacksjs/actions": ["@stacksjs/actions@0.72.76", "", { "dependencies": { "@stacksjs/bumpx": "^0.2.6", "@stacksjs/bunpress": "^0.2.8", "@stacksjs/config": "0.72.76", "@stacksjs/logsmith": "^0.2.3", "@stacksjs/registry": "0.72.76", "@stacksjs/stx": "^0.2.230", "@stacksjs/ts-cloud": "^0.12.4", "@stacksjs/ts-md": "^0.1.1" }, "peerDependencies": { "craft-native": "^0.0.67", "pickier": "^0.1.58" }, "optionalPeers": ["craft-native", "pickier"] }, "sha512-eIJwF9PmMTxDTCaii4XAPEfecLJMHdWhunKZkFYtugBXs5f8+5DlbxNcEN4h+RbGSe2sepsMf0yaYyLLwvZ9Xg=="],
 
