@@ -167,8 +167,13 @@ route.post('/api/projects', async (request: any) => {
   if (name.length > 255)
     return json({ error: 'Project name is too long.' }, 400)
 
-  // Free is one project. Checked on CREATE, not on access, so an account that
-  // already has several keeps every one of them and simply cannot add another.
+  // Checked on CREATE, not on access, so an account that already has several
+  // keeps every one of them and simply cannot add another. The allowance itself
+  // lives in app/Billing/plans.ts; do not restate the number here, because a
+  // comment is exactly the copy that goes stale when it changes.
+  //
+  // Counts every project the user owns, archived ones included: archiving does
+  // not free a slot.
   //
   // Fails OPEN: isPro() returns true when billing is unconfigured (self-hosted)
   // or when the lookup itself errors. A billing hiccup must never stop someone
