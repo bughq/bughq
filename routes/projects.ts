@@ -180,7 +180,7 @@ route.post('/api/projects', async (request: any) => {
     ))?.[0]?.n ?? 0)
     if (owned >= FREE_PROJECTS) {
       return json({
-        error: `Free includes ${FREE_PROJECTS} project. Upgrade to Pro for unlimited projects.`,
+        error: `Free includes ${FREE_PROJECTS} project${FREE_PROJECTS === 1 ? '' : 's'}. Upgrade to Pro for unlimited projects.`,
         upgrade: '/pricing',
       }, 402)
     }

@@ -11,7 +11,7 @@
 export const FREE_EVENTS_PER_MONTH = 5000
 
 /** Free's advertised project allowance. */
-export const FREE_PROJECTS = 1
+export const FREE_PROJECTS = 5
 
 /**
  * Free's teammate allowance. Zero: teams are a Pro feature.

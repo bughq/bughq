@@ -1,7 +1,7 @@
 <script server>
 useSeoMeta({
   title: "Pricing - bughq",
-  description: "Simple, honest pricing for bughq error tracking. Free for one project on your own, Pro for unlimited projects and your team, or self-host free forever.",
+  description: "Simple, honest pricing for bughq error tracking. Free for five projects on your own, Pro for unlimited projects and your team, or self-host free forever.",
   canonical: "https://bughq.org/pricing",
 })
 </script>
@@ -76,9 +76,9 @@ useSeoMeta({
           <div class="card p-7">
             <div class="text-sm font-semibold uppercase tracking-wider text-subtle">Free</div>
             <div class="mt-3"><span class="wordmark text-4xl">$0</span><span class="text-sm text-subtle"> / forever</span></div>
-            <p class="text-sm mt-2 text-muted">Enough to run one app properly.</p>
+            <p class="text-sm mt-2 text-muted">Enough to run a handful of apps properly.</p>
             <ul class="mt-6 space-y-2.5 text-sm">
-              <li class="flex items-center gap-2"><span class="check">✓</span> 1 project</li>
+              <li class="flex items-center gap-2"><span class="check">✓</span> 5 projects</li>
               <li class="flex items-center gap-2"><span class="check">✓</span> 5k errors a month</li>
               <li class="flex items-center gap-2"><span class="check">✓</span> 30 days of history</li>
               <li class="flex items-center gap-2"><span class="check">✓</span> Just you</li>

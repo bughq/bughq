@@ -30,7 +30,7 @@ if (token) {
 let projectCount = 0
 let ownedCount = 0
 let atProjectLimit = false
-let freeProjects = 1
+let freeProjects = 5
 if (user) {
   const counted = (await db.unsafe(
     `SELECT COUNT(DISTINCT p.id) AS n
