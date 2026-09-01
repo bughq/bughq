@@ -27,11 +27,29 @@ export const tsCloud: TsCloudConfig = {
     region: 'us-east-1', // Default AWS region
   },
 
-  // BugHQ owns its dedicated Hetzner server. It keeps its application,
-  // database, rpx gateway, and one server-level cloud dashboard isolated from
-  // the shared Stacks server.
+  // Attach to the statushq box rather than keeping a server of its own.
+  //
+  // `attachTo` takes the OWNER PROJECT'S SLUG, not a server name, and for this
+  // box the two differ: the server is named `statushq-production-app` but its
+  // `ts-cloud/project` label reads `uptime-status`. ts-cloud matches the label,
+  // so `attachTo: 'statushq'` finds nothing and fails with "Attach target
+  // 'statushq' has no reachable box for 'production'", which reads like the
+  // server is missing when it is running fine. loghq/config/cloud.ts documents
+  // the same trap.
+  //
+  // PREREQUISITE, and it is not optional: that box runs SQLite and has no
+  // Postgres process. This app is Postgres (DB_CONNECTION=postgres, 16 live
+  // NOW() calls, BIGSERIAL migrations), so the server must be installed there
+  // BEFORE this attaches. ts-cloud will create the role and database inside an
+  // existing cluster, but it will not install the cluster: attach mode skips
+  // provisioning, and reuse of an existing box is a metadata rehydrate that
+  // re-provisions nothing.
+  //
+  // Ports do not collide: 3022/3023 here against statushq 3000/3008 and loghq
+  // 3042/3043.
   cloud: {
     provider: 'hetzner',
+    attachTo: 'uptime-status',
   },
 
   /**

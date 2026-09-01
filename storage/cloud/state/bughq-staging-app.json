@@ -1,8 +1,0 @@
-{
-  "stackName": "bughq-staging-app",
-  "serverId": 149399600,
-  "serverName": "stacks-staging-app",
-  "publicIp": "49.12.8.203",
-  "sshUser": "root",
-  "deployStoragePath": "/var/ts-cloud/staging"
-}

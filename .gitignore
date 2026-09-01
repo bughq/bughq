@@ -110,3 +110,10 @@ storage/framework/cache/
 # — so any app borrowing this project's node_modules writes its mail here too.
 # That is how a dozen loghq password resets ended up in bughq's logs/mail.
 /logs/
+
+# ts-cloud's resolved server state. Machine-written, and PINNING: with a state
+# file present, resolvePersistedAttachTargetBox returns the box recorded there
+# and ignores `cloud.attachTo`, so a deploy keeps shipping to the old server and
+# stays GREEN while doing it. analyticshq ignores this path; loghq and status
+# track zero files under it. This app was the only one committing them.
+storage/cloud/
