@@ -71,7 +71,7 @@
   },
   "dependencies": {
     "@loghq/stacks": "^0.2.6",
-    "stacks": "^0.72.76",
+    "stacks": "^0.74.0",
     "stripe": "22.3.2"
   },
   "devDependencies": {
