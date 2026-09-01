@@ -70,7 +70,7 @@
     "sqlite": "^3.47.2"
   },
   "dependencies": {
-    "@loghq/stacks": "^0.2.5",
+    "@loghq/stacks": "^0.2.6",
     "stacks": "^0.72.76",
     "stripe": "22.3.2"
   },
