@@ -167,6 +167,23 @@ route.post('/api/projects', async (request: any) => {
   if (name.length > 255)
     return json({ error: 'Project name is too long.' }, 400)
 
+  // Two apps of the same name in one account is never what anyone meant, and it
+  // is quietly destructive: both render identically in every list, so the
+  // ingest key you copy out is a coin flip.
+  //
+  // Deliberately BEFORE the plan gate. Someone who has simply retyped a name
+  // they already used should be told that, not told to upgrade - the paywall is
+  // the wrong answer to a typo, and the most annoying possible one.
+  //
+  // lower(), not ILIKE: ILIKE is Postgres-only and this also runs on SQLite.
+  // Scoped to the owner, since two accounts may both have an app called "api".
+  const clash = (await db.unsafe(
+    'SELECT id FROM projects WHERE owner_id = $1 AND lower(name) = lower($2) LIMIT 1',
+    [Number(user.id), name],
+  ))?.[0]
+  if (clash)
+    return json({ error: `You already have an app called "${name}".`, project: String(clash.id) }, 409)
+
   // Checked on CREATE, not on access, so an account that already has several
   // keeps every one of them and simply cannot add another. The allowance itself
   // lives in app/Billing/plans.ts; do not restate the number here, because a
