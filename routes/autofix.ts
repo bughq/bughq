@@ -1,6 +1,7 @@
 import { Auth } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
+import { sameOrigin } from '../app/Support/origin'
 import RunAutofix from '../app/Jobs/RunAutofix'
 import { parseRepository, repositoryInfo, repositoryTree } from '../app/Autofix/github'
 import aiConfig from '../config/ai'
@@ -15,16 +16,6 @@ async function currentUser(request: any): Promise<any | null> {
   if (!token) return null
   try { return await Auth.getUserFromToken(token) }
   catch { return null }
-}
-
-function sameOrigin(request: any): boolean {
-  const origin = request.headers?.get?.('origin')
-  if (!origin) return true
-  try {
-    const host = request.headers?.get?.('x-forwarded-host') || request.headers?.get?.('host') || new URL(request.url).host
-    return new URL(origin).host === host
-  }
-  catch { return false }
 }
 
 function userEmail(user: any): string {

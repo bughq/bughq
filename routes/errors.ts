@@ -10,6 +10,7 @@
 import { Auth } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
 import { response, route } from '@stacksjs/router'
+import { sameOrigin } from '../app/Support/origin'
 import { record as recordUsage } from '../app/Billing/usage'
 import { dispatchAlerts } from '../app/Errors/alerts'
 import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, randomId } from '../app/Errors/fingerprint'
@@ -167,19 +168,6 @@ function userEmail(user: any): string {
 // carries the attacker's Origin and is rejected. Absent Origin (non-browser
 // callers, some same-origin form posts) falls through to the cookie+SameSite
 // gate, and bearer-token API calls are same-origin anyway.
-function sameOrigin(request: any): boolean {
-  const origin = request.headers?.get?.('origin')
-  if (!origin)
-    return true
-  try {
-    const host = request.headers?.get?.('x-forwarded-host') || request.headers?.get?.('host') || new URL(request.url).host
-    return new URL(origin).host === host
-  }
-  catch {
-    return false
-  }
-}
-
 /**
  * True when `user` can access the issue: they own the project it belongs to, or
  * they're an invited member of it. Viewing and triage (resolve/ignore) are open
