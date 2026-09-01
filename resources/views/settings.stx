@@ -178,6 +178,32 @@ function installGuide(platform: string | null, key: string): InstallGuide {
     return { label: 'React', install: 'bun add @bughq/sdk', code: `import { bughq } from '@bughq/sdk'\n\nbughq.init({ key: '${key}' })\n// then capture render errors from an ErrorBoundary` }
   if (p === 'javascript' || p === 'browser')
     return { label: 'JavaScript', install: '', code: scriptTag }
+  if (p === 'stacks') {
+    return {
+      label: 'Stacks',
+      install: 'bun add @bughq/stacks',
+      code: `// config/logging.ts\n`
+        + `import type { LoggingConfig } from '@stacksjs/types'\n`
+        + `import { bughqTransport } from '@bughq/stacks'\n`
+        + `import { storagePath } from '@stacksjs/path'\n\n`
+        + `export default {\n`
+        + `  logsPath: storagePath('logs/stacks.log'),\n`
+        + `  deploymentsPath: storagePath('logs/deployments.log'),\n`
+        + `  transports: [\n`
+        + `    bughqTransport({ key: '${key}' }),\n`
+        + `  ],\n`
+        + `} satisfies LoggingConfig\n\n`
+        + `// That is the whole integration, and no call site changes.\n`
+        + `// log.error and above become issues. Everything below it is kept as\n`
+        + `// a breadcrumb, 30 per trace, and attached to the next issue, so the\n`
+        + `// lines leading up to a failure arrive with the failure.\n\n`
+        + `// Unhandled exceptions are NOT captured by default, because the\n`
+        + `// built server entry installs its own handlers. Queue workers\n`
+        + `// install none, so turn it on there with\n`
+        + `// capture: { unhandled: true }, or set BUGHQ_CAPTURE_UNHANDLED=true.\n\n`
+        + `// The signed-in user and failed-job context are attached already.`,
+    }
+  }
   if (p === 'laravel')
     return { label: 'Laravel', install: 'composer require bughq/bughq-laravel', code: `# .env\nBUGHQ_KEY=${key}\n\n# exceptions, failed jobs, and breadcrumbs are captured automatically` }
   if (p === 'php')

@@ -172,6 +172,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
           <option value="react">React</option>
           <option value="vue">Vue</option>
           <option value="nuxt">Nuxt</option>
+          <option value="stacks">Stacks</option>
           <option value="laravel">Laravel</option>
           <option value="php">PHP</option>
           <option value="other">Other</option>
