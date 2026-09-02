@@ -9,8 +9,9 @@
 
 import { Auth } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
-import { response, route } from '@stacksjs/router'
+import { route } from '@stacksjs/router'
 import { sameOrigin } from '../app/Support/origin'
+import { healthResponse } from '../app/Support/health'
 import { record as recordUsage } from '../app/Billing/usage'
 import { dispatchAlerts } from '../app/Errors/alerts'
 import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, randomId } from '../app/Errors/fingerprint'
@@ -663,5 +664,9 @@ route.post('/api/sdk/hello', sdkHello).skipCsrf()
 
 // Same reachability split as /sdk.js above: /api/health is the one an uptime
 // check on the public origin can actually see.
-route.get('/health', () => response.json({ status: 'ok', app: 'bughq' }))
-route.get('/api/health', () => response.json({ status: 'ok', app: 'bughq' }))
+//
+// These used to answer a literal `{ status: 'ok' }`, which is an endpoint that
+// cannot fail — 200 with the database down and every page 500ing. See
+// app/Support/health.ts for what replaced it and why.
+route.get('/health', () => healthResponse())
+route.get('/api/health', () => healthResponse())
