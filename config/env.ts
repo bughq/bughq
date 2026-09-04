@@ -307,4 +307,14 @@ export default {
     validation: schema.string(),
     default: '',
   },
+
+  // The analyticshq site this app reports page views to. Empty disables the
+  // tracker rather than failing: tsAnalyticsStxConfig ties `enabled` to the
+  // App ID, so a checkout without this set renders no tag and beacons at
+  // nothing. That is what keeps local development and CI out of production
+  // numbers without anyone remembering to switch it off.
+  ANALYTICSHQ_APP_ID: {
+    validation: schema.string(),
+    default: '',
+  },
 } satisfies EnvConfig

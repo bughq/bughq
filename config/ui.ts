@@ -1,4 +1,6 @@
 import type { StxOptions as UiOptions } from '@stacksjs/stx'
+import { env } from '@stacksjs/env'
+import { tsAnalyticsStxConfig } from '@ts-analytics/tracking/stx'
 
 /**
  * STX Configuration for Stacks
@@ -6,6 +8,20 @@ import type { StxOptions as UiOptions } from '@stacksjs/stx'
  */
 
 export default {
+  // Page views to analyticshq. The App ID comes from the environment so a
+  // fork, a CI run and a laptop do not all report into production's numbers;
+  // with it unset the block is inert and no tag is rendered.
+  //
+  // `apiEndpoint` is passed explicitly rather than relying on the package
+  // default. Every release of @ts-analytics/tracking up to 0.1.13 baked in
+  // `http://localhost:2027`, so an app that supplied only an App ID beaconed
+  // into nothing; naming the origin here means a future regression in that
+  // default cannot silently take this app's analytics with it.
+  analytics: tsAnalyticsStxConfig({
+    appId: env.ANALYTICSHQ_APP_ID,
+    apiEndpoint: 'https://analyticshq.org',
+  }),
+
   // Where the app lives. Pinned rather than inferred, and that matters:
   // resolveStxRoot (config.js:363-373) only returns root 'resources' because
   // BOTH resources/views and resources/layouts exist on disk. The second is an
