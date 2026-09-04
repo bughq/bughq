@@ -53,8 +53,8 @@ if (user) {
   // Ask before the user fills the form in. The API refuses this anyway
   // (routes/projects.ts, 402), but discovering a limit by having your work
   // rejected is a worse way to learn it than being told up front.
-  const { isPro } = await import('../../../app/Billing/pro')
-  const { FREE_PROJECTS } = await import('../../../app/Billing/plans')
+  const { isPro } = await import('~/app/Billing/pro')
+  const { FREE_PROJECTS } = await import('~/app/Billing/plans')
   atProjectLimit = !(await isPro(Number(user.id))) && ownedCount >= FREE_PROJECTS
   freeProjects = FREE_PROJECTS
 }

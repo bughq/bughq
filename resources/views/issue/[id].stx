@@ -70,7 +70,8 @@ let user: Viewer | null = null
 if (token) {
   try {
     const { Auth } = await import('@stacksjs/auth')
-    user = await Auth.getUserFromToken(token)
+    // A full model instance in, the fields this file uses out.
+    user = (await Auth.getUserFromToken(token)) as unknown as Viewer
   }
   catch { user = null }
 }
@@ -102,14 +103,14 @@ async function loadData(): Promise<IssueData> {
     return { issue: null, events: [] }
   // Visible to the project owner OR an invited member (matched by email).
   const userEmail = String(user.email || '').trim().toLowerCase()
-  const row: Issue | null = (await db.unsafe(
+  const row: Issue | null = ((await db.unsafe(
     `SELECT i.* FROM issues i JOIN projects p ON p.id = i.project_id
      WHERE i.id = $1 AND (
        p.owner_id = $2
        OR EXISTS (SELECT 1 FROM project_members m WHERE m.project_id = p.id AND lower(m.email) = $3)
      ) LIMIT 1`,
     [issueId, Number(user.id), userEmail],
-  ))?.[0] ?? null
+  )) as unknown as Issue[])?.[0] ?? null
   if (!row)
     return { issue: null, events: [] }
 
@@ -125,10 +126,10 @@ async function loadData(): Promise<IssueData> {
     [issueId],
   ))?.[0]?.n ?? 0)
 
-  const rows: ErrorEvent[] = (await db.unsafe(
+  const rows: ErrorEvent[] = ((await db.unsafe(
     'SELECT * FROM error_events WHERE issue_id = $1 ORDER BY timestamp DESC LIMIT 25',
     [issueId],
-  )) ?? []
+  )) as unknown as ErrorEvent[]) ?? []
 
   // Opening the issue marks it read for THIS viewer, at the count they are
   // actually looking at. Watermarking on the count rather than a timestamp is

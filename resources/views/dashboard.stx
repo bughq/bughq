@@ -67,11 +67,23 @@ const requestedPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 
 // token. It was bridged because the names collide, and then I made that
 // explicit by naming it in defineClientPayload, which was the wrong call.
 const __token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
-let user = null
+/**
+ * The identity fields these views read off the session. `Auth.getUserFromToken`
+ * resolves a full User model instance; naming the narrow shape here is what the
+ * rest of this file is written against, and keeps the assertion below honest
+ * about which fields are actually used.
+ */
+interface Viewer {
+  id: number | string
+  email?: string | null
+}
+
+let user: Viewer | null = null
 if (__token) {
   try {
     const { Auth } = await import('@stacksjs/auth')
-    user = await Auth.getUserFromToken(__token)
+    // A full model instance in, the fields this file uses out.
+    user = (await Auth.getUserFromToken(__token)) as unknown as Viewer
   }
   catch { user = null }
 }
@@ -85,7 +97,7 @@ if (user) {
   // The user's own projects plus any they've been invited to (matched by email),
   // so shared projects appear in the switcher just like owned ones.
   const userEmail = String(user.email || '').trim().toLowerCase()
-  projects = (await db.unsafe(
+  projects = ((await db.unsafe(
     `SELECT DISTINCT p.id, p.name, p.platform, p.ingest_key, p.created_at, p.is_active,
             (p.owner_id = $1) AS is_owner
      FROM projects p
@@ -93,16 +105,16 @@ if (user) {
      WHERE p.owner_id = $1 OR m.email IS NOT NULL
      ORDER BY p.created_at DESC NULLS LAST, p.id`,
     [Number(user.id), userEmail],
-  )) ?? []
+  )) as unknown as DashboardProject[]) ?? []
   // Pending invitations addressed to this user's email, surfaced as a banner
   // with a Join button. A brand-new user who signed up via an invite link has
   // no projects yet — show the banner instead of forcing them to create one.
-  pendingInvites = (await db.unsafe(
+  pendingInvites = ((await db.unsafe(
     `SELECT i.token, p.name AS project_name FROM project_invites i
      JOIN projects p ON p.id = i.project_id
      WHERE lower(i.email) = $1 ORDER BY i.created_at ASC NULLS LAST`,
     [userEmail],
-  )) ?? []
+  )) as unknown as DashboardInvite[]) ?? []
   if (projects.length === 0 && pendingInvites.length === 0)
     needsOnboarding = true
   else if (projects.length > 0)
@@ -135,7 +147,11 @@ const switchTarget = pageUrl({ page: 1 })
 // snoozed rows, so snoozing genuinely quietens the number rather than just
 // hiding the row.
 let unreadCount = 0
-if (projectId) {
+// `user` is named in the guard because the query reads user.id. It cannot be
+// null here — `projects` is only filled inside `if (user)`, so a null user
+// leaves activeProject undefined and projectId null — but that runs through
+// two intermediate values, which is more than a reader should have to hold.
+if (projectId && user) {
   unreadCount = Number((await db.unsafe(
     `SELECT COUNT(*) AS n FROM issues i
        LEFT JOIN issue_reads r ON r.issue_id = i.id AND r.user_id = $2
@@ -241,7 +257,11 @@ let live = false
 let pager = { from: 0, to: 0, total: 0, page: 1, pages: 1, hasPrev: false, hasNext: false, prevHref: '', nextHref: '' }
 
 async function loadData() {
-  if (!projectId)
+  // `user` joins the guard for the same reason as the unread count above: the
+  // issues query reads user.id, and a null user cannot reach here because
+  // projectId is derived from projects, which is only filled inside
+  // `if (user)`. Naming it costs nothing and saves the reader the chain.
+  if (!projectId || !user)
     return
 
   // Whichever release sent the most recent event, plus how many distinct
@@ -301,7 +321,7 @@ async function loadData() {
   const page = Math.min(requestedPage, pages)
   const offset = (page - 1) * PAGE_SIZE
 
-  issues = (await db.unsafe(
+  issues = ((await db.unsafe(
     `SELECT i.id, i.title, i.culprit, i.error_type, i.level, i.status, i.count, i.last_seen, i.snoozed_until,
             (r.user_id IS NULL OR i.count > r.seen_count) AS unread,
             GREATEST(COALESCE(i.count, 0) - COALESCE(r.seen_count, 0), 0) AS new_since
@@ -310,7 +330,7 @@ async function loadData() {
       WHERE ${where}
       ORDER BY i.last_seen DESC, i.id DESC LIMIT ${PAGE_SIZE} OFFSET ${offset}`,
     [...params, Number(user.id)],
-  )) ?? []
+  )) as unknown as DashboardIssue[]) ?? []
 
   // Release, environment and the affected-user tally all live on error_events,
   // not on issues, so they need a second pass. Deliberately not a join on the

@@ -31,11 +31,23 @@ const justRotated = query.get('rotated') === '1'
 const cookieProject = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_project')) || ''
 
 const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
-let user = null
+/**
+ * The identity fields these views read off the session. `Auth.getUserFromToken`
+ * resolves a full User model instance; naming the narrow shape here is what the
+ * rest of this file is written against, and keeps the assertion below honest
+ * about which fields are actually used.
+ */
+interface Viewer {
+  id: number | string
+  email?: string | null
+}
+
+let user: Viewer | null = null
 if (token) {
   try {
     const { Auth } = await import('@stacksjs/auth')
-    user = await Auth.getUserFromToken(token)
+    // A full model instance in, the fields this file uses out.
+    user = (await Auth.getUserFromToken(token)) as unknown as Viewer
   }
   catch { user = null }
 }
@@ -61,32 +73,32 @@ let members: MemberRow[] = []
 let invites: InviteRow[] = []
 if (user) {
   // Owned projects only — settings is the owner's admin surface.
-  projects = (await db.unsafe(
+  projects = ((await db.unsafe(
     'SELECT id, name, platform, ingest_key, is_active FROM projects WHERE owner_id = $1 ORDER BY created_at DESC NULLS LAST, id',
     [Number(user.id)],
-  )) ?? []
+  )) as unknown as ProjectRow[]) ?? []
   if (projects.length === 0)
     needsOnboarding = true
   else
     activeProject = projects.find(p => p.id === requestedProject) || projects.find(p => p.id === cookieProject) || projects[0]
 
   if (activeProject) {
-    channels = (await db.unsafe(
+    channels = ((await db.unsafe(
       `SELECT id, type, label, webhook_url, enabled, created_at
        FROM alert_channels WHERE project_id = $1 ORDER BY created_at DESC NULLS LAST, id`,
       [activeProject.id],
-    )) ?? []
-    members = (await db.unsafe(
+    )) as unknown as ChannelRow[]) ?? []
+    members = ((await db.unsafe(
       `SELECT m.id, m.email, m.role FROM project_members m
        WHERE m.project_id = $1 ORDER BY m.created_at ASC NULLS LAST, m.email`,
       [activeProject.id],
-    )) ?? []
-    invites = (await db.unsafe(
+    )) as unknown as MemberRow[]) ?? []
+    invites = ((await db.unsafe(
       `SELECT i.id, i.email, i.token, i.delivery_status, i.delivery_error, (u.id IS NOT NULL) AS registered
        FROM project_invites i LEFT JOIN users u ON lower(u.email) = lower(i.email)
        WHERE i.project_id = $1 ORDER BY i.created_at ASC NULLS LAST, i.email`,
       [activeProject.id],
-    )) ?? []
+    )) as unknown as InviteRow[]) ?? []
   }
 }
 const projectId = activeProject?.id || null
