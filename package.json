@@ -72,12 +72,12 @@
   "dependencies": {
     "@loghq/stacks": "^0.2.6",
     "@ts-analytics/tracking": "^0.1.15",
-    "bun-query-builder": "^0.2.60",
-    "stacks": "^0.74.0",
-    "stripe": "22.3.2"
+    "bun-query-builder": "^0.2.66",
+    "stacks": "^0.74.24",
+    "stripe": "22.6.1"
   },
   "devDependencies": {
-    "better-dx": "^0.2.15"
+    "better-dx": "^0.2.25"
   },
   "git-hooks": {
     "pre-commit": {
