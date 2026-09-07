@@ -19,7 +19,7 @@ useSeoMeta({
 
 @section('content')
     <main>
-      <nav class="subnav shell" aria-label="Breadcrumb">
+      <nav class="shell subnav" aria-label="Breadcrumb">
         <StxLink to="/">Home</StxLink><span class="sep">/</span>
         <StxLink to="/compare">Compare</StxLink><span class="sep">/</span>
         <span>Airbrake</span>
@@ -35,7 +35,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-labelledby="table-heading">
+      <section class="reveal section shell" aria-labelledby="table-heading">
         <div class="section-head">
           <h2 id="table-heading" class="section-title">bughq and Airbrake, side by side</h2>
         </div>
@@ -74,7 +74,7 @@ useSeoMeta({
         <p class="cmp-note">Where Airbrake still leads: it is a long-established tool with deep, mature SDKs for Ruby and other classic server stacks.</p>
       </section>
 
-      <section class="section shell reveal" aria-labelledby="why-heading">
+      <section class="reveal section shell" aria-labelledby="why-heading">
         <div class="section-head">
           <h2 id="why-heading" class="section-title">Why teams pick bughq</h2>
         </div>
@@ -103,7 +103,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Fair comparison">
+      <section class="reveal section shell" aria-label="Fair comparison">
         <div class="chips">
           <div class="chip">
             <h3>Credit where it is due</h3>
@@ -116,7 +116,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-labelledby="related-heading">
+      <section class="reveal section shell" aria-labelledby="related-heading">
         <div class="section-head">
           <h2 id="related-heading" class="section-title">More comparisons</h2>
         </div>
@@ -136,7 +136,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Get started">
+      <section class="reveal section shell" aria-label="Get started">
         <div class="cta-band">
           <h2>Own your error tracking.</h2>
           <div class="cta-actions">

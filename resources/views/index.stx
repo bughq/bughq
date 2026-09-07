@@ -85,7 +85,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section id="features" class="section shell reveal" aria-labelledby="features-heading">
+      <section id="features" class="reveal section shell" aria-labelledby="features-heading">
         <div class="section-head">
           <h2 id="features-heading" class="section-title">From throw to triaged, without the noise.</h2>
         </div>
@@ -100,7 +100,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-labelledby="how-heading">
+      <section class="reveal section shell" aria-labelledby="how-heading">
         <div class="section-head">
           <h2 id="how-heading" class="section-title">Live in three steps.</h2>
         </div>
@@ -117,14 +117,14 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Open source and self-hosting">
+      <section class="reveal section shell" aria-label="Open source and self-hosting">
         <div class="open-band">
           <p><strong>Open source, and yours to run.</strong> Host bughq on your own Postgres so sensitive stack data never leaves your infrastructure, or start on the hosted tier in a minute.</p>
           <StxLink class="btn ghost" to="/features/self-host">Read about self-hosting</StxLink>
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Get started">
+      <section class="reveal section shell" aria-label="Get started">
         <div class="cta-band">
           <h2>Ship with a net under you.</h2>
           <div class="cta-actions">

@@ -936,22 +936,22 @@ html { scroll-behavior: smooth; }
 @keyframes dz-pop { from { opacity: 0; transform: translateY(6px) scale(0.98) } to { opacity: 1; transform: none } }
 </style>
 
-<div class="min-h-[100dvh] px-5 py-10 md:px-10">
-  <div class="max-w-2xl mx-auto">
+<div class="px-5 py-10 md:px-10 min-h-[100dvh]">
+  <div class="mx-auto max-w-2xl">
 
-    <header class="flex items-center justify-between gap-4 mb-7">
-      <StxLink to="/projects" class="wordmark-link"><h1 class="wordmark text-2xl leading-none">bughq</h1></StxLink>
-      <div class="flex items-center gap-2">
+    <header class="flex gap-4 items-center justify-between mb-7">
+      <StxLink to="/projects" class="wordmark-link"><h1 class="leading-none text-2xl wordmark">bughq</h1></StxLink>
+      <div class="flex gap-2 items-center">
         <button class="icon-btn theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <StxLink to="/dashboard" class="btn-ghost px-3.5 py-2 text-sm font-medium">← Dashboard</StxLink>
+        <StxLink to="/dashboard" class="px-3.5 py-2 font-medium text-sm btn-ghost">← Dashboard</StxLink>
       </div>
     </header>
 
     @if (!user)
-      <div id="auth-pending" class="text-center py-24 text-sm text-subtle">Loading…</div>
+      <div id="auth-pending" class="py-24 text-center text-sm text-subtle">Loading…</div>
     @endif
 
     @if (needsOnboarding)
@@ -960,10 +960,10 @@ html { scroll-behavior: smooth; }
 
     @if (user && activeProject)
       <div class="mb-6">
-        <div class="flex items-center gap-3 flex-wrap">
-          <h2 class="text-xl font-semibold" style="letter-spacing:-0.02em">Settings</h2>
+        <div class="flex flex-wrap gap-3 items-center">
+          <h2 class="font-semibold text-xl" style="letter-spacing:-0.02em">Settings</h2>
           @if (projects.length > 1)
-            <select @change="switchProject" aria-label="Switch project" class="panel mono px-3 py-1.5 text-sm text-muted">
+            <select @change="switchProject" aria-label="Switch project" class="px-3 py-1.5 text-muted text-sm mono panel">
               @foreach (projects as p)
                 {{-- The same marker dashboard.stx puts on its options. An
                      archived project is not capturing anything, and this page is
@@ -978,13 +978,13 @@ html { scroll-behavior: smooth; }
                  so the guard is real — but template expressions are checked one at
                  a time and cannot see it, and asserting non-null would be claiming
                  something this expression has not established. --}}
-            <span class="mono text-sm text-muted">{{ activeProject?.name }}{{ activeProject?.is_active === false ? ' (archived)' : '' }}</span>
+            <span class="text-muted text-sm mono">{{ activeProject?.name }}{{ activeProject?.is_active === false ? ' (archived)' : '' }}</span>
           @endif
         </div>
-        <p class="text-sm mt-1.5 text-subtle">Manage the API key, team, alerts, and deletion for this project.</p>
+        <p class="mt-1.5 text-sm text-subtle">Manage the API key, team, alerts, and deletion for this project.</p>
       </div>
 
-      <nav class="tabnav flex items-center gap-2 mb-8 text-sm">
+      <nav class="flex gap-2 items-center mb-8 text-sm tabnav">
         <a href="#install" class="px-3 py-1.5 font-medium">Install</a>
         <a href="#keys" class="px-3 py-1.5 font-medium">Keys</a>
         <a href="#members" class="px-3 py-1.5 font-medium">Members</a>
@@ -993,10 +993,10 @@ html { scroll-behavior: smooth; }
       </nav>
 
       <!-- ============================ INSTALL ============================ -->
-      <section id="install" class="sec mb-10">
-        <div class="sec-title mb-3">Install</div>
-        <div class="panel px-5 py-5">
-          <div class="flex items-center justify-between gap-3 mb-3.5">
+      <section id="install" class="mb-10 sec">
+        <div class="mb-3 sec-title">Install</div>
+        <div class="px-5 py-5 panel">
+          <div class="flex gap-3 items-center justify-between mb-3.5">
             {{-- An archived project's ingest turns every event away with 403
                  `project inactive` (app/Errors/ingest.ts) — before the key is
                  even looked at — so the usual "wire this up to start capturing"
@@ -1005,11 +1005,11 @@ html { scroll-behavior: smooth; }
                  nothing arrives until the project is unarchived. Same voice as
                  the archived notice in the danger zone below. --}}
             @if (activeProject.is_active === false)
-              <p class="text-sm text-subtle"><span class="mono text-muted">{{ activeProject?.name }}</span> is archived, so its ingest rejects every event with <span class="mono">project inactive</span> — installing this now captures nothing. Unarchive it in the danger zone below first.</p>
+              <p class="text-sm text-subtle"><span class="text-muted mono">{{ activeProject?.name }}</span> is archived, so its ingest rejects every event with <span class="mono">project inactive</span> — installing this now captures nothing. Unarchive it in the danger zone below first.</p>
             @else
-              <p class="text-sm text-subtle">Wire bughq into <span class="mono text-muted">{{ activeProject?.name }}</span> to start capturing errors — they group into issues automatically.</p>
+              <p class="text-sm text-subtle">Wire bughq into <span class="text-muted mono">{{ activeProject?.name }}</span> to start capturing errors — they group into issues automatically.</p>
             @endif
-            <span class="badge badge-soft shrink-0">{{ guide.label }}</span>
+            <span class="shrink-0 badge badge-soft">{{ guide.label }}</span>
           </div>
           @if (guide.install)
             <div class="relative mb-2">
@@ -1025,63 +1025,63 @@ html { scroll-behavior: smooth; }
       </section>
 
       <!-- ============================ KEYS ============================ -->
-      <section id="keys" class="sec mb-10">
-        <div class="sec-title mb-3">API key</div>
-        <div class="panel px-5 py-5">
-          <p class="text-sm mb-4 text-subtle">
-            This key authorizes error reports for <span class="mono text-muted">{{ activeProject?.name }}</span>.
+      <section id="keys" class="mb-10 sec">
+        <div class="mb-3 sec-title">API key</div>
+        <div class="px-5 py-5 panel">
+          <p class="mb-4 text-sm text-subtle">
+            This key authorizes error reports for <span class="text-muted mono">{{ activeProject?.name }}</span>.
             It's a public identifier (safe to ship in client code), not a secret — it says <em>which</em> project a report belongs to.
           </p>
-          <div class="flex items-center gap-2 flex-wrap">
-            <code :text="keyDisplay()" class="field mono px-3.5 py-2.5 text-sm flex-1 min-w-[220px] truncate" style="letter-spacing:0.01em">{{ keyMask }}</code>
-            <button @click="toggleReveal" :text="revealed() ? 'Hide' : 'Reveal'" class="btn-ghost px-3 py-2 text-sm font-medium">Reveal</button>
-            <button @click="copyText('key', currentKey())" :text="copyLabel('key')" class="btn-ghost px-3 py-2 text-sm font-medium">Copy</button>
-            <button @click="rotateKey" :disabled="rotating()" class="btn-danger px-3 py-2 text-sm font-medium">Rotate</button>
+          <div class="flex flex-wrap gap-2 items-center">
+            <code :text="keyDisplay()" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm truncate field mono" style="letter-spacing:0.01em">{{ keyMask }}</code>
+            <button @click="toggleReveal" :text="revealed() ? 'Hide' : 'Reveal'" class="px-3 py-2 font-medium text-sm btn-ghost">Reveal</button>
+            <button @click="copyText('key', currentKey())" :text="copyLabel('key')" class="px-3 py-2 font-medium text-sm btn-ghost">Copy</button>
+            <button @click="rotateKey" :disabled="rotating()" class="px-3 py-2 font-medium text-sm btn-danger">Rotate</button>
           </div>
           {{-- The same 404 the rotate confirm quotes, for the reason spelled out
                in the note above rotateKey: a retired key resolves to no project,
                so the ingest never reaches the key comparison that would 401. --}}
-          <p class="text-xs mt-3.5 leading-relaxed text-subtle">
+          <p class="mt-3.5 leading-relaxed text-subtle text-xs">
             Rotating generates a new key and <span style="color: var(--warn)">invalidates the current one immediately</span> — any SDK still sending the old key is rejected with <span class="mono">404 unknown project</span> until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
           </p>
           @if (keyNote() && keyNote().ok)
-            <span class="note show note-ok text-xs mt-2" :text="noteText(keyNote())"></span>
+            <span class="mt-2 text-xs note note-ok show" :text="noteText(keyNote())"></span>
           @endif
           @if (keyNote() && !keyNote().ok)
-            <span class="note show note-err text-xs mt-2" :text="noteText(keyNote())"></span>
+            <span class="mt-2 text-xs note note-err show" :text="noteText(keyNote())"></span>
           @endif
         </div>
       </section>
 
       <!-- ============================ MEMBERS ============================ -->
-      <section id="members" class="sec mb-10">
-        <div class="sec-title mb-3">Members</div>
+      <section id="members" class="mb-10 sec">
+        <div class="mb-3 sec-title">Members</div>
         <div class="flex flex-col gap-2.5 mb-4">
           <!-- Owner (always first, not removable) -->
-          <div class="panel flex items-center gap-3.5 px-4 py-3.5">
-            <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold badge-owner">{{ (ownerEmail || '?').charAt(0).toUpperCase() }}</span>
-            <div class="min-w-0 flex-1">
-              <div class="text-sm font-medium truncate">{{ ownerEmail }}</div>
-              <div class="text-xs mt-0.5 text-subtle">Full access</div>
+          <div class="flex gap-3.5 items-center px-4 py-3.5 panel">
+            <span class="grid place-items-center shrink-0 h-8 w-8 font-semibold rounded-lg badge-owner">{{ (ownerEmail || '?').charAt(0).toUpperCase() }}</span>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-sm truncate">{{ ownerEmail }}</div>
+              <div class="mt-0.5 text-subtle text-xs">Full access</div>
             </div>
             <span class="badge badge-owner">Owner</span>
           </div>
           @foreach (memberView as m)
-            <div class="panel flex items-center gap-3.5 px-4 py-3.5" @if="!gone().includes('{{ m.id }}')">
-              <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold text-muted" style="background: color-mix(in srgb, var(--text-3) 16%, var(--panel))">{{ (m.email || '?').charAt(0).toUpperCase() }}</span>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium truncate">{{ m.email }}</div>
-                <div class="text-xs mt-0.5 text-subtle">Can view &amp; triage issues</div>
+            <div class="flex gap-3.5 items-center px-4 py-3.5 panel" @if="!gone().includes('{{ m.id }}')">
+              <span class="grid place-items-center shrink-0 h-8 w-8 font-semibold text-muted rounded-lg" style="background: color-mix(in srgb, var(--text-3) 16%, var(--panel))">{{ (m.email || '?').charAt(0).toUpperCase() }}</span>
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-sm truncate">{{ m.email }}</div>
+                <div class="mt-0.5 text-subtle text-xs">Can view &amp; triage issues</div>
               </div>
               <span class="badge badge-soft">Member</span>
-              <button @click="removeMember('{{ m.id }}')" :disabled="removing() === '{{ m.id }}'" :text="removeLabel('{{ m.id }}')" class="btn-danger px-2.5 py-1.5 text-xs font-medium" title="Remove">Remove</button>
+              <button @click="removeMember('{{ m.id }}')" :disabled="removing() === '{{ m.id }}'" :text="removeLabel('{{ m.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-danger" title="Remove">Remove</button>
             </div>
           @endforeach
           @foreach (inviteView as i)
-            <div class="panel flex items-center gap-3.5 px-4 py-3.5" @if="!gone().includes('{{ i.id }}')">
-              <span class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-semibold text-subtle" style="background: color-mix(in srgb, var(--text-3) 12%, var(--panel))">{{ (i.email || '?').charAt(0).toUpperCase() }}</span>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium truncate">{{ i.email }}</div>
+            <div class="flex gap-3.5 items-center px-4 py-3.5 panel" @if="!gone().includes('{{ i.id }}')">
+              <span class="grid place-items-center shrink-0 h-8 w-8 font-semibold text-subtle rounded-lg" style="background: color-mix(in srgb, var(--text-3) 12%, var(--panel))">{{ (i.email || '?').charAt(0).toUpperCase() }}</span>
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-sm truncate">{{ i.email }}</div>
                 <div class="text-xs mt-0.5 {{ i.failed ? 'note-failed' : 'text-subtle' }}">{{ i.note }}</div>
               </div>
               @if (i.failed)
@@ -1090,14 +1090,14 @@ html { scroll-behavior: smooth; }
               @if (!i.failed)
                 <span class="badge badge-pending" title="Pending — becomes a member once they accept">Invited</span>
               @endif
-              <button @click="resendInvite('{{ i.id }}')" :disabled="resending() === '{{ i.id }}'" :text="resendLabel('{{ i.id }}')" class="btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Send the invite email again">Resend</button>
-              <button @click="copyText('join-{{ i.id }}', '{{ i.join }}')" :text="copyLabel('join-{{ i.id }}', 'Copied ✓', 'Copy link')" class="btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Copy join link">Copy link</button>
-              <button @click="removeMember('{{ i.id }}')" :disabled="removing() === '{{ i.id }}'" :text="removeLabel('{{ i.id }}')" class="btn-danger px-2.5 py-1.5 text-xs font-medium" title="Revoke invite">Remove</button>
+              <button @click="resendInvite('{{ i.id }}')" :disabled="resending() === '{{ i.id }}'" :text="resendLabel('{{ i.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Send the invite email again">Resend</button>
+              <button @click="copyText('join-{{ i.id }}', '{{ i.join }}')" :text="copyLabel('join-{{ i.id }}', 'Copied ✓', 'Copy link')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Copy join link">Copy link</button>
+              <button @click="removeMember('{{ i.id }}')" :disabled="removing() === '{{ i.id }}'" :text="removeLabel('{{ i.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-danger" title="Revoke invite">Remove</button>
             </div>
           @endforeach
         </div>
-        <div class="panel px-5 py-5">
-          <div class="text-sm font-semibold mb-3">Invite a teammate</div>
+        <div class="px-5 py-5 panel">
+          <div class="mb-3 font-semibold text-sm">Invite a teammate</div>
           @if (!canInvite)
             {{-- The form is replaced rather than disabled: a greyed-out field
                  you can still focus and type into, that then refuses you, is
@@ -1110,28 +1110,28 @@ html { scroll-behavior: smooth; }
           @endif
           @if (canInvite)
           <form @submit="inviteMember">
-            <div class="flex items-center gap-2 flex-wrap">
-              <input name="email" type="email" aria-label="Teammate email address" class="field flex-1 min-w-[220px] px-3.5 py-2.5 text-sm" placeholder="teammate@company.com" autocomplete="off">
-              <button type="submit" :disabled="inviting()" :text="inviting() ? 'Inviting…' : 'Invite'" class="btn px-4 py-2.5 text-sm font-semibold">Invite</button>
+            <div class="flex flex-wrap gap-2 items-center">
+              <input name="email" type="email" aria-label="Teammate email address" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm field" placeholder="teammate@company.com" autocomplete="off">
+              <button type="submit" :disabled="inviting()" :text="inviting() ? 'Inviting…' : 'Invite'" class="px-4 py-2.5 font-semibold text-sm btn">Invite</button>
             </div>
           </form>
           @if (inviteNote() && inviteNote().ok)
-            <span class="note show note-ok text-xs mt-2.5" :text="noteText(inviteNote())"></span>
+            <span class="mt-2.5 text-xs note note-ok show" :text="noteText(inviteNote())"></span>
           @endif
           @if (inviteNote() && !inviteNote().ok)
-            <span class="note show note-err text-xs mt-2.5" :text="noteText(inviteNote())"></span>
+            <span class="mt-2.5 text-xs note note-err show" :text="noteText(inviteNote())"></span>
           @endif
           @endif
-          <p class="text-xs mt-3.5 leading-relaxed text-subtle">
+          <p class="mt-3.5 leading-relaxed text-subtle text-xs">
             Inviting people is part of Pro. We email them a join link, they sign up or log in with that address, then accept from a banner in the app. Members can view and triage issues and get the same new-issue and regression emails you do; keys, members and deletion stay with you.
           </p>
         </div>
       </section>
 
       <!-- ============================ ALERTS ============================ -->
-      <section id="alerts" class="sec mb-10">
-        <div class="sec-title mb-3">Alerts</div>
-        <p class="text-sm mb-4 text-subtle">
+      <section id="alerts" class="mb-10 sec">
+        <div class="mb-3 sec-title">Alerts</div>
+        <p class="mb-4 text-sm text-subtle">
           Get pinged in Slack or Discord on a new issue or a regression. The project owner is always emailed too.
         </p>
         {{-- The toggle carries both `:data-on` and a plain `data-on`, and that is
@@ -1140,38 +1140,38 @@ html { scroll-behavior: smooth; }
              pairing on the URL input's placeholder below. --}}
         <div class="flex flex-col gap-2.5 mb-4">
           @foreach (channelView as c)
-            <div class="panel flex items-center gap-3.5 px-4 py-3.5" @if="!gone().includes('{{ c.id }}')">
+            <div class="flex gap-3.5 items-center px-4 py-3.5 panel" @if="!gone().includes('{{ c.id }}')">
               <span class="badge badge-{{ c.type }}">{{ c.type === 'slack' ? 'Slack' : 'Discord' }}</span>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium truncate">{{ c.label }}</div>
-                <div class="text-xs mono truncate mt-0.5 text-subtle">{{ c.mask }}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-sm truncate">{{ c.label }}</div>
+                <div class="mt-0.5 text-subtle text-xs truncate mono">{{ c.mask }}</div>
               </div>
-              <button @click="testChannel('{{ c.id }}')" :disabled="testing() === '{{ c.id }}'" :text="testLabel('{{ c.id }}')" class="btn-ghost px-2.5 py-1.5 text-xs font-medium" title="Send a test message">Test</button>
+              <button @click="testChannel('{{ c.id }}')" :disabled="testing() === '{{ c.id }}'" :text="testLabel('{{ c.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Send a test message">Test</button>
               <div class="tgl" @click="toggleChannel('{{ c.id }}')" :data-on="isOn('{{ c.id }}') ? '1' : '0'" :aria-checked="isOn('{{ c.id }}') ? 'true' : 'false'" data-on="{{ c.enabled ? '1' : '0' }}" role="switch" aria-checked="{{ c.enabled ? 'true' : 'false' }}" title="Enable / disable"></div>
-              <button @click="removeChannel('{{ c.id }}')" :disabled="removing() === '{{ c.id }}'" :text="removeLabel('{{ c.id }}')" class="btn-danger px-2.5 py-1.5 text-xs font-medium" title="Remove">Remove</button>
+              <button @click="removeChannel('{{ c.id }}')" :disabled="removing() === '{{ c.id }}'" :text="removeLabel('{{ c.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-danger" title="Remove">Remove</button>
             </div>
           @endforeach
-          <div class="panel px-5 py-8 text-center" @if="noChannels()">
-            <div class="text-sm font-medium mb-1">No chat alerts yet</div>
-            <div class="text-xs text-subtle">Add a Slack or Discord webhook below to start getting pinged.</div>
+          <div class="px-5 py-8 text-center panel" @if="noChannels()">
+            <div class="mb-1 font-medium text-sm">No chat alerts yet</div>
+            <div class="text-subtle text-xs">Add a Slack or Discord webhook below to start getting pinged.</div>
           </div>
         </div>
-        <div class="panel px-5 py-5">
-          <div class="text-sm font-semibold mb-3.5">Add a channel</div>
+        <div class="px-5 py-5 panel">
+          <div class="mb-3.5 font-semibold text-sm">Add a channel</div>
           <form @submit="addChannel">
-            <div class="grid grid-cols-2 gap-2 mb-3">
-              <button type="button" @click="chType.set('slack')" :data-sel="chType() === 'slack' ? '1' : '0'" class="seg seg-slack px-3 py-2.5 text-sm font-medium" data-sel="1">Slack</button>
-              <button type="button" @click="chType.set('discord')" :data-sel="chType() === 'discord' ? '1' : '0'" class="seg seg-discord px-3 py-2.5 text-sm font-medium" data-sel="0">Discord</button>
+            <div class="grid gap-2 grid-cols-2 mb-3">
+              <button type="button" @click="chType.set('slack')" :data-sel="chType() === 'slack' ? '1' : '0'" class="px-3 py-2.5 font-medium text-sm seg seg-slack" data-sel="1">Slack</button>
+              <button type="button" @click="chType.set('discord')" :data-sel="chType() === 'discord' ? '1' : '0'" class="px-3 py-2.5 font-medium text-sm seg seg-discord" data-sel="0">Discord</button>
             </div>
-            <input name="webhook_url" type="url" aria-label="Webhook URL" class="field w-full px-3.5 py-2.5 text-sm mono mb-2" :placeholder="urlPlaceholder()" placeholder="https://hooks.slack.com/services/…" autocomplete="off" spellcheck="false">
-            <input name="label" type="text" aria-label="Channel label (optional)" class="field w-full px-3.5 py-2.5 text-sm mb-3" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
-            <div class="flex items-center gap-3">
-              <button type="submit" :disabled="adding()" :text="adding() ? 'Adding…' : 'Add channel'" class="btn px-4 py-2.5 text-sm font-semibold">Add channel</button>
+            <input name="webhook_url" type="url" aria-label="Webhook URL" class="mb-2 px-3.5 py-2.5 w-full text-sm field mono" :placeholder="urlPlaceholder()" placeholder="https://hooks.slack.com/services/…" autocomplete="off" spellcheck="false">
+            <input name="label" type="text" aria-label="Channel label (optional)" class="mb-3 px-3.5 py-2.5 w-full text-sm field" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
+            <div class="flex gap-3 items-center">
+              <button type="submit" :disabled="adding()" :text="adding() ? 'Adding…' : 'Add channel'" class="px-4 py-2.5 font-semibold text-sm btn">Add channel</button>
               @if (whNote() && whNote().ok)
-                <span class="note show note-ok text-xs" :text="noteText(whNote())"></span>
+                <span class="text-xs note note-ok show" :text="noteText(whNote())"></span>
               @endif
               @if (whNote() && !whNote().ok)
-                <span class="note show note-err text-xs" :text="noteText(whNote())"></span>
+                <span class="text-xs note note-err show" :text="noteText(whNote())"></span>
               @endif
             </div>
           </form>
@@ -1179,12 +1179,12 @@ html { scroll-behavior: smooth; }
                textContent gets swapped, so Discord keeps the same styling Slack
                has instead of degrading to plain text on the first switch. --}}
           @if (chType() === 'slack')
-            <p class="text-xs mt-3.5 leading-relaxed text-subtle">
+            <p class="mt-3.5 leading-relaxed text-subtle text-xs">
               In Slack: <span class="text-muted">Apps → Incoming Webhooks → Add to a channel</span>, then paste the <span class="mono">hooks.slack.com/services/…</span> URL.
             </p>
           @endif
           @if (chType() === 'discord')
-            <p class="text-xs mt-3.5 leading-relaxed text-subtle">
+            <p class="mt-3.5 leading-relaxed text-subtle text-xs">
               In Discord: <span class="text-muted">Server Settings → Integrations → Webhooks → New Webhook</span>, then copy the <span class="mono">discord.com/api/webhooks/…</span> URL.
             </p>
           @endif
@@ -1192,34 +1192,34 @@ html { scroll-behavior: smooth; }
       </section>
 
       <!-- ============================ DANGER ============================ -->
-      <section id="danger" class="sec mb-6">
-        <div class="sec-title mb-3" style="color: var(--warn)">Danger zone</div>
-        <div class="panel danger-panel">
+      <section id="danger" class="mb-6 sec">
+        <div class="mb-3 sec-title" style="color: var(--warn)">Danger zone</div>
+        <div class="danger-panel panel">
           <!-- Archive / Unarchive -->
-          <div class="flex items-center justify-between gap-4 px-5 py-4">
+          <div class="flex gap-4 items-center justify-between px-5 py-4">
             <div class="min-w-0">
               @if (activeProject.is_active === false)
-                <div class="text-sm font-semibold mb-0.5">Unarchive this project</div>
-                <p class="text-sm text-subtle"><span class="mono text-muted">{{ activeProject?.name }}</span> is archived and isn’t capturing new errors. Unarchiving resumes ingestion right away.</p>
+                <div class="mb-0.5 font-semibold text-sm">Unarchive this project</div>
+                <p class="text-sm text-subtle"><span class="text-muted mono">{{ activeProject?.name }}</span> is archived and isn’t capturing new errors. Unarchiving resumes ingestion right away.</p>
               @else
-                <div class="text-sm font-semibold mb-0.5">Archive this project</div>
-                <p class="text-sm text-subtle">Stops capturing new errors and pauses alerts for <span class="mono text-muted">{{ activeProject?.name }}</span>. Existing issues and events are kept — you can unarchive anytime.</p>
+                <div class="mb-0.5 font-semibold text-sm">Archive this project</div>
+                <p class="text-sm text-subtle">Stops capturing new errors and pauses alerts for <span class="text-muted mono">{{ activeProject?.name }}</span>. Existing issues and events are kept — you can unarchive anytime.</p>
               @endif
             </div>
             @if (activeProject.is_active === false)
-              <button @click="unarchive" :disabled="unarchiving()" :text="unarchiving() ? 'Unarchiving…' : 'Unarchive'" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">Unarchive</button>
+              <button @click="unarchive" :disabled="unarchiving()" :text="unarchiving() ? 'Unarchiving…' : 'Unarchive'" class="flex-none px-4 py-2.5 font-semibold text-sm whitespace-nowrap btn-danger">Unarchive</button>
             @else
-              <button @click="dzOpen('archive')" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">Archive</button>
+              <button @click="dzOpen('archive')" class="flex-none px-4 py-2.5 font-semibold text-sm whitespace-nowrap btn-danger">Archive</button>
             @endif
           </div>
           <div class="dz-div"></div>
           <!-- Delete -->
-          <div class="flex items-center justify-between gap-4 px-5 py-4">
+          <div class="flex gap-4 items-center justify-between px-5 py-4">
             <div class="min-w-0">
-              <div class="text-sm font-semibold mb-0.5">Delete this project</div>
-              <p class="text-sm text-subtle">Permanently deletes <span class="mono text-muted">{{ activeProject?.name }}</span> and all of its issues, events, alert channels, and members. This cannot be undone.</p>
+              <div class="mb-0.5 font-semibold text-sm">Delete this project</div>
+              <p class="text-sm text-subtle">Permanently deletes <span class="text-muted mono">{{ activeProject?.name }}</span> and all of its issues, events, alert channels, and members. This cannot be undone.</p>
             </div>
-            <button @click="dzOpen('delete')" class="btn-danger px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-none">Delete</button>
+            <button @click="dzOpen('delete')" class="flex-none px-4 py-2.5 font-semibold text-sm whitespace-nowrap btn-danger">Delete</button>
           </div>
         </div>
       </section>
@@ -1231,11 +1231,11 @@ html { scroll-behavior: smooth; }
            also what lets dzOpen focus the field. --}}
       <div class="dz-overlay" :hidden="dzAction() === null" hidden @click="dzBackdrop" @keydown="dzKey">
         <div class="dz-card panel" role="dialog" aria-modal="true" aria-labelledby="dz-title">
-          <div id="dz-title" class="text-base font-semibold mb-1" :text="dzCopy().title"></div>
-          <p class="text-sm mb-4 text-muted" :text="dzCopy().desc"></p>
-          <label for="dz-confirm" class="block text-xs mb-1.5 text-subtle">Type <span class="mono text-muted">{{ activeProject?.name }}</span> to confirm</label>
-          <input ref="dzInput" id="dz-confirm" type="text" class="field w-full px-3.5 py-2.5 text-sm mono mb-4" :value="dzTyped()" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
-          <div class="flex items-center justify-end gap-2 flex-wrap">
+          <div id="dz-title" class="mb-1 font-semibold text-base" :text="dzCopy().title"></div>
+          <p class="mb-4 text-muted text-sm" :text="dzCopy().desc"></p>
+          <label for="dz-confirm" class="block mb-1.5 text-subtle text-xs">Type <span class="text-muted mono">{{ activeProject?.name }}</span> to confirm</label>
+          <input ref="dzInput" id="dz-confirm" type="text" class="mb-4 px-3.5 py-2.5 w-full text-sm field mono" :value="dzTyped()" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div class="flex flex-wrap gap-2 items-center justify-end">
             {{-- Inside the button row and `w-full`, so it takes a line of its own
                  above the buttons rather than sharing one with them. Sharing was
                  tried: at the card's 440px there is no room left, and the confirm
@@ -1243,9 +1243,9 @@ html { scroll-behavior: smooth; }
                  hint appeared. This way the row only exists when there is
                  something to say and nothing else moves. --}}
             @if (dzMismatch())
-              <span class="text-xs w-full text-subtle">Doesn't match yet — type the name exactly.</span>
+              <span class="w-full text-subtle text-xs">Doesn't match yet — type the name exactly.</span>
             @endif
-            <button @click="dzClose" type="button" class="btn-ghost px-4 py-2.5 text-sm font-medium">Cancel</button>
+            <button @click="dzClose" type="button" class="px-4 py-2.5 font-medium text-sm btn-ghost">Cancel</button>
             {{-- Static text as well as :text. The dialog markup is always in the
                  document, and :text only fills this in once the runtime binds —
                  so the HTML actually served carried a button with no content and
@@ -1253,10 +1253,10 @@ html { scroll-behavior: smooth; }
                  technology reads if it gets there first. "Confirm" is a safe
                  default because the dialog cannot be open before that binding
                  has run, and :text owns the label from then on. --}}
-            <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :text="dzConfirmLabel()" type="button" class="btn-danger px-4 py-2.5 text-sm font-semibold" disabled>Confirm</button>
+            <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :text="dzConfirmLabel()" type="button" class="px-4 py-2.5 font-semibold text-sm btn-danger" disabled>Confirm</button>
           </div>
           @if (dzNote())
-            <span class="note show note-err text-xs mt-2.5" :text="noteText(dzNote())"></span>
+            <span class="mt-2.5 text-xs note note-err show" :text="noteText(dzNote())"></span>
           @endif
         </div>
       </div>

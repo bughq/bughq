@@ -10,7 +10,7 @@ useSeoMeta({
 
 @section('content')
     <main>
-      <nav class="subnav shell" aria-label="Breadcrumb">
+      <nav class="shell subnav" aria-label="Breadcrumb">
         <StxLink to="/">Home</StxLink><span class="sep">/</span>
         <StxLink to="/#features">Features</StxLink><span class="sep">/</span>
         <span>Self-hosting</span>
@@ -26,7 +26,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Self-hosting preview">
+      <section class="reveal section shell" aria-label="Self-hosting preview">
         <div class="code" style="max-width: 700px">
           <div class="code-bar"><span class="chart-cap">Run bughq on your own box</span></div>
           <pre class="code-body"><code>git clone https://github.com/stacksjs/bughq
@@ -39,7 +39,7 @@ buddy serve   # your instance, your data</code></pre>
         </div>
       </section>
 
-      <section class="section shell reveal" aria-labelledby="how-heading">
+      <section class="reveal section shell" aria-labelledby="how-heading">
         <div class="section-head">
           <h2 id="how-heading" class="section-title">How it works</h2>
         </div>
@@ -68,7 +68,7 @@ buddy serve   # your instance, your data</code></pre>
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="What you get">
+      <section class="reveal section shell" aria-label="What you get">
         <div class="metrics">
           <div class="metric">
             <div class="m-value">Open source</div>
@@ -85,7 +85,7 @@ buddy serve   # your instance, your data</code></pre>
         </div>
       </section>
 
-      <section class="section shell reveal" aria-labelledby="related-heading">
+      <section class="reveal section shell" aria-labelledby="related-heading">
         <div class="section-head">
           <h2 id="related-heading" class="section-title">Pairs well with</h2>
         </div>
@@ -105,7 +105,7 @@ buddy serve   # your instance, your data</code></pre>
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Get started">
+      <section class="reveal section shell" aria-label="Get started">
         <div class="cta-band">
           <h2>Ship with a net under you.</h2>
           <div class="cta-actions">

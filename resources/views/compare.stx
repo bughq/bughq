@@ -23,7 +23,7 @@ useSeoMeta({
 
 @section('content')
     <main>
-      <nav class="subnav shell" aria-label="Breadcrumb">
+      <nav class="shell subnav" aria-label="Breadcrumb">
         <StxLink to="/">Home</StxLink><span class="sep">/</span>
         <span>Compare</span>
       </nav>
@@ -38,7 +38,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-labelledby="alts-heading">
+      <section class="reveal section shell" aria-labelledby="alts-heading">
         <div class="section-head">
           <h2 id="alts-heading" class="section-title">Pick a tool to compare</h2>
           <p class="section-intro">Each page carries a full capability table, an honest note on what the other tool does better, and where bughq fits instead.</p>
@@ -53,7 +53,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="How to read these">
+      <section class="reveal section shell" aria-label="How to read these">
         <div class="chips">
           <div class="chip">
             <h3>Open and self-hosted</h3>
@@ -66,7 +66,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Get started">
+      <section class="reveal section shell" aria-label="Get started">
         <div class="cta-band">
           <h2>Own your error tracking.</h2>
           <div class="cta-actions">

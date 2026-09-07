@@ -10,7 +10,7 @@ useSeoMeta({
 
 @section('content')
     <main>
-      <nav class="subnav shell" aria-label="Breadcrumb">
+      <nav class="shell subnav" aria-label="Breadcrumb">
         <StxLink to="/">Home</StxLink><span class="sep">/</span>
         <span>Use cases</span>
       </nav>
@@ -25,7 +25,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Use cases">
+      <section class="reveal section shell" aria-label="Use cases">
         <div class="usecases">
 
           <article class="usecase">
@@ -76,7 +76,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Get started">
+      <section class="reveal section shell" aria-label="Get started">
         <div class="cta-band">
           <h2>Ship with a net under you.</h2>
           <div class="cta-actions">

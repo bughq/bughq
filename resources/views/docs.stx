@@ -10,7 +10,7 @@ useSeoMeta({
 
 @section('content')
     <main>
-      <nav class="subnav shell" aria-label="Breadcrumb">
+      <nav class="shell subnav" aria-label="Breadcrumb">
         <StxLink to="/">Home</StxLink><span class="sep">/</span>
         <span>Docs</span>
       </nav>
@@ -25,7 +25,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-labelledby="quickstart-heading">
+      <section class="reveal section shell" aria-labelledby="quickstart-heading">
         <div class="section-head">
           <h2 id="quickstart-heading" class="section-title">Quickstart</h2>
           <p class="section-intro">Three steps take you from an empty project to grouped issues arriving in your dashboard.</p>
@@ -55,7 +55,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Install and initialize">
+      <section class="reveal section shell" aria-label="Install and initialize">
         <div class="code" style="max-width: 700px">
           <div class="code-bar"><span class="chart-cap">install and initialize</span></div>
           <pre class="code-body"><code># install
@@ -72,7 +72,7 @@ bughq.init({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-labelledby="topics-heading">
+      <section class="reveal section shell" aria-labelledby="topics-heading">
         <div class="section-head">
           <h2 id="topics-heading" class="section-title">Read up by topic</h2>
         </div>
@@ -110,7 +110,7 @@ bughq.init({
         </div>
       </section>
 
-      <section class="section shell reveal" aria-label="Get started">
+      <section class="reveal section shell" aria-label="Get started">
         <div class="cta-band">
           <h2>Ready to catch your first issue?</h2>
           <div class="cta-actions">

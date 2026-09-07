@@ -105,11 +105,11 @@ if (token) {
 </style>
 
 <div class="min-h-[100dvh]">
-  <header class="max-w-3xl mx-auto flex items-center justify-between px-5 md:px-6 h-16">
-    <a href="/" class="wordmark text-lg">bughq</a>
-    <div class="flex items-center gap-2.5">
-      <StxLink to="/dashboard" class="btn btn-ghost px-3.5 py-2 text-sm">Dashboard</StxLink>
-      <button @click="logout" class="btn btn-ghost px-3.5 py-2 text-sm">Log out</button>
+  <header class="flex items-center justify-between mx-auto px-5 md:px-6 h-16 max-w-3xl">
+    <a href="/" class="text-lg wordmark">bughq</a>
+    <div class="flex gap-2.5 items-center">
+      <StxLink to="/dashboard" class="px-3.5 py-2 text-sm btn btn-ghost">Dashboard</StxLink>
+      <button @click="logout" class="px-3.5 py-2 text-sm btn btn-ghost">Log out</button>
     </div>
   </header>
 
@@ -121,56 +121,56 @@ if (token) {
        extractor counts those tags as plain strings and does not skip comments;
        naming it literally unbalanced the count, so this page was served as a
        full document and the router injected its head into the live page. -->
-  <div class="max-w-3xl mx-auto px-5 md:px-6 py-8">
-    <h1 class="wordmark text-2xl mb-6">Account</h1>
+  <div class="mx-auto px-5 py-8 md:px-6 max-w-3xl">
+    <h1 class="mb-6 text-2xl wordmark">Account</h1>
 
-    <section class="card p-6 mb-5">
-      <div class="flex items-center gap-4">
+    <section class="mb-5 p-6 card">
+      <div class="flex gap-4 items-center">
         @if (user() && user().avatar)
-          <img class="avatar w-14 h-14" :src="user()?.avatar" alt="" width="56" height="56">
+          <img class="h-14 w-14 avatar" :src="user()?.avatar" alt="" width="56" height="56">
         @endif
         @if (!user() || !user().avatar)
-          <div class="avatar w-14 h-14 grid place-items-center text-accent" style="font-weight: 700; font-size: 1.25rem">{{ user() ? initial(user()?.name || user()?.email) : '' }}</div>
+          <div class="grid place-items-center h-14 w-14 text-accent avatar" style="font-weight: 700; font-size: 1.25rem">{{ user() ? initial(user()?.name || user()?.email) : '' }}</div>
         @endif
         <div class="min-w-0">
           @if (!user())
             <div class="skeleton" style="width: 160px; height: 20px"></div>
           @endif
           @if (user())
-            <div class="text-lg font-semibold">{{ user()?.name || 'Your account' }}</div>
+            <div class="font-semibold text-lg">{{ user()?.name || 'Your account' }}</div>
           @endif
-          <div class="text-sm mt-1.5 text-muted">{{ user()?.email || '' }}</div>
+          <div class="mt-1.5 text-muted text-sm">{{ user()?.email || '' }}</div>
         </div>
         @if (user() && user().provider)
-          <span class="badge px-2.5 py-1 ml-auto">{{ user()?.provider }}</span>
+          <span class="ml-auto px-2.5 py-1 badge">{{ user()?.provider }}</span>
         @endif
       </div>
     </section>
 
-    <section class="card mb-5">
+    <section class="mb-5 card">
       <div class="flex items-center justify-between px-6 py-4">
         <div>
-          <div class="text-xs uppercase tracking-wide text-subtle" style="font-family: var(--mono)">Plan</div>
-          <div class="text-base font-semibold mt-1">
+          <div class="text-subtle text-xs tracking-wide uppercase" style="font-family: var(--mono)">Plan</div>
+          <div class="mt-1 font-semibold text-base">
             {{ pro() ? 'Pro' : 'Free' }}
             @if (pro())
-              <span class="badge badge-pro px-2 py-0.5 ml-1">active</span>
+              <span class="ml-1 px-2 py-0.5 badge badge-pro">active</span>
             @endif
           </div>
         </div>
         @if (pro())
-          <StxLink to="/pricing" class="btn btn-ghost px-4 py-2 text-sm">Manage plan</StxLink>
+          <StxLink to="/pricing" class="px-4 py-2 text-sm btn btn-ghost">Manage plan</StxLink>
         @endif
         @if (!pro())
-          <StxLink to="/pricing" class="btn btn-primary px-4 py-2 text-sm">Upgrade to Pro</StxLink>
+          <StxLink to="/pricing" class="px-4 py-2 text-sm btn btn-primary">Upgrade to Pro</StxLink>
         @endif
       </div>
-      <div class="row flex items-center justify-between px-6 py-4">
+      <div class="flex items-center justify-between px-6 py-4 row">
         <div>
-          <div class="text-xs uppercase tracking-wide text-subtle" style="font-family: var(--mono)">Member since</div>
-          <div class="text-base mt-1 text-muted">{{ fmtDate(user()?.created_at) }}</div>
+          <div class="text-subtle text-xs tracking-wide uppercase" style="font-family: var(--mono)">Member since</div>
+          <div class="mt-1 text-base text-muted">{{ fmtDate(user()?.created_at) }}</div>
         </div>
-        <StxLink to="/dashboard" class="btn btn-ghost px-4 py-2 text-sm">Open dashboard</StxLink>
+        <StxLink to="/dashboard" class="px-4 py-2 text-sm btn btn-ghost">Open dashboard</StxLink>
       </div>
     </section>
 

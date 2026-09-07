@@ -136,37 +136,37 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 .err { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
 </style>
 
-<div class="min-h-[100dvh] flex items-center justify-center px-5 py-12">
-  <div class="w-full max-w-md">
-    <div class="text-center mb-8">
-      <a href="/" class="wordmark text-2xl">bughq</a>
+<div class="flex items-center justify-center px-5 py-12 min-h-[100dvh]">
+  <div class="max-w-md w-full">
+    <div class="mb-8 text-center">
+      <a href="/" class="text-2xl wordmark">bughq</a>
     </div>
 
     @if (!user)
-      <div id="auth-pending" class="text-center py-24 text-sm text-subtle">Loading…</div>
+      <div id="auth-pending" class="py-24 text-center text-sm text-subtle">Loading…</div>
     @endif
 
     @if (user)
-    <div class="text-center mb-8">
+    <div class="mb-8 text-center">
       {{-- "your first" is a claim about the account, and it was hardcoded, so it
            greeted people on their fifth app too. projectCount is the same
            owned-or-joined scope /projects counts. --}}
-      <h1 class="text-xl font-semibold tracking-tight">{{ projectCount === 0 ? 'Create your first app' : 'Create a new app' }}</h1>
-      <p class="text-sm mt-2 text-subtle">Each app gets its own error stream and ingest key.</p>
+      <h1 class="font-semibold text-xl tracking-tight">{{ projectCount === 0 ? 'Create your first app' : 'Create a new app' }}</h1>
+      <p class="mt-2 text-sm text-subtle">Each app gets its own error stream and ingest key.</p>
     </div>
 
     <form @submit="handleSubmit" class="space-y-4">
       @if (error())
-        <div class="err text-sm rounded-lg px-3 py-2">{{ error() }}</div>
+        <div class="px-3 py-2 text-sm rounded-lg err">{{ error() }}</div>
       @endif
 
       <div>
-        <label for="new-app-name" class="block text-xs font-medium mb-1.5 text-muted">App name</label>
-        <input name="name" id="new-app-name" type="text" required autofocus placeholder="Acme Web" class="field w-full px-3.5 py-2.5 text-sm">
+        <label for="new-app-name" class="block mb-1.5 font-medium text-muted text-xs">App name</label>
+        <input name="name" id="new-app-name" type="text" required autofocus placeholder="Acme Web" class="px-3.5 py-2.5 w-full text-sm field">
       </div>
       <div>
-        <label for="new-app-platform" class="block text-xs font-medium mb-1.5 text-muted">Platform</label>
-        <select name="platform" id="new-app-platform" class="field w-full px-3.5 py-2.5 text-sm">
+        <label for="new-app-platform" class="block mb-1.5 font-medium text-muted text-xs">Platform</label>
+        <select name="platform" id="new-app-platform" class="px-3.5 py-2.5 w-full text-sm field">
           <option value="javascript">JavaScript / Browser</option>
           <option value="node">Node.js</option>
           <option value="react">React</option>
@@ -180,7 +180,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       </div>
 
       @if (atProjectLimit)
-        <div class="limit-note text-sm rounded-[10px] px-4 py-3">
+        <div class="px-4 py-3 text-sm rounded-[10px] limit-note">
           You already have {{ ownedCount === 1 ? 'an app' : `${ownedCount} apps` }} on Free, which covers {{ freeProjects === 1 ? 'one' : freeProjects }}.
           <a href="/pricing" class="text-accent">Pro</a> lifts that, and brings your team with it.
         </div>
@@ -192,10 +192,10 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
            to choke on. Server decides which button exists; the client only ever
            animates the one it owns. --}}
       @if (atProjectLimit)
-        <a href="/pricing" class="btn-accent w-full py-2.5 text-sm font-semibold block text-center">Upgrade to add another app</a>
+        <a href="/pricing" class="block py-2.5 w-full font-semibold text-center text-sm btn-accent">Upgrade to add another app</a>
       @endif
       @if (!atProjectLimit)
-        <button type="submit" :disabled="loading()" class="btn-accent w-full py-2.5 text-sm font-semibold">
+        <button type="submit" :disabled="loading()" class="py-2.5 w-full font-semibold text-sm btn-accent">
           {{ loading() ? 'Creating…' : 'Create app' }}
         </button>
       @endif

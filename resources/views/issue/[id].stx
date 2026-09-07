@@ -644,19 +644,19 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 .theme-btn[data-t="dark"] .ic-moon { display: block; }
 </style>
 
-<div class="min-h-screen px-4 py-6 md:px-8 md:py-8">
+<div class="px-4 py-6 md:px-8 md:py-8 min-h-screen">
   <div class="mx-auto" style="max-width: 78rem">
 
-    <div class="flex items-center justify-between gap-3 mb-5">
+    <div class="flex gap-3 items-center justify-between mb-5">
       {{-- StxLink, not a plain anchor. interceptAllLinks is false (config/ui.ts:96),
            so SPA navigation is opted INTO — an <a href> here is a full document
            load, and this is the most-travelled path in the app. Safe to convert
            because /dashboard is in the same `default` layout group; the app to
            marketing links elsewhere must stay plain for exactly that reason. --}}
-      <StxLink to="/dashboard" class="backlink inline-flex items-center gap-1.5 text-sm">
+      <StxLink to="/dashboard" class="inline-flex gap-1.5 items-center text-sm backlink">
         <span>&larr;</span> Back to issues
       </StxLink>
-      <div class="flex items-center gap-2">
+      <div class="flex gap-2 items-center">
         <button class="icon-btn theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -668,16 +668,16 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
     </div>
 
     @if (sessionExpired)
-      <div class="card px-5 py-16 text-center">
-        <div class="text-4xl mb-3">🔒</div>
-        <div class="font-semibold mb-1">Your session expired</div>
+      <div class="px-5 py-16 text-center card">
+        <div class="mb-3 text-4xl">🔒</div>
+        <div class="mb-1 font-semibold">Your session expired</div>
         <div class="text-sm text-subtle">Sign in again and this link will take you straight to the issue.</div>
-        <StxLink to="/login" class="btn-accent inline-block px-4 py-2 mt-5 text-sm font-medium">Sign in</StxLink>
+        <StxLink to="/login" class="inline-block mt-5 px-4 py-2 font-medium text-sm btn-accent">Sign in</StxLink>
       </div>
     @elseif (!issue)
-      <div class="card px-5 py-16 text-center">
-        <div class="text-4xl mb-3">🔍</div>
-        <div class="font-semibold mb-1">Issue not found</div>
+      <div class="px-5 py-16 text-center card">
+        <div class="mb-3 text-4xl">🔍</div>
+        <div class="mb-1 font-semibold">Issue not found</div>
         <div class="text-sm text-subtle">
           @if (!live)
             Waiting for data. Provision Postgres and make sure the issue id is correct.
@@ -691,17 +691,17 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
       <!-- Header -->
       <header class="mb-6">
         <div class="card" style="border-left: 3px solid {{ levelColor(issue.level) }}; box-shadow: -7px 0 28px -16px color-mix(in srgb, {{ levelColor(issue.level) }} 70%, transparent); padding: 1.15rem 1.35rem 1.25rem">
-          <div class="flex items-center gap-2 flex-wrap mb-3">
+          <div class="flex flex-wrap gap-2 items-center mb-3">
             <span class="pill lvl lvl-{{ issue.level || 'error' }}">{{ issue.level || 'error' }}</span>
             <span class="pill st-{{ status }}">{{ status }}</span>
-            <span class="text-xs text-subtle">Last seen {{ lastSeenAgo }}</span>
+            <span class="text-subtle text-xs">Last seen {{ lastSeenAgo }}</span>
           </div>
-          <h1 class="mono break-words" style="font-size:1.7rem; line-height:1.15; font-weight:800; letter-spacing:-0.01em">{{ issue.error_type || 'Error' }}</h1>
-          <p class="text-base md:text-lg mt-2.5 break-words text-ink">{{ (latest && latest.message) || issue.title }}</p>
+          <h1 class="break-words mono" style="font-size:1.7rem; line-height:1.15; font-weight:800; letter-spacing:-0.01em">{{ issue.error_type || 'Error' }}</h1>
+          <p class="mt-2.5 break-words text-base text-ink md:text-lg">{{ (latest && latest.message) || issue.title }}</p>
           @if (issue.culprit)
-            <p class="text-xs mt-2.5 mono truncate text-subtle">{{ issue.culprit }}</p>
+            <p class="mt-2.5 text-subtle text-xs truncate mono">{{ issue.culprit }}</p>
           @endif
-          <div class="flex flex-wrap items-center gap-2 mt-4">
+          <div class="flex flex-wrap gap-2 items-center mt-4">
             @if (isResolved)
               <form method="POST" action="/issue/{{ issue.id }}/status?to=unresolved">
                 <button type="submit" class="btn">Reopen</button>
@@ -740,17 +740,17 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
                the count unbalanced, the extractor gave up and returned the whole
                document, and the router (trusting X-STX-Fragment) injected that
                document's head and body into the live main element. -->
-          <div class="min-w-0 grid gap-5 items-start" style="grid-auto-rows:min-content">
+          <div class="grid gap-5 items-start min-w-0" style="grid-auto-rows:min-content">
 
             @if (exceptions.length)
-              <section class="card overflow-hidden">
+              <section class="overflow-hidden card">
                 <div class="card-head" style="justify-content:space-between">
                   <span>Stack trace</span>
-                  <button type="button" class="copybtn btn" @click="copyStack" style="padding:.25rem .55rem">{{ copyLabel() }}</button>
+                  <button type="button" class="btn copybtn" @click="copyStack" style="padding:.25rem .55rem">{{ copyLabel() }}</button>
                 </div>
                 <div style="padding:.5rem">
                   @foreach (exceptions as ex)
-                    <div class="exc card" style="border-color:var(--border-2); box-shadow:none">
+                    <div class="card exc" style="border-color:var(--border-2); box-shadow:none">
                       @if (ex.isCause)
                         <!-- Cause-chain exceptions aren't in the page header, so
                              they still lead with their own type + message. The
@@ -794,7 +794,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
                             </details>
                           @endif
                         @empty
-                          <div class="px-3 py-4 text-xs mono text-subtle">No frames parsed.</div>
+                          <div class="px-3 py-4 text-subtle text-xs mono">No frames parsed.</div>
                         @endforelse
                       </div>
                     </div>
@@ -803,7 +803,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
               </section>
             @else
               @if (stack)
-                <section class="card overflow-hidden">
+                <section class="overflow-hidden card">
                   <div class="card-head">Stack trace</div>
                   <pre class="jsonblock">{{ stack }}</pre>
                 </section>
@@ -811,7 +811,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
             @endif
 
             @if (crumbs.length)
-              <section class="card overflow-hidden">
+              <section class="overflow-hidden card">
                 <div class="card-head">Breadcrumbs <span class="text-muted">{{ crumbs.length }}</span></div>
                 <div>
                   @foreach (crumbs as c)
@@ -826,18 +826,18 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
               </section>
             @endif
 
-            <section class="card overflow-hidden">
+            <section class="overflow-hidden card">
               <div class="card-head">Recent events <span class="text-muted">{{ events.length }}</span></div>
               @forelse (events as ev)
-                <div class="flex items-center gap-3 px-4 py-2.5" style="border-top:1px solid var(--border-2)">
+                <div class="flex gap-3 items-center px-4 py-2.5" style="border-top:1px solid var(--border-2)">
                   <span class="shrink-0 rounded-full" style="width:7px; height:7px; background: {{ levelColor(ev.severity) }}; box-shadow: 0 0 8px color-mix(in srgb, {{ levelColor(ev.severity) }} 60%, transparent)"></span>
-                  <div class="min-w-0 flex-1">
+                  <div class="flex-1 min-w-0">
                     <div class="text-sm truncate {{ ev.url ? '' : 'mono' }}" title="{{ ev.url || ev.id }}">{{ ev.url || shortEventId(ev.id) }}</div>
-                    <div class="text-xs mono truncate text-subtle">{{ [ev.browser, ev.os, ev.framework, ev.release].filter(Boolean).join(' · ') || ev.category || '-' }}</div>
+                    <div class="text-subtle text-xs truncate mono">{{ [ev.browser, ev.os, ev.framework, ev.release].filter(Boolean).join(' · ') || ev.category || '-' }}</div>
                   </div>
-                  <div class="text-right shrink-0">
-                    <div class="text-xs tabular-nums text-muted">{{ fromNow(ev.timestamp) }}</div>
-                    <div class="text-xs text-subtle">{{ ev.environment || '-' }}</div>
+                  <div class="shrink-0 text-right">
+                    <div class="tabular-nums text-muted text-xs">{{ fromNow(ev.timestamp) }}</div>
+                    <div class="text-subtle text-xs">{{ ev.environment || '-' }}</div>
                   </div>
                 </div>
               @empty
@@ -848,9 +848,9 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
           </div>
 
           <!-- SIDEBAR -->
-          <aside class="min-w-0 grid gap-5 items-start" style="grid-auto-rows:min-content">
+          <aside class="grid gap-5 items-start min-w-0" style="grid-auto-rows:min-content">
 
-            <section class="card overflow-hidden">
+            <section class="overflow-hidden card">
               <div class="card-head">Event</div>
               <dl class="kv">
                 @foreach (eventMeta as m)
@@ -875,14 +875,14 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
             </section>
 
             @if (latest && latest.url)
-              <section class="card overflow-hidden">
+              <section class="overflow-hidden card">
                 <div class="card-head">URL</div>
-                <div class="jsonblock text-ink">{{ latest.url }}</div>
+                <div class="text-ink jsonblock">{{ latest.url }}</div>
               </section>
             @endif
 
             @if (tagList.length)
-              <section class="card overflow-hidden">
+              <section class="overflow-hidden card">
                 <div class="card-head">Tags</div>
                 <dl class="kv">
                   @foreach (tagList as t)
@@ -894,7 +894,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
             @endif
 
             @if (userRows.length)
-              <section class="card overflow-hidden">
+              <section class="overflow-hidden card">
                 <div class="card-head">User</div>
                 <dl class="kv">
                   @foreach (userRows as r)
@@ -906,7 +906,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
             @endif
 
             @foreach (contextList as ctx)
-              <section class="card overflow-hidden">
+              <section class="overflow-hidden card">
                 <div class="card-head">{{ ctx.name }}</div>
                 @forelse (ctx.rows as r)
                   <dl class="kv" style="padding-top:.6rem; padding-bottom:.2rem">
@@ -914,14 +914,14 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
                     <dd>{{ r.v }}</dd>
                   </dl>
                 @empty
-                  <div class="px-4 py-3 text-xs mono text-subtle">empty</div>
+                  <div class="px-4 py-3 text-subtle text-xs mono">empty</div>
                 @endforelse
                 <div style="height:.6rem"></div>
               </section>
             @endforeach
 
             @if (extra)
-              <section class="card overflow-hidden">
+              <section class="overflow-hidden card">
                 <div class="card-head">Additional data</div>
                 <pre class="jsonblock">{{ JSON.stringify(extra, null, 2) }}</pre>
               </section>
@@ -934,7 +934,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 
     @endif
 
-    <footer class="mt-10 text-center text-xs text-subtle">
+    <footer class="mt-10 text-center text-subtle text-xs">
       Error tracking · powered by Stacks + Postgres · bughq.org
     </footer>
 

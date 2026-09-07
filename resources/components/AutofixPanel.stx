@@ -373,7 +373,7 @@ loadAutofix(true)
   <div :class="readyClass()">
     <div>
       <div class="font-semibold text-sm">Prepare a repository fix</div>
-      <p class="mt-1 max-w-2xl text-xs text-subtle">BugHQ will inspect the stack trace, read a bounded set of source files, and open a draft pull request for review.</p>
+      <p class="mt-1 max-w-2xl text-subtle text-xs">BugHQ will inspect the stack trace, read a bounded set of source files, and open a draft pull request for review.</p>
     </div>
     <button type="button" :class="runButtonClass()" @click="startAutofix" :disabled="autofixStarting()">
       <i class="h-4 w-4 i-hugeicons-ai-magic"></i> Run Autofix
@@ -424,7 +424,7 @@ loadAutofix(true)
     </details>
 
     <div :class="retryClass()">
-      <span class="text-xs text-subtle">The previous run stopped safely. No partial pull request was opened.</span>
+      <span class="text-subtle text-xs">The previous run stopped safely. No partial pull request was opened.</span>
       <button type="button" class="btn" @click="startAutofix" :disabled="autofixStarting()">Retry Autofix</button>
     </div>
   </div>
