@@ -9,7 +9,7 @@
  *
  * `useColorMode` does all of it, and takes its configuration from
  * `window.__STX_COLOR_MODE__`, which the pre-paint boot script publishes from
- * `app.colorMode` in config/ui.ts. That shared source is the point: without it
+ * `app.colorMode` in config/stx.ts. That shared source is the point: without it
  * the composable would fall back to its own defaults, read a different storage
  * key, and undo the theme on hydration — reintroducing the exact flash the boot
  * script exists to prevent (stacksjs/stx#1794).
@@ -29,7 +29,7 @@ export const useTheme = defineStore('theme', () => {
   // is no `.value`: it is `cm.mode` to read and `cm.set(x)` to write. A template
   // binding cannot react to a getter, which is why the signal below exists.
   //
-  // No options: every one comes from app.colorMode in config/ui.ts via
+  // No options: every one comes from app.colorMode in config/stx.ts via
   // window.__STX_COLOR_MODE__, which the pre-paint boot script publishes. They
   // used to be duplicated here because that script was emitted after the store
   // bundle, so the global did not exist yet — stacksjs/stx#1803, now fixed and

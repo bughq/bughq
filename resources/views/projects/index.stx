@@ -54,7 +54,7 @@ function fromNow(iso: string | null): string {
 
 <script client>
 // Theme lives in the store: one implementation, shared across pages, and the
-// pre-paint boot script in config/ui.ts already applied it before this ran.
+// pre-paint boot script in config/stx.ts already applied it before this ran.
 const themeStore = useStore('theme')
 
 // `const theme = themeStore.theme` is what this wants to be. The derived() wrapper

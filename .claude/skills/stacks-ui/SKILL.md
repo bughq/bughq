@@ -19,7 +19,7 @@ For premium, non-templated UI (layout, typography, color, motion) built on stx +
 ## Key Paths
 - Core package: `storage/framework/core/ui/src/`
 - Components: `storage/framework/core/ui/src/components/`
-- UI config: `config/ui.ts` (Crosswind)
+- UI config: `config/stx.ts` (Crosswind)
 - STX config: `config/stx.ts`
 - STX engine: `node_modules/@stacksjs/stx/`
 - Crosswind: `node_modules/@cwcss/crosswind/`
@@ -178,7 +178,7 @@ Previous versions of this file documented `const { value, remove } = useLocalSto
 That is a third shape, from a module that is not exported; in a `<script client>` block the
 destructure yields `undefined` for both.
 
-## Crosswind Configuration (config/ui.ts)
+## Crosswind Configuration (config/stx.ts)
 
 ```typescript
 export default {

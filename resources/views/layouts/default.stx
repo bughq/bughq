@@ -30,13 +30,13 @@
      intercepting one fetches the redirect as a fragment instead of following
      it.
 
-     Staying a plain <a> is the whole mechanism, because config/ui.ts now sets
+     Staying a plain <a> is the whole mechanism, because config/stx.ts now sets
      `router.interceptAllLinks: false` — an unmarked anchor is never claimed.
      That flag used to be `true`, which is why these links also carried
      `data-no-router`; converting the marketing site's nav and footer anchors to
      <StxLink> is what allowed it to be turned off, and the attributes have
      since been removed as dead weight. The four OAuth links keep theirs as a
-     latch — see the comment in config/ui.ts. Unifying both shells onto one
+     latch — see the comment in config/stx.ts. Unifying both shells onto one
      layout would remove the marketing-boundary exception entirely. --}}
 <main>
 @yield('content')
