@@ -510,7 +510,7 @@ defineClientPayload({ stack })
 
 <script client>
 // Theme lives in the store: one implementation, shared across pages, and the
-// pre-paint boot script in config/stx.ts already applied it before this ran.
+// pre-paint boot script in config/ui.ts already applied it before this ran.
 const themeStore = useStore('theme')
 const theme = themeStore.theme
 
@@ -648,7 +648,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
   <div class="mx-auto" style="max-width: 78rem">
 
     <div class="flex gap-3 items-center justify-between mb-5">
-      {{-- StxLink, not a plain anchor. interceptAllLinks is false (config/stx.ts:96),
+      {{-- StxLink, not a plain anchor. interceptAllLinks is false (config/ui.ts:96),
            so SPA navigation is opted INTO — an <a href> here is a full document
            load, and this is the most-travelled path in the app. Safe to convert
            because /dashboard is in the same `default` layout group; the app to

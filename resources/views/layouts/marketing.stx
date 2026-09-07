@@ -44,7 +44,7 @@ catch {
          page that had no @section('description'), suppressing the real one.
          Emitting nothing lets useSeoMeta be the single source. --}}
     {{-- The font links and the pre-paint theme guard are deliberately NOT here.
-         They live in config/stx.ts `app.head` (Stage 1), and injectConfigHeadTags
+         They live in config/ui.ts `app.head` (Stage 1), and injectConfigHeadTags
          adds them to this head, deduped on href and on inline script content.
          Re-adding them would emit a second copy on every marketing page.
 

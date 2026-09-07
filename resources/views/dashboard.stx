@@ -458,7 +458,7 @@ defineClientPayload({ inviteTokens, issueStatuses, statusFilter })
 
 <script client>
 // Theme lives in the store: one implementation, shared across pages, and the
-// pre-paint boot script in config/stx.ts already applied it before this ran.
+// pre-paint boot script in config/ui.ts already applied it before this ran.
 const themeStore = useStore('theme')
 const theme = themeStore.theme
 
@@ -781,7 +781,7 @@ summary::-webkit-details-marker { display: none; }
 .theme-btn[data-t="dark"] .ic-moon { display: block; }
 </style>
 
-{{-- The pre-paint theme guard now lives in config/stx.ts `app.head.script`, so
+{{-- The pre-paint theme guard now lives in config/ui.ts `app.head.script`, so
      it lands in the document head on every page — including the 23 marketing
      pages, which never had one despite marketing.css shipping data-theme tokens.
 

@@ -102,7 +102,7 @@ function declarations(p: Palette): string {
 /**
  * Light is the base. The system-preference block then dark-mode's anyone who has
  * expressed no explicit choice, and the two `[data-theme]` rules let the toggle
- * (and the pre-paint boot script in config/stx.ts, which writes that attribute)
+ * (and the pre-paint boot script in config/ui.ts, which writes that attribute)
  * override the system in either direction.
  *
  * Order matters: `[data-theme]` must come after the media query so an explicit
