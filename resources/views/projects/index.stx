@@ -90,7 +90,7 @@ function logout() {
 <style>
 .card { transition: border-color 0.15s ease, transform 0.12s ease; }
 .card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); transform: translateY(-1px); }
-.btn { background: var(--accent); color: #fff; border-radius: 10px; }
+.btn { background: var(--accent); color: var(--accent-ink); border-radius: 10px; }
 .btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
 .btn-ghost { border: 1px solid var(--border); color: var(--text); border-radius: 10px; }
 .btn-ghost:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }

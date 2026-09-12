@@ -17,15 +17,13 @@ import { dispatchAlerts } from '../app/Errors/alerts'
 import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, randomId } from '../app/Errors/fingerprint'
 import { authorizeIngest } from '../app/Errors/ingest'
 import { allowAlert, rateLimit } from '../app/Errors/limits'
+import { buildMetadata, col255, parseIngestEnvelope } from '../app/Errors/payload'
+import { isIssueStatus, snoozedUntil } from '../app/Errors/triage'
 import { ingestUrl } from '../app/Support/urls'
 
 // Ingest abuse bounds. The public key gate is not enough on its own - a script
 // with the key (readable from any bundle) could flood the ingest.
 const MAX_BODY_BYTES = 256 * 1024 // reject payloads larger than this outright
-const MAX_MESSAGE = 4096 // stored message cap
-const MAX_STACK = 24 * 1024 // stored stack cap
-const MAX_METADATA_BYTES = 96 * 1024 // stored metadata JSON cap
-const MAX_BREADCRUMBS = 100 // keep the most recent N
 // Fixed-window quotas (per process): per project, and per client IP across
 // projects. Generous enough for a real error storm's client-deduped traffic,
 // tight enough to kill a Postman flood.
@@ -55,62 +53,6 @@ function clientIp(request: any): string {
     }
   }
   return direct
-}
-
-function clip(value: string, max: number): string {
-  return value.length > max ? `${value.slice(0, max)}…[truncated]` : value
-}
-
-// Hard cap for varchar(255) columns. Postgres RAISES on overflow, which aborts
-// the whole INSERT and drops the event — so every client-supplied or derived
-// string bound for a 255-char column passes through here first. Note plain
-// `clip(x, 255)` is NOT safe for these: its "…[truncated]" suffix pushes the
-// result past 255. Returns null for nullish input so it drops straight in.
-function col255(value: unknown): string | null {
-  if (value == null)
-    return null
-  const s = String(value)
-  return s.length > 255 ? `${s.slice(0, 254)}…` : s
-}
-
-/**
- * Bundle the SDK's rich fields into a single JSON blob stored in
- * `error_events.metadata` (widened to hold it, migration 0129). Keeps a flat,
- * predictable shape the issue-detail page can destructure, and stays null when
- * a bare/legacy client sends nothing extra.
- */
-function buildMetadata(body: any): string | null {
-  const meta: Record<string, unknown> = {}
-  if (body.extra && typeof body.extra === 'object')
-    meta.extra = body.extra
-  if (body.tags && typeof body.tags === 'object')
-    meta.tags = body.tags
-  if (body.contexts && typeof body.contexts === 'object')
-    meta.contexts = body.contexts
-  // Keep only the most recent breadcrumbs so a client can't balloon the row.
-  if (Array.isArray(body.breadcrumbs) && body.breadcrumbs.length)
-    meta.breadcrumbs = body.breadcrumbs.slice(-MAX_BREADCRUMBS)
-  if (body.sdk && typeof body.sdk === 'object')
-    meta.sdk = body.sdk
-  if (body.session && typeof body.session === 'object')
-    meta.session = body.session
-  if (body.timestamp)
-    meta.client_timestamp = body.timestamp
-  if (!Object.keys(meta).length)
-    return null
-  const serialized = JSON.stringify(meta)
-  // Hard size ceiling on the whole blob: if a caller stuffs huge extra/tags,
-  // drop the free-form fields and keep the small structured ones rather than
-  // storing an unbounded document.
-  if (serialized.length <= MAX_METADATA_BYTES)
-    return serialized
-  const trimmed = JSON.stringify({
-    sdk: meta.sdk,
-    session: meta.session,
-    client_timestamp: meta.client_timestamp,
-    _truncated: 'oversized metadata dropped',
-  })
-  return trimmed
 }
 
 const CORS = {
@@ -219,8 +161,9 @@ route.post('/errors', async (request: any) => {
   // ACTUAL parsed payload too, or an understated/missing length slips past.
   if (Buffer.byteLength(JSON.stringify(body)) > MAX_BODY_BYTES)
     return json({ error: 'payload too large' }, 413)
-  if (!body.message)
-    return json({ error: 'missing message' }, 400)
+  const parsed = parseIngestEnvelope(body, request.headers?.get('x-bughq-key'))
+  if (!parsed.ok)
+    return json({ error: parsed.error }, 400)
 
   // Per-IP quota across all projects (blunts a broad flood before we even hit
   // the DB for the project lookup).
@@ -233,8 +176,7 @@ route.post('/errors', async (request: any) => {
   // project on its own — a key-only client sends no project id at all (simpler
   // than a Sentry DSN, which carries the project id in its path). When a client
   // DOES send a project id we still honor it and require the key to match it.
-  const providedKey = request.headers?.get('x-bughq-key') ?? body.key ?? null
-  const requestedProject = body.project ?? body.p ?? null
+  const { providedKey, requestedProject } = parsed.value
   let project = null
   if (requestedProject) {
     project = (await db.unsafe(
@@ -274,7 +216,7 @@ route.post('/errors', async (request: any) => {
   // plan. Accepted rather than rejected: the SDK would retry a 4xx forever and
   // the client cannot be told to stop, since apps like this one are static
   // builds where changing a flag means a redeploy.
-  if (project.console_muted === true && String(body.type ?? '') === 'ConsoleError')
+  if (project.console_muted === true && parsed.value.errorType === 'ConsoleError')
     return json({ ok: true, muted: true })
 
   // Meter this event against the owning account.
@@ -294,15 +236,9 @@ route.post('/errors', async (request: any) => {
   // Costs one Map mutation. No round-trip: see app/Billing/usage.ts.
   recordUsage(project.owner_id, 'accepted')
 
-  const errorType = clip(String(body.type ?? body.error_type ?? 'Error'), 255)
-  // Bound stored strings server-side: never trust the SDK's client-side caps.
-  const message = clip(String(body.message), MAX_MESSAGE)
-  const stack = body.stack ? clip(String(body.stack), MAX_STACK) : undefined
+  const { errorType, message, stack, fingerprintParts: fpOverride } = parsed.value
   // A client may force grouping with an explicit `fingerprint` array; otherwise
   // we derive one from type + normalized message + top stack frame.
-  const fpOverride = Array.isArray(body.fingerprint) && body.fingerprint.length
-    ? body.fingerprint.map((p: unknown) => String(p))
-    : null
   const fp = fpOverride ? fingerprintFromParts(fpOverride) : fingerprint(errorType, message, stack)
 
   // Roll the occurrence into its Issue in ONE atomic statement.
@@ -464,19 +400,6 @@ route.get('/api/issues/{issueId}', async (request: any) => {
  * endpoint validate against this, and the ingest's regression branch depends on
  * 'resolved' being spelled exactly this way.
  */
-const ISSUE_STATUSES = new Set(['unresolved', 'resolved', 'ignored'])
-
-/**
- * How long each snooze preset lasts. Server-side so the duration cannot be
- * chosen by the caller — see the note at the snooze branch below.
- */
-const SNOOZE_PRESETS = {
-  '1h': 60 * 60 * 1000,
-  '4h': 4 * 60 * 60 * 1000,
-  '1d': 24 * 60 * 60 * 1000,
-  '1w': 7 * 24 * 60 * 60 * 1000,
-} as const
-
 route.post('/api/issues/{issueId}/resolve', async (request: any) => {
   if (!sameOrigin(request))
     return json({ error: 'forbidden' }, 403)
@@ -504,13 +427,12 @@ route.post('/api/issues/{issueId}/resolve', async (request: any) => {
       await db.unsafe('UPDATE issues SET snoozed_until = NULL WHERE id = $1', [issueId])
       return json({ ok: true, snoozed_until: null })
     }
-    const ms = SNOOZE_PRESETS[key as keyof typeof SNOOZE_PRESETS]
-    if (!ms)
+    const until = snoozedUntil(key)
+    if (!until)
       return json({ error: 'invalid snooze duration' }, 400)
     // Computed here rather than accepting a client timestamp: a caller could
     // otherwise snooze an issue until the year 3000 and remove it from every
     // tab permanently.
-    const until = new Date(Date.now() + ms).toISOString()
     // Snoozing implies the issue is open. Doing this in one statement keeps a
     // snoozed row from ever being simultaneously resolved or ignored, which is
     // what lets the Snoozed and Ignored tabs stay disjoint without a constraint.
@@ -522,7 +444,7 @@ route.post('/api/issues/{issueId}/resolve', async (request: any) => {
   }
 
   const status = request.jsonBody?.status ?? 'resolved'
-  if (!ISSUE_STATUSES.has(status))
+  if (!isIssueStatus(status))
     return json({ error: 'invalid status' }, 400)
   // Any status change clears the snooze. Without this a resolved issue could
   // still carry a future snoozed_until and reappear on the Snoozed tab, which
@@ -539,7 +461,7 @@ route.post('/issue/{issueId}/status', async (request: any) => {
     return json({ error: 'forbidden' }, 403)
   const issueId = request.params.issueId
   const to = request.query?.to ?? request.jsonBody?.to ?? 'resolved'
-  if (!ISSUE_STATUSES.has(to))
+  if (!isIssueStatus(to))
     return json({ error: 'invalid status' }, 400)
   const user = await userFromRequest(request)
   if (!user)

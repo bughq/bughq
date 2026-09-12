@@ -421,12 +421,10 @@ const stats = [
 ]
 
 // The banner rows are server-rendered one per invite, and each one hides itself
-// against `dismissed`. The empty state underneath points AT those rows, so it
-// needs the same answer they do — and "is any banner still on screen" is a fact
-// that only exists client-side. Hand over the tokens so the copy can be derived
-// from the very list the banners test themselves against, rather than from a
-// second count that could disagree with them.
-const inviteTokens: string[] = pendingInvites.map(i => i.token)
+// against `dismissed`. The empty state only needs to know whether every row was
+// hidden, so bridge the non-sensitive count rather than duplicating invitation
+// capability tokens into a page-wide client payload.
+const pendingInviteCount = pendingInvites.length
 
 // Name what crosses into the client block. Without this the bridge still ships
 // these values, but untyped — the checker cannot see them, so a rename here or
@@ -453,7 +451,7 @@ function snoozeLeft(until: string | null): string {
 const issueStatuses: Record<string, string> = Object.fromEntries(
   issues.map((i): [string, string] => [String(i.id), String(i.status || 'unresolved')]),
 )
-defineClientPayload({ inviteTokens, issueStatuses, statusFilter })
+defineClientPayload({ issueStatuses, pendingInviteCount, statusFilter })
 </script>
 
 <script client>
@@ -499,7 +497,7 @@ function dismissInvite(token: string): void {
 // nothing until a manual reload. Same list, same test as each banner runs on
 // itself, so the two can never disagree about what is up there.
 function invitesShowing(): boolean {
-  return inviteTokens.some(t => !dismissed().includes(t))
+  return dismissed().length < pendingInviteCount
 }
 
 function joinLabel(token: string): string {
@@ -839,7 +837,7 @@ summary::-webkit-details-marker { display: none; }
           <div class="flex flex-wrap gap-3 items-center mb-2.5 px-5 py-3.5 panel" style="border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, var(--panel))" @if="!dismissed().includes('{{ inv.token }}')">
             <span class="text-sm">🎉 You've been invited to <span class="font-semibold">{{ inv.project_name }}</span>.</span>
             <div class="flex gap-2 items-center ml-auto">
-              <button @click="joinInvite('{{ inv.token }}')" :disabled="joining() === '{{ inv.token }}'" :text="joinLabel('{{ inv.token }}')" class="px-4 py-1.5 font-semibold text-sm bg-accent border border-accent pill" style="color:#fff">Join</button>
+              <button @click="joinInvite('{{ inv.token }}')" :disabled="joining() === '{{ inv.token }}'" :text="joinLabel('{{ inv.token }}')" class="px-4 py-1.5 font-semibold text-sm bg-accent border border-accent text-accent-ink pill">Join</button>
               <button @click="dismissInvite('{{ inv.token }}')" class="px-3 py-1.5 text-sm text-subtle border border-line pill" title="Hide for now">Dismiss</button>
             </div>
           </div>
@@ -900,7 +898,7 @@ summary::-webkit-details-marker { display: none; }
         @foreach (statusTabs as f)
           <StxLink to="{{ f.href }}"
              class="px-3.5 py-1.5 font-medium text-sm border pill"
-             style="{{ f.key === statusFilter ? 'color: #fff; background: var(--accent); border-color: var(--accent)' : 'color: var(--text-2); border-color: var(--border)' }}">{{ f.label }}</StxLink>
+             style="{{ f.key === statusFilter ? 'color: var(--accent-ink); background: var(--accent); border-color: var(--accent)' : 'color: var(--text-2); border-color: var(--border)' }}">{{ f.label }}</StxLink>
         @endforeach
         <span class="shrink-0 mx-1.5 h-4 w-px bg-line" aria-hidden="true"></span>
         @foreach (rangeTabs as r)
@@ -1132,7 +1130,7 @@ summary::-webkit-details-marker { display: none; }
              picks one; stx cloaks a directive-hidden element until then, so
              neither flashes. --}}
         <p class="text-sm text-subtle" @if="invitesShowing()">Accept an invitation above to get started, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
-        <p class="text-sm text-subtle" @if="!invitesShowing()">Dismissed for this visit only — reload to bring {{ inviteTokens.length === 1 ? 'the invitation' : 'them' }} back, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
+        <p class="text-sm text-subtle" @if="!invitesShowing()">Dismissed for this visit only — reload to bring {{ pendingInviteCount === 1 ? 'the invitation' : 'them' }} back, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
       </div>
     @endif
 

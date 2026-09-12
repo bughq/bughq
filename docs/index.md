@@ -1,76 +1,41 @@
 ---
+title: BugHQ Documentation
+description: Capture production errors, group duplicates, understand impact, and move from issue to fix.
 layout: home
-
-title: Stacks
-titleTemplate: Modern TypeScript Fullstack Development.
-
 hero:
-  name: Stacks.js
-  text: Build. Ship. Faster.
-  tagline: Rapid application, cloud & library development framework. For the best full-stack teams.
-  image: /images/logos/logo-white.png
+  name: BugHQ
+  text: Turn production errors into fixes
+  tagline: Group duplicate failures, preserve the context that matters, alert the right team, and close the loop from regression to resolution.
   actions:
     - theme: brand
-      text: Coming Soon
-      # text: Get Started
-      link: /docs/guide/get-started
+      text: Capture your first error
+      link: /getting-started
     - theme: alt
-      text: View on GitHub
-      link: https://github.com/stacksjs/stacks
-
+      text: Choose an SDK
+      link: /capture/browser
 features:
-  - title: Best-in-Class DX
-    icon: 🦋
-    details: One framework that does it all. Building TypeScript apps & libraries has never been simpler.
-  - title: App Development
-    icon: 🖥️
-    details: Performant Web or Tauri desktop applications, let Stacks handle the heavy-lifting for you.
-  - title: Library Development
-    icon: 📚
-    details: Automagically builds & distributes your component & function libraries, via npm.
-  - title: Cloud Development
-    icon: ☁️
-    details: Automatic zero-downtime deployments of production-ready serverless clouds. Self-hosted.
-  - title: Modern Administration
-    icon: 📊
-    details: A sleek admin dashboard, out-of-the-box. For devs & your clients. Our product is your product.
-  - title: Scalable APIs
-    icon: 📡
-    details: Building serverless APIs has never been simpler. Focus on your business logic, not your infrastructure.
-  - title: Secure Authentication
-    icon: 🔐
-    details: Robust API & web authentication, ensuring the security of your user data. User-friendly, zero-config & ready-to-go.
-  - title: Built-in CI / CD
-    icon: 🤖
-    details: Focus on coding, not publishing. Automates linting, version tagging, changelog generation, test execution, and more.
-  - title: Global CDN
-    icon: 🌐
-    details: '"Securely deliver content with low latency and high transfer speeds," AWS. Your assets, zero-config.'
-  - title: Queues & Jobs
-    icon: 📦
-    details: Leverage the power of queues. Defer time-consuming tasks using managed serverless queues.
-  - title: Notifications
-    icon: 📨
-    details: Send notifications to your users via email, SMS, Slack, Discord, Push and more.
-  - title: Billing & Payments
-    icon: 💳
-    details: Accept payments from your users using Stripe. One-off payments, subscriptions, and more.
-  - title: Search Engine
-    icon: 🔍
-    details: 'Powerful & fast. "Build an intuitive search experience in a snap," Meilisearch.'
-  - title: Progressive UI Engine
-    icon: ⚙️
-    details: An approachable, performant and versatile framework for building web UIs.
-  - title: Atomic CSS Engine
-    icon: 🎨
-    details: '"Blazingly fast utility-first CSS framework," Headwind. Easily create & manage your styles.'
-  - title: Streamlined Testing
-    icon: 🧪
-    details: A fast built-in testing framework. Enjoyable support for both unit & feature tests.
-  - title: Commerce
-    icon: 💴
-    details: A fast built-in testing framework. Enjoyable support for both unit & feature tests.
-  - title: Realtime
-    icon: 🏃🏻
-    details: Build real-time features with WebSockets. Add live updates, chat, notifications & collaborative features with ease.
+  - title: Stable issue grouping
+    details: Normalize volatile messages and stack data so repeated failures become one issue instead of a wall of events.
+  - title: Debugging context
+    details: Keep releases, environments, users, tags, breadcrumbs, sessions, and structured context beside each failure.
+  - title: From alert to pull request
+    details: Notify email, Slack, or Discord, then optionally prepare a guarded GitHub Autofix pull request.
 ---
+
+## Choose a path
+
+- Follow the [quick start](/getting-started) to create a project and send a test error.
+- Choose an integration for [browser JavaScript](/capture/browser), [Stacks and stx](/capture/stacks-stx), [Vue and Nuxt](/capture/vue-nuxt), or [PHP and Laravel](/capture/php-laravel).
+- Learn how grouping, status, and regressions work in [issues and triage](/use/issues-triage).
+- Use the [HTTP API reference](/reference/api) for custom clients and automation.
+
+## The error lifecycle
+
+1. An SDK sends an event to `POST /errors` with the project's public ingest key.
+2. BugHQ validates limits and calculates a stable fingerprint.
+3. The event creates a new issue or increments an existing issue.
+4. New issues and regressions can notify email, Slack, or Discord.
+5. Owners and project members investigate, assign context, and resolve or ignore the issue.
+6. An owner can optionally connect GitHub and run a guarded AI Autofix workflow.
+
+BugHQ is under active development. Verify deployment and SDK behavior against the version you run before relying on it for a production incident process.

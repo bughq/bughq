@@ -876,7 +876,7 @@ html { scroll-behavior: smooth; }
 .wordmark-link:hover { opacity: 0.75; }
 .sec { scroll-margin-top: 84px; }
 .sec-title { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); }
-.btn { background: var(--accent); color: #fff; border-radius: 10px; transition: background 0.15s ease, opacity 0.15s ease; }
+.btn { background: var(--accent); color: var(--accent-ink); border-radius: 10px; transition: background 0.15s ease, opacity 0.15s ease; }
 .btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
 .btn:disabled { opacity: 0.55; cursor: default; }
 .btn-ghost { border: 1px solid var(--border); color: var(--text-2); border-radius: 9px; background: var(--panel); transition: color 0.15s ease, border-color 0.15s ease; }
