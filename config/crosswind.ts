@@ -33,6 +33,8 @@ interface Palette {
   text3: string
   /** Brand accent, used for primary actions and focus rings. */
   accent: string
+  /** Text placed on the brand accent. */
+  accentInk: string
   /** Sparkline / activity rail tint on the dashboard. */
   rail: string
   /** Success state. */
@@ -49,8 +51,9 @@ const light: Palette = {
   border: 'rgba(15,23,42,0.09)',
   text: '#0b0f19',
   text2: '#4b5565',
-  text3: '#97a1b2',
+  text3: '#667085',
   accent: '#e11d48',
+  accentInk: '#ffffff',
   rail: 'rgba(225,29,72,0.14)',
   ok: '#16a34a',
   warn: '#b91c1c',
@@ -63,8 +66,9 @@ const dark: Palette = {
   border: 'rgba(148,163,184,0.12)',
   text: '#f3f5f9',
   text2: '#b3bccb',
-  text3: '#667085',
+  text3: '#7b879a',
   accent: '#fb7185',
+  accentInk: '#090b11',
   rail: 'rgba(251,113,133,0.16)',
   ok: '#4ade80',
   warn: '#f87171',
@@ -92,6 +96,7 @@ function declarations(p: Palette): string {
     `--text-2: ${p.text2}`,
     `--text-3: ${p.text3}`,
     `--accent: ${p.accent}`,
+    `--accent-ink: ${p.accentInk}`,
     `--rail: ${p.rail}`,
     `--ok: ${p.ok}`,
     `--warn: ${p.warn}`,
@@ -143,6 +148,7 @@ export default {
         muted: 'var(--text-2)',
         subtle: 'var(--text-3)',
         accent: 'var(--accent)',
+        'accent-ink': 'var(--accent-ink)',
         // `--ok` has existed since this palette was written and was only ever
         // reachable as `var(--ok)` in a page's own CSS. Registering it makes the
         // success state a utility like every other colour here, which is what
@@ -210,7 +216,7 @@ export default {
     // and set no background of their own, so a shared `btn` would paint every
     // plain button on those pages accent. This owns one of the six and leaves
     // the rest to their pages.
-    'btn-accent': 'bg-accent text-white rounded-[10px] '
+    'btn-accent': 'bg-accent text-accent-ink rounded-[10px] '
       + '[transition:transform_0.12s_ease,opacity_0.15s_ease] '
       + 'hover:bg-[color-mix(in_srgb,var(--accent)_88%,#000)] '
       + 'active:translate-y-px '
