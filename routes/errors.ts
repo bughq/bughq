@@ -17,7 +17,7 @@ import { dispatchAlerts } from '../app/Errors/alerts'
 import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, randomId } from '../app/Errors/fingerprint'
 import { authorizeIngest } from '../app/Errors/ingest'
 import { allowAlert, rateLimit } from '../app/Errors/limits'
-import { buildMetadata, clip, col255, MAX_MESSAGE, MAX_STACK } from '../app/Errors/payload'
+import { buildMetadata, col255, parseIngestEnvelope } from '../app/Errors/payload'
 import { isIssueStatus, snoozedUntil } from '../app/Errors/triage'
 import { ingestUrl } from '../app/Support/urls'
 
@@ -161,8 +161,9 @@ route.post('/errors', async (request: any) => {
   // ACTUAL parsed payload too, or an understated/missing length slips past.
   if (Buffer.byteLength(JSON.stringify(body)) > MAX_BODY_BYTES)
     return json({ error: 'payload too large' }, 413)
-  if (!body.message)
-    return json({ error: 'missing message' }, 400)
+  const parsed = parseIngestEnvelope(body, request.headers?.get('x-bughq-key'))
+  if (!parsed.ok)
+    return json({ error: parsed.error }, 400)
 
   // Per-IP quota across all projects (blunts a broad flood before we even hit
   // the DB for the project lookup).
@@ -175,8 +176,7 @@ route.post('/errors', async (request: any) => {
   // project on its own — a key-only client sends no project id at all (simpler
   // than a Sentry DSN, which carries the project id in its path). When a client
   // DOES send a project id we still honor it and require the key to match it.
-  const providedKey = request.headers?.get('x-bughq-key') ?? body.key ?? null
-  const requestedProject = body.project ?? body.p ?? null
+  const { providedKey, requestedProject } = parsed.value
   let project = null
   if (requestedProject) {
     project = (await db.unsafe(
@@ -216,7 +216,7 @@ route.post('/errors', async (request: any) => {
   // plan. Accepted rather than rejected: the SDK would retry a 4xx forever and
   // the client cannot be told to stop, since apps like this one are static
   // builds where changing a flag means a redeploy.
-  if (project.console_muted === true && String(body.type ?? '') === 'ConsoleError')
+  if (project.console_muted === true && parsed.value.errorType === 'ConsoleError')
     return json({ ok: true, muted: true })
 
   // Meter this event against the owning account.
@@ -236,15 +236,9 @@ route.post('/errors', async (request: any) => {
   // Costs one Map mutation. No round-trip: see app/Billing/usage.ts.
   recordUsage(project.owner_id, 'accepted')
 
-  const errorType = clip(String(body.type ?? body.error_type ?? 'Error'), 255)
-  // Bound stored strings server-side: never trust the SDK's client-side caps.
-  const message = clip(String(body.message), MAX_MESSAGE)
-  const stack = body.stack ? clip(String(body.stack), MAX_STACK) : undefined
+  const { errorType, message, stack, fingerprintParts: fpOverride } = parsed.value
   // A client may force grouping with an explicit `fingerprint` array; otherwise
   // we derive one from type + normalized message + top stack frame.
-  const fpOverride = Array.isArray(body.fingerprint) && body.fingerprint.length
-    ? body.fingerprint.map((p: unknown) => String(p))
-    : null
   const fp = fpOverride ? fingerprintFromParts(fpOverride) : fingerprint(errorType, message, stack)
 
   // Roll the occurrence into its Issue in ONE atomic statement.
