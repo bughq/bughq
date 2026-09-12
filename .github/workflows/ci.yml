@@ -191,5 +191,14 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      - name: Build
+      - name: Build application
         run: bun run build
+
+      - name: Build documentation
+        run: bun buddy build docs
+
+      - name: Validate documentation
+        run: bun run docs:validate
+
+      - name: Verify generated files are current
+        run: git diff --exit-code

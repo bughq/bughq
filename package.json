@@ -31,6 +31,7 @@
     "dev:api": "./buddy dev:api",
     "dev:full": "STACKS_FULL_DEV=1 ./buddy dev",
     "build": "./buddy build",
+    "docs:validate": "bun scripts/validate-docs.ts",
     "prod": "./buddy build",
     "deploy": "./buddy deploy",
     "lint": "./buddy lint",
