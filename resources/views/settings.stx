@@ -14,7 +14,7 @@ useSeoMeta({
 })
 
 const { db } = await import('@stacksjs/database')
-const { appUrl, ingestUrl } = await import('../../../app/Support/urls')
+const { appUrl, ingestUrl } = await import('../../app/Support/urls')
 // APP_BASE is the web app (join links); INGEST_BASE is where /sdk.js + /errors
 // are served (a separate host in local dev). Both are absolute and env-driven,
 // falling back to the local servers. See app/Support/urls.ts.

@@ -2,7 +2,7 @@
 // Show a provider's sign-in button only when it's actually configured, so the
 // buttons stay hidden until credentials are set (then reappear automatically —
 // no code change). See config/services.ts.
-const services = (await import('../../../config/services')).default
+const services = (await import('../../config/services')).default
 const githubEnabled = !!services.github?.clientId
 const googleEnabled = !!services.google?.clientId
 const anyOauth = githubEnabled || googleEnabled
