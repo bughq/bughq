@@ -55,6 +55,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build the production artifact
+        run: bun run build
+
+      - name: Validate the production artifact
+        run: bun run release:validate
+
       # Attach deploys over SSH to the shared box (same DEPLOY_SSH_KEY authorized
       # on the box). Derive the .pub from the private key so one secret suffices.
       - name: Add deploy SSH key
@@ -158,3 +164,7 @@ jobs:
           # schema change must fail the job: the release is already live by this
           # point, so a red step here is a loud alarm, not a broken deploy.
           $SSH "cd ${APP_DIR}/current && set -a && . ${APP_DIR}/shared/.env && . ${APP_DIR}/shared/.env.keys && set +a && printf 'Y\nn\n' | bun node_modules/@stacksjs/buddy/dist/cli.js migrate"
+
+      - name: Smoke test production
+        if: needs.determine-environment.outputs.environment == 'production'
+        run: bun run deployment:smoke

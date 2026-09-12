@@ -206,5 +206,8 @@ jobs:
       - name: Validate responsive visual contracts
         run: bun run visual:validate
 
+      - name: Validate production release artifact
+        run: bun run release:validate
+
       - name: Verify generated files are current
         run: git diff --exit-code
