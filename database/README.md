@@ -10,9 +10,14 @@ The database directory is where you would store your custom migrations and seeds
 The following command will bootstrap a new migration file in the `database/migrations` directory:
 
 ```bash
-# automated migrations
+# generate and apply model changes during development
 buddy migrate
 ```
+
+Review and commit every generated SQL file before deploying it. Production
+releases run `buddy migrate --no-generate`, so a fresh release applies only the
+migration corpus reviewed in Git and cannot create duplicate migrations from a
+missing local snapshot.
 
 ```bash
 # automated seeds
