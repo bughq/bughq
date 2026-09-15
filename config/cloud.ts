@@ -687,23 +687,31 @@ export const tsCloud: TsCloudConfig = {
    *    to `/var/www/<siteName>`, served by the reverse proxy's `file_server`)
    *  - `bucket`            → upload built `root` to object storage + CDN
    *
-   * The static sites below (`docs`, `blog`, and external marketing sites) are the Hetzner
+   * Static sites such as `docs` are the Hetzner
    * server-static replacement for the AWS website-hosting buckets in
    * `infrastructure.storage` (see the supersede note there). `buddy deploy`'s
    * Hetzner path (`deployAllComputeSites`) builds each site's `root`, tars it,
    * and ships it to `/var/www/<siteName>` on the box. No new Hetzner buckets are
    * created. Each site's key maps 1:1 to `/var/www/<key>`:
-   *   - `docs`   → /var/www/docs   → served at /docs   on stacksjs.com
-   *   - `blog`   → /var/www/blog   → served at /blog   on stacksjs.com
+   *   - `docs`   -> /var/www/docs   -> served at /docs on bughq.org
    *
    * The Stacks root is served by the `main` server app; do not add a second
    * static `/` site for stacksjs.com or it will compete with the app route.
    */
   sites: {
-    // The bughq app — a Bun server (`buddy serve`) rendering the stx issues
+    // BunPress product documentation, built locally and served at /docs.
+    docs: {
+      root: './dist/docs/.bunpress',
+      path: '/docs',
+      domain: env.APP_DOMAIN || 'bughq.org',
+      deploy: 'server',
+      build: 'PATH="$PWD/node_modules/.bin:$PATH" bun node_modules/@stacksjs/buddy/dist/cli.js build docs && test -d dist/docs/.bunpress',
+    },
+
+    // The bughq app is a Bun server (`buddy serve`) rendering the stx issues
     // dashboard + serving the /errors ingest + /api issue routes on :3000,
     // fronted by the reverse proxy on bughq.org. Single-purpose error-tracking
-    // app: no docs/blog/marketing static sites from the scaffold template.
+    // app with the documentation mounted separately at /docs.
     //
     // On the shared `stacks` box (attachTo) ts-cloud namespaces every install
     // dir by project slug — this ships to /var/www/bughq-main via the

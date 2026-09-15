@@ -55,6 +55,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build the production artifact
+        run: bun run build
+
+      - name: Validate the production artifact
+        run: bun run release:validate
+
       # Attach deploys over SSH to the shared box (same DEPLOY_SSH_KEY authorized
       # on the box). Derive the .pub from the private key so one secret suffices.
       - name: Add deploy SSH key
@@ -147,6 +153,8 @@ jobs:
           # autoLoadEnv, so it never decrypts .env.<env> on its own. Source the
           # already-decrypted shared/.env (+ .env.keys) first so the plaintext
           # config is in the shell env before buddy loads.
+          # A release must apply only the SQL reviewed and committed to Git. Model
+          # generation belongs in development, never on the production server.
           # Y = run migrations, n = do NOT apply destructive drops (two_factor_* etc.)
           # NOT `|| echo "::warning::"`. That swallowed the exit code, and between
           # 11 Aug and 24 Aug fourteen consecutive deploys reported success while
@@ -157,4 +165,8 @@ jobs:
           # a members endpoint reading columns that were never created. A failed
           # schema change must fail the job: the release is already live by this
           # point, so a red step here is a loud alarm, not a broken deploy.
-          $SSH "cd ${APP_DIR}/current && set -a && . ${APP_DIR}/shared/.env && . ${APP_DIR}/shared/.env.keys && set +a && printf 'Y\nn\n' | bun node_modules/@stacksjs/buddy/dist/cli.js migrate"
+          $SSH "cd ${APP_DIR}/current && set -a && . ${APP_DIR}/shared/.env && . ${APP_DIR}/shared/.env.keys && set +a && printf 'Y\nn\n' | bun node_modules/@stacksjs/buddy/dist/cli.js migrate --no-generate"
+
+      - name: Smoke test production
+        if: needs.determine-environment.outputs.environment == 'production'
+        run: bun run deployment:smoke
