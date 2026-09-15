@@ -777,6 +777,58 @@ summary::-webkit-details-marker { display: none; }
 .theme-btn .ic-sun, .theme-btn .ic-moon { display: none; }
 .theme-btn[data-t="light"] .ic-sun { display: block; }
 .theme-btn[data-t="dark"] .ic-moon { display: block; }
+@media (max-width: 639px) {
+  /* Keep every project control reachable without making the document wider
+     than the phone. Identity and utilities stay above app navigation. */
+  .dashboard-appbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+  .dashboard-project-switcher { min-width: 0; }
+  .dashboard-project-switcher select { width: 100%; min-width: 0; }
+  .dashboard-utilities { grid-column: 3; grid-row: 1; }
+  .dashboard-app-action {
+    display: flex;
+    justify-content: center;
+    min-height: 40px;
+  }
+  .dashboard-all-apps { grid-column: 1 / 3; grid-row: 2; }
+  .dashboard-new-app { grid-column: 3; grid-row: 2; }
+
+  /* Two compact summary tiles followed by one full-width total keeps large
+     event counts legible instead of squeezing them into a narrow column. */
+  .dashboard-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-stats > :nth-child(3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    border-left-width: 0;
+  }
+
+  /* Issue metadata and triage move below the title on phones. The title owns
+     the full content width and every action remains easy to tap. */
+  .row-wrap {
+    display: grid;
+    grid-template-columns: 4px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .issue-rail { grid-column: 1; grid-row: 1 / 3; height: 100%; min-height: 44px; }
+  .row-link { grid-column: 2 / -1; grid-row: 1; }
+  .event-count {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    justify-content: flex-start;
+    width: auto;
+  }
+  .row-actions { grid-column: 3; grid-row: 2; width: auto; }
+  .act { width: 44px; height: 44px; }
+  .issue-columns .events-heading { display: none; }
+  .issue-columns .page-count { width: auto; }
+}
 </style>
 
 {{-- The pre-paint theme guard now lives in config/ui.ts `app.head.script`, so
@@ -847,46 +899,50 @@ summary::-webkit-details-marker { display: none; }
 
     @if (projectId)
     <header class="flex flex-wrap gap-5 items-end justify-between mb-10">
-      <div class="flex gap-3 items-center">
+      <div class="flex gap-3 items-center dashboard-appbar">
         <StxLink to="/projects" class="wordmark-link"><h1 class="leading-none text-2xl md:text-[28px] wordmark">bughq</h1></StxLink>
-        @if (projects.length > 1)
-          {{-- data-target is a precomputed string, not a call. Written as an
-               inline pageUrl(...) invocation the braces of its object argument
-               closed the interpolation early, so the attribute rendered as the
-               literal source text and switching apps navigated to that and
-               404'd. Every other href on this page is precomputed the same way
-               (pager.prevHref, f.href); this attribute was the exception. --}}
-          <select @change="switchProject" aria-label="Switch project" data-target="{{ switchTarget }}"
-                  class="px-3 py-1.5 text-muted text-sm mono panel">
-            @foreach (projects as p)
-              <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}{{ p.is_active === false ? ' (archived)' : '' }}</option>
-            @endforeach
-          </select>
-        @else
-          {{-- Optional-chained because the checker cannot see that this branch
-               only renders when a project resolved. It is inside @if (projectId),
-               and projectId is derived from activeProject, so the guard is real
-               — but it is two hops away and template expressions are checked in
-               isolation. Cheaper than asserting non-null and lying about it. --}}
-          <span class="text-muted text-sm mono">{{ activeProject?.name }}{{ activeProject?.is_active === false ? ' (archived)' : '' }}</span>
-        @endif
-        <StxLink to="/projects" class="px-3 py-1.5 font-medium text-muted text-sm border border-line pill">All apps</StxLink>
-        <StxLink to="/projects/new" class="px-3 py-1.5 font-medium text-muted text-sm border border-line pill">+ New app</StxLink>
-        <button class="icon-btn theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
-          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </button>
-        {{-- Owners only. Everything on /settings is an owner action — rotate
-             the key, invite, delete, wire up alerts — and the page scopes its
-             project list to owner_id, so a member who followed this gear owned
-             nothing, tripped the onboarding branch and landed on "Create your
-             first app" with no way back to the project they were just looking
-             at. Offering a control that cannot work is worse than omitting it. --}}
-        @if (activeProject.is_owner !== false)
-        <StxLink to="/settings" class="icon-btn" title="Settings" aria-label="Settings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </StxLink>
-        @endif
+        <div class="dashboard-project-switcher">
+          @if (projects.length > 1)
+            {{-- data-target is a precomputed string, not a call. Written as an
+                 inline pageUrl(...) invocation the braces of its object argument
+                 closed the interpolation early, so the attribute rendered as the
+                 literal source text and switching apps navigated to that and
+                 404'd. Every other href on this page is precomputed the same way
+                 (pager.prevHref, f.href); this attribute was the exception. --}}
+            <select @change="switchProject" aria-label="Switch project" data-target="{{ switchTarget }}"
+                    class="px-3 py-1.5 text-muted text-sm mono panel">
+              @foreach (projects as p)
+                <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}{{ p.is_active === false ? ' (archived)' : '' }}</option>
+              @endforeach
+            </select>
+          @else
+            {{-- Optional-chained because the checker cannot see that this branch
+                 only renders when a project resolved. It is inside @if (projectId),
+                 and projectId is derived from activeProject, so the guard is real
+                 — but it is two hops away and template expressions are checked in
+                 isolation. Cheaper than asserting non-null and lying about it. --}}
+            <span class="text-muted text-sm mono">{{ activeProject?.name }}{{ activeProject?.is_active === false ? ' (archived)' : '' }}</span>
+          @endif
+        </div>
+        <StxLink to="/projects" class="px-3 py-1.5 font-medium text-muted text-sm border border-line pill dashboard-app-action dashboard-all-apps">All apps</StxLink>
+        <StxLink to="/projects/new" class="px-3 py-1.5 font-medium text-muted text-sm border border-line pill dashboard-app-action dashboard-new-app">+ New app</StxLink>
+        <div class="flex gap-3 items-center dashboard-utilities">
+          <button class="icon-btn theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
+            <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          {{-- Owners only. Everything on /settings is an owner action — rotate
+               the key, invite, delete, wire up alerts — and the page scopes its
+               project list to owner_id, so a member who followed this gear owned
+               nothing, tripped the onboarding branch and landed on "Create your
+               first app" with no way back to the project they were just looking
+               at. Offering a control that cannot work is worse than omitting it. --}}
+          @if (activeProject.is_owner !== false)
+          <StxLink to="/settings" class="icon-btn" title="Settings" aria-label="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </StxLink>
+          @endif
+        </div>
       </div>
       {{-- StxLink, not a plain anchor. interceptAllLinks is false, so an
            unmarked anchor is a full document load — these tabs and the pager
@@ -916,7 +972,7 @@ summary::-webkit-details-marker { display: none; }
     @endif
 
     <!-- Stats: hairline-separated, mono numerics, no heavy card chrome -->
-    <div class="grid grid-cols-3 mb-8 border-line divide-x panel reveal">
+    <div class="grid grid-cols-3 mb-8 border-line divide-x panel reveal dashboard-stats">
       @foreach (stats as s)
         <div class="px-5 py-5 border-line">
           <div class="mb-2 font-medium text-subtle text-xs tracking-wider uppercase">{{ s.label }}</div>
@@ -939,17 +995,17 @@ summary::-webkit-details-marker { display: none; }
     </div>
 
     <section class="overflow-hidden panel reveal">
-      <div class="flex gap-4 items-center px-5 py-3.5 border-b border-line">
+      <div class="flex gap-4 items-center px-5 py-3.5 border-b border-line issue-columns">
         <span class="shrink-0 w-1"></span>
         <span class="flex-1 min-w-0 font-semibold text-subtle text-xs tracking-wider uppercase">Issues</span>
         {{-- Aligned to the numeric columns below, with the same widths, so the
              numbers are labelled rather than left to be guessed at. The count
              was previously an unlabelled figure floating between the culprit
              and the timestamp. --}}
-        <span class="col-head w-16 text-right">Events</span>
+        <span class="col-head w-16 text-right events-heading">Events</span>
         <span class="hidden sm:block col-head w-14 text-right">Users</span>
         <span class="hidden sm:block col-head w-20 text-right">Last seen</span>
-        <span class="w-24 text-right text-subtle text-xs mono">{{ pager.total === 0 ? 'none' : `${pager.from}-${pager.to} of ${pager.total.toLocaleString()}` }}</span>
+        <span class="w-24 text-right text-subtle text-xs mono page-count">{{ pager.total === 0 ? 'none' : `${pager.from}-${pager.to} of ${pager.total.toLocaleString()}` }}</span>
       </div>
 
       @forelse (issues as issue)
@@ -959,7 +1015,7 @@ summary::-webkit-details-marker { display: none; }
              page. The link now covers only the text block; the rail, counts and
              controls are siblings, so a button click stays a button click. --}}
         <div class="flex gap-4 items-center row-wrap px-5 py-4 border-b border-line" @if="!rowHidden('{{ issue.id }}')">
-          <span class="shrink-0 h-11 w-1 rounded-full" style="background: {{ levelColor(issue.level) }}"></span>
+          <span class="shrink-0 h-11 w-1 rounded-full issue-rail" style="background: {{ levelColor(issue.level) }}"></span>
           <StxLink to="/issue/{{ issue.id }}" class="block flex-1 row-link min-w-0">
             <div class="flex gap-2 items-center min-w-0">
               {{-- The dot carries the same fact as the weight, for anyone who
@@ -1009,7 +1065,7 @@ summary::-webkit-details-marker { display: none; }
                auto-width block with users stacked under the count, so the
                numbers sat at a different x on every row and any row with a user
                count was taller than its neighbours. --}}
-          <div class="flex gap-1.5 items-center justify-end shrink-0 w-16" title="{{ Number(issue.count).toLocaleString() }} {{ issue.count === 1 ? 'occurrence' : 'occurrences' }}">
+          <div class="flex gap-1.5 items-center justify-end shrink-0 w-16 event-count" title="{{ Number(issue.count).toLocaleString() }} {{ issue.count === 1 ? 'occurrence' : 'occurrences' }}">
             <svg class="col-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             <span class="font-semibold tabular-nums mono">{{ Number(issue.count).toLocaleString() }}</span>
           </div>
