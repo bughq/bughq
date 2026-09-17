@@ -241,6 +241,9 @@ declare interface DashboardQuery {
   status?: string
   range?: string
   page?: number
+  /** Custom last-seen window, 'YYYY-MM-DD'. Present together or not at all; they win over `range`. */
+  from?: string
+  to?: string
 }
 
 /** The status tabs. Anything else in `?status=` falls back to 'unresolved'. */

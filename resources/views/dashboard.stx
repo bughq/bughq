@@ -50,6 +50,20 @@ const rangeFilter: string = RANGES.some(r => r.key === rangeParam) && rangeParam
 const ALL_RANGE = RANGES[RANGES.length - 1]
 const activeRange: DashboardRange = RANGES.find(r => r.key === rangeFilter) ?? ALL_RANGE
 
+// Custom last-seen window: ?from=YYYY-MM-DD&to=YYYY-MM-DD, both required and
+// valid, wins over the preset. These reach SQL as PARAMETERS, never
+// interpolated (unlike the whitelisted interval string).
+const qFrom = query.get('from')
+const qTo = query.get('to')
+const isDay = (v: string | null): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)
+const isCustom = isDay(qFrom) && isDay(qTo)
+const customFrom = isCustom ? String(qFrom).slice(0, 10) : ''
+const customTo = isCustom ? String(qTo).slice(0, 10) : ''
+const fmtDayLabel = (d: string): string => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+const rangeLabel = isCustom
+  ? (customFrom.slice(0, 4) === customTo.slice(0, 4) ? `${fmtDayLabel(customFrom)} \u2013 ${fmtDayLabel(customTo)}, ${customTo.slice(0, 4)}` : `${fmtDayLabel(customFrom)}, ${customFrom.slice(0, 4)} \u2013 ${fmtDayLabel(customTo)}, ${customTo.slice(0, 4)}`)
+  : (activeRange.interval ? activeRange.label : 'All time')
+
 const PAGE_SIZE = 25
 const pageParam = Number.parseInt(query.get('page') || '1', 10)
 const requestedPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
@@ -127,12 +141,18 @@ const projectId = activeProject?.id || null
 // appears here - it rides the bughq_project cookie. Changing status or range
 // always resets to page 1.
 function pageUrl(overrides: DashboardQuery): string {
-  const state = { status: statusFilter, range: rangeFilter, page: requestedPage, ...overrides }
+  const state = { status: statusFilter, range: rangeFilter, page: requestedPage, from: customFrom, to: customTo, ...overrides }
   const p = new URLSearchParams()
   if (state.status && state.status !== 'unresolved')
     p.set('status', state.status)
-  if (state.range && state.range !== 'all')
+  // A custom window and a preset range are mutually exclusive; from/to win.
+  if (state.from && state.to) {
+    p.set('from', state.from)
+    p.set('to', state.to)
+  }
+  else if (state.range && state.range !== 'all') {
     p.set('range', state.range)
+  }
   if (state.page && state.page > 1)
     p.set('page', String(state.page))
   const s = p.toString()
@@ -193,7 +213,7 @@ const statusTabs = [
   { key: 'ignored', label: 'Ignored' },
   { key: 'all', label: 'All' },
 ].map(f => ({ ...f, href: pageUrl({ status: f.key, page: 1 }) }))
-const rangeTabs = RANGES.map(r => ({ ...r, href: pageUrl({ range: r.key, page: 1 }) }))
+const rangeTabs = RANGES.map(r => ({ ...r, href: pageUrl({ range: r.key, page: 1, from: '', to: '' }) }))
 
 let issues: DashboardIssue[] = []
 let counts = { total: 0, unresolved: 0, events: 0 }
@@ -310,8 +330,15 @@ async function loadData() {
   }
   // last_seen is stored as an ISO-8601 varchar (the ingest writes
   // toISOString()), so cast before comparing against a real timestamp.
-  if (activeRange.interval)
+  if (isCustom) {
+    params.push(`${customFrom}T00:00:00.000Z`)
+    conds.push(`i.last_seen::timestamptz >= $${params.length}`)
+    params.push(`${customTo}T23:59:59.999Z`)
+    conds.push(`i.last_seen::timestamptz <= $${params.length}`)
+  }
+  else if (activeRange.interval) {
     conds.push(`i.last_seen::timestamptz >= NOW() - INTERVAL '${activeRange.interval}'`)
+  }
   const where = conds.join(' AND ')
 
   // Count first so an out-of-range ?page clamps to the last real page instead
@@ -358,12 +385,23 @@ async function loadData() {
 
   // Stats respect the date range (so "Events captured" means captured in the
   // selected window) but not the status tabs, which only slice the list.
+  // `FROM issues` is unaliased here, so the column is bare `last_seen` (the
+  // list query above is `FROM issues i`, hence its `i.` prefix). Custom bounds
+  // are parameters; the interval string stays whitelisted-and-interpolated.
   const cconds = ['project_id = $1']
-  if (activeRange.interval)
-    cconds.push(`i.last_seen::timestamptz >= NOW() - INTERVAL '${activeRange.interval}'`) // varchar ISO column, see above
+  const cparams: unknown[] = [projectId]
+  if (isCustom) {
+    cparams.push(`${customFrom}T00:00:00.000Z`)
+    cconds.push(`last_seen::timestamptz >= $${cparams.length}`)
+    cparams.push(`${customTo}T23:59:59.999Z`)
+    cconds.push(`last_seen::timestamptz <= $${cparams.length}`)
+  }
+  else if (activeRange.interval) {
+    cconds.push(`last_seen::timestamptz >= NOW() - INTERVAL '${activeRange.interval}'`)
+  }
   const c = (await db.unsafe(
     `SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE status = 'unresolved') AS unresolved, COALESCE(SUM(count),0) AS events FROM issues WHERE ${cconds.join(' AND ')}`,
-    [projectId],
+    cparams,
   ))?.[0]
   counts = { total: Number(c?.total ?? 0), unresolved: Number(c?.unresolved ?? 0), events: Number(c?.events ?? 0) }
   live = true
@@ -831,6 +869,133 @@ summary::-webkit-details-marker { display: none; }
   .issue-columns .events-heading { display: none; }
   .issue-columns .page-count { width: auto; }
 }
+
+
+  /* ---- Reporting-period picker (Fathom-style presets + calendar) ---- */
+.range-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0 0.72rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-2);
+  font: 600 0.8125rem/1 var(--sans, ui-sans-serif);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+.range-tool:hover { color: var(--text); border-color: var(--accent); }
+.range-tool:active { transform: scale(0.98); }
+.range-tool:focus-visible,
+.range-link:focus-visible,
+.chrome-btn:focus-visible,
+.icon-btn:focus-visible,
+select.panel:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.range-tool.is-active { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.range-tool i { width: 1rem; height: 1rem; }
+.date-menu { position: relative; }
+.date-menu > summary { list-style: none; }
+.date-menu > summary::-webkit-details-marker { display: none; }
+.date-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 40;
+  width: min(44rem, calc(100vw - 2.5rem));
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--text) 10%, transparent);
+}
+/* Period picker: presets down the left, two months on the right. The range is
+   drawn flat with rounded ends, the way Fathom's is, on the --bar wash the KPI
+   bars already use so it reads as the same accent at the same strength. */
+.drp-backdrop { position: fixed; inset: 0; z-index: 39; background: transparent; cursor: default; }
+.drp { display: grid; grid-template-columns: 10.5rem minmax(0, 1fr); gap: 0.75rem; }
+.drp-presets { display: flex; flex-direction: column; gap: 0.15rem; padding-right: 0.75rem; border-right: 1px solid var(--border); }
+.drp-preset {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  font: 500 0.8125rem/1.2 var(--sans, ui-sans-serif);
+  text-align: left;
+  cursor: pointer;
+}
+.drp-preset:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
+.drp-preset.is-active { color: var(--accent-ink); background: var(--accent); }
+.drp-cals { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.drp-head { display: grid; grid-template-columns: 2rem minmax(0, 1fr) minmax(0, 1fr) 2rem; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem; }
+.drp-nav {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.drp-nav:hover { color: var(--text); border-color: var(--border); }
+.drp-nav svg { width: 1rem; height: 1rem; }
+.drp-nav.is-hidden { visibility: hidden; }
+.drp-sel {
+  min-width: 0;
+  height: 2rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: 600 0.8125rem/1 var(--sans, ui-sans-serif);
+}
+.drp-dow, .drp-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.drp-dow span { padding: 0.25rem 0; color: var(--text-3); font: 600 0.7rem/1.2 var(--sans, ui-sans-serif); text-align: center; }
+.drp-day {
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font: 500 0.8125rem/1 var(--mono, ui-monospace);
+  cursor: pointer;
+}
+.drp-day:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.drp-day.is-out { color: var(--text-3); }
+.drp-day.is-today { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.drp-day.is-range { background: var(--accent-soft); }
+.drp-day.is-edge { background: var(--accent); color: var(--accent-ink); border-radius: 8px; }
+.drp-day.is-disabled { color: var(--text-3); opacity: 0.45; cursor: default; }
+.drp-day.is-disabled:hover { background: transparent; }
+.drp-day:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+@media (max-width: 640px) {
+  .date-menu { position: static; }
+  .date-popover { left: 0; right: auto; width: calc(100vw - 2rem); max-height: calc(100dvh - 6rem); overflow-y: auto; overscroll-behavior: contain; }
+  .drp { grid-template-columns: minmax(0, 1fr); }
+  .drp-presets { flex-direction: row; flex-wrap: wrap; gap: 0.35rem; padding: 0 0 0.6rem; border-right: 0; border-bottom: 1px solid var(--border); }
+  .drp-preset { width: auto; padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 999px; }
+  .drp-cals { grid-template-columns: minmax(0, 1fr); }
+  .drp-cal.is-right { display: none; }
+  .drp-cal.is-left .drp-nav.is-hidden { visibility: visible; }
+  .drp-day { height: 2.5rem; }
+}
 </style>
 
 {{-- The pre-paint theme guard now lives in config/ui.ts `app.head.script`, so
@@ -962,8 +1127,9 @@ summary::-webkit-details-marker { display: none; }
         @foreach (rangeTabs as r)
           <StxLink to="{{ r.href }}"
              class="px-3 py-1.5 font-medium text-xs border mono pill"
-             style="{{ r.key === rangeFilter ? 'color: var(--accent); border-color: var(--accent)' : 'color: var(--text-3); border-color: var(--border)' }}">{{ r.label }}</StxLink>
+             style="{{ !isCustom && r.key === rangeFilter ? 'color: var(--accent); border-color: var(--accent)' : 'color: var(--text-3); border-color: var(--border)' }}">{{ r.label }}</StxLink>
         @endforeach
+        <DateRangePicker :summary="rangeLabel" :active="isCustom" />
       </nav>
     </header>
 
