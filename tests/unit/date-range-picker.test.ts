@@ -7,7 +7,10 @@ const component = readFileSync(join(ROOT, 'resources/components/DateRangePicker.
 const dashboard = readFileSync(join(ROOT, 'resources/views/dashboard.stx'), 'utf8')
 
 const pureSlice = component.match(/\/\/ #region pure\n([\s\S]*?)\n\/\/ #endregion pure/)?.[1] ?? ''
-const pure = new Function(`${pureSlice}\nreturn { pickGrid, pickShift, pickPreset, pickQuery }`)() as Record<string, (...a: any[]) => any>
+// The shipped functions are typed (bughq runs stx typecheck); strip the types
+// with Bun's transpiler so this evaluates the exact runtime code.
+const pureJs = new Bun.Transpiler({ loader: 'ts' }).transformSync(pureSlice)
+const pure = new Function(`${pureJs}\nreturn { pickGrid, pickShift, pickPreset, pickQuery }`)() as Record<string, (...a: any[]) => any>
 
 describe('bughq dashboard date picker: math + presets', () => {
   test('grid, leap Feb, future flag', () => {
