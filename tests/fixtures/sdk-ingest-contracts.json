@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "clients": [
+    {
+      "name": "@bughq/sdk",
+      "headerKey": null,
+      "body": {
+        "key": "pk_browser",
+        "project": "web",
+        "type": "TypeError",
+        "message": "checkout failed",
+        "stack": "TypeError: checkout failed\n    at submit (checkout.ts:42:3)",
+        "level": "error",
+        "framework": "javascript",
+        "timestamp": "2026-09-12T00:00:00.000Z",
+        "sdk": { "name": "bughq.javascript", "version": "0.2.2" }
+      }
+    },
+    {
+      "name": "@bughq/vue",
+      "headerKey": null,
+      "body": {
+        "key": "pk_vue",
+        "type": "Error",
+        "message": "render failed",
+        "framework": "vue",
+        "sdk": { "name": "bughq.vue", "version": "0.2.2" }
+      }
+    },
+    {
+      "name": "@bughq/nuxt",
+      "headerKey": null,
+      "body": {
+        "key": "pk_nuxt",
+        "type": "Error",
+        "message": "route failed",
+        "framework": "nuxt",
+        "sdk": { "name": "bughq.nuxt", "version": "0.2.2" }
+      }
+    },
+    {
+      "name": "@bughq/stx",
+      "headerKey": null,
+      "body": {
+        "key": "pk_stx",
+        "type": "Error",
+        "message": "server action failed",
+        "framework": "stx",
+        "sdk": { "name": "bughq.stx.server", "version": "0.2.2" }
+      }
+    },
+    {
+      "name": "@bughq/stacks",
+      "headerKey": null,
+      "body": {
+        "key": "pk_stacks",
+        "type": "OperationFailed",
+        "message": "queue.process failed (timeout)",
+        "framework": "stacks",
+        "fingerprint": ["bughq.op", "queue.process", "timeout"],
+        "sdk": { "name": "bughq.stacks", "version": "0.2.2" }
+      }
+    },
+    {
+      "name": "bughq/php",
+      "headerKey": "pk_php",
+      "body": {
+        "project": "api",
+        "type": "RuntimeException",
+        "message": "payment failed",
+        "framework": "php",
+        "sdk": { "name": "bughq.php", "version": "0.2.0" },
+        "session": { "id": "session-php", "startedAt": "2026-09-12T00:00:00Z" }
+      }
+    },
+    {
+      "name": "bughq/laravel",
+      "headerKey": "pk_laravel",
+      "body": {
+        "project": "laravel-api",
+        "type": "RuntimeException",
+        "message": "job failed",
+        "framework": "laravel",
+        "contexts": { "job": { "name": "SendInvoice", "attempts": 3 } },
+        "sdk": { "name": "bughq.laravel", "version": "0.2.0" }
+      }
+    }
+  ]
+}
