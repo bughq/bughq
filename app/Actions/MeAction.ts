@@ -16,9 +16,19 @@ export default new Action({
   description: 'Return the current user and their Pro status',
   method: 'GET',
   async handle(request: RequestInstance) {
+    // /api/me has no `.middleware('auth')`, so resolve the session here: a
+    // bearer (external API-token callers) OR the HttpOnly `auth-token` cookie
+    // the dashboard/account client sends (credentials:'same-origin', no
+    // Authorization header). request.user() is the last resort.
     const authHeader = ((request as any).headers?.get?.('authorization') ?? '')
-    const bearer = (request as any).bearerToken?.() ?? authHeader.replace(/^Bearer\s+/i, '')
-    const user = bearer ? await Auth.getUserFromToken(bearer) : await request.user()
+    let token = (request as any).bearerToken?.() ?? authHeader.replace(/^Bearer\s+/i, '')
+    if (!token) {
+      const cookie = ((request as any).headers?.get?.('cookie') ?? '')
+      const m = cookie.match(/(?:^|;)\s*auth-token=([^;]+)/)
+      if (m)
+        token = decodeURIComponent(m[1])
+    }
+    const user = token ? await Auth.getUserFromToken(token) : await request.user()
     if (!user)
       return response.unauthorized('Authentication required')
 

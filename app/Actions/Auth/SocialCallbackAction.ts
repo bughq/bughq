@@ -6,6 +6,7 @@ import { config } from '@stacksjs/config'
 import { db } from '@stacksjs/database'
 import { response } from '@stacksjs/router'
 import { GitHubProvider, GoogleProvider } from '@stacksjs/socials'
+import { buildAuthCookie } from './authCookie'
 
 function makeDriver(provider: string): GitHubProvider | GoogleProvider | null {
   const svc = config.services as any
@@ -101,18 +102,16 @@ export default new Action({
     if (!result?.token)
       return fail('We could not sign you in.')
 
-    // Hand the token to the client, mirroring the email/password flow exactly:
-    // localStorage for bearer API calls + the bughq_token cookie so the very
-    // first server-rendered page is already authenticated. Token is embedded in
-    // the response body, never in the URL. Then land in the app.
-    const token = JSON.stringify(result.token)
-    const user = JSON.stringify({ id: userId, email, name: social.name })
-    return response.html(
-      `<!doctype html><meta charset="utf-8"><title>Signing you in</title>`
-      + `<script>try{localStorage.setItem('token', ${token});localStorage.setItem('user', ${user});`
-      + `document.cookie='bughq_token='+${token}+'; path=/; max-age=86400; samesite=lax'+(location.protocol==='https:'?'; secure':'')}catch(e){}`
-      + `location.replace('/dashboard')</script>Signing you in...`,
-      200,
-    )
+    // Establish the session purely via the HttpOnly `auth-token` cookie, the
+    // same contract LoginAction/RegisterAction use (buildAuthCookie). No
+    // localStorage, no client-readable cookie, no token in the URL — a plain
+    // 302 into the app, already authenticated for SSR.
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': '/dashboard',
+        'Set-Cookie': buildAuthCookie(result.token, result.expiresIn),
+      },
+    })
   },
 })

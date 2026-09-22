@@ -54,7 +54,7 @@ if (!issueId && routeParams.id)
 
 // Authenticate + owner-scope: an issue is only visible to the owner of the
 // project it belongs to, so no tenant can read another's issue by id.
-const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
+const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('auth-token')) || ''
 /**
  * The two fields this page reads off the signed-in user, and nothing more.
  * Annotated rather than inferred because `user` is read inside loadData(): a
@@ -948,25 +948,15 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 }
 </style>
 
-<!-- Client guard: require the bearer token and mirror it into the cookie the
-     server authenticates from (matches the dashboard), and record which project
-     is being viewed. Deliberately not client directives: the guard has to run
-     before paint to avoid flashing a logged-out page, and both only set cookies
-     or navigate. The theme toggle and copy button that used to live here are
-     now @click handlers in the client script block at the top of this file. -->
+<!-- Client hook: record which project is being viewed. Deliberately not a
+     client directive: it has to run before paint and only sets a cookie. The
+     auth gate lives server-side — this SSR page renders issue content only when
+     the `auth-token` cookie resolved the user, and an HttpOnly cookie is not
+     readable from JS, so there is no client presence check to make. The theme
+     toggle and copy button that used to live here are now @click handlers in
+     the client script block at the top of this file. -->
 <script>
 (function () {
-  // The bughq_token cookie is the single source of truth: it is what every
-  // <script server> block authenticates from, and the store writes it at sign-in.
-  // This guard only has to notice its absence and leave. It used to read a
-  // localStorage copy, mirror it into the cookie and reload — a second source for
-  // the same fact, with nothing keeping the two in step.
-  //
-  // Raw document.cookie because this is a bare <script> that runs before the
-  // signals runtime exists, so useStore is not defined yet. Every other cookie
-  // access in this app goes through the session store.
-  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) { window.location.replace('/login'); return }
-
   // Viewing an issue makes its project the active one, so "Back to issues"
   // (a clean /dashboard) lands on the right project - e.g. arriving from an
   // alert email for a project you were not last browsing.

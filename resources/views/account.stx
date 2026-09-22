@@ -53,37 +53,36 @@ function fmtDate(v: string | null | undefined): string {
     : d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function logout() {
-  const token = useStore('session').token()
+async function logout() {
+  // POST /logout so the server revokes this token and clears the HttpOnly
+  // `auth-token` cookie, then leave. Errors are swallowed — the redirect is
+  // what the user sees either way.
   try {
-    fetch('/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+    await fetch('/logout', { method: 'POST', credentials: 'same-origin' })
   }
-  catch { /* best effort: the local session is cleared either way */ }
-  localStorage.removeItem('user')
-  // Setting a cookie signal to '' emits max-age=0, which is the delete.
-  useStore('session').signOut()
+  catch { /* best effort: leave anyway */ }
   window.location.assign('/login')
 }
 
-// Runs on hydration, including after a fragment swap onto this page.
-const token = useStore('session').token()
-if (token) {
-  fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } })
-    .then((r) => {
-      if (r.status === 401) {
-        window.location.replace('/login')
-        return null
-      }
-      return r.json()
-    })
-    .then((d: MeResponse | null) => {
-      if (!d || !d.user)
-        return
-      user.set(d.user)
-      pro.set(d.pro === true)
-    })
-    .catch(() => { /* leave the skeleton in place */ })
-}
+// Runs on hydration, including after a fragment swap onto this page. The session
+// rides the HttpOnly `auth-token` cookie sent automatically with the request; a
+// 401 (no/dead cookie) bounces to /login — the guard the removed pre-paint
+// signedIn() check used to do, now that an HttpOnly cookie is unreadable in JS.
+fetch('/api/me', { credentials: 'same-origin' })
+  .then((r) => {
+    if (r.status === 401) {
+      window.location.replace('/login')
+      return null
+    }
+    return r.json()
+  })
+  .then((d: MeResponse | null) => {
+    if (!d || !d.user)
+      return
+    user.set(d.user)
+    pro.set(d.pro === true)
+  })
+  .catch(() => { /* leave the skeleton in place */ })
 </script>
 
 
@@ -180,12 +179,3 @@ if (token) {
   </div>
 </div>
 
-<!-- Guard only: bounce to /login before paint if there is no token. Everything
-     the account view renders is driven by the signals in the client script
-     block at the top of this file. -->
-<script>
-(function () {
-  if (!useStore('session').signedIn())
-    window.location.replace('/login')
-})()
-</script>

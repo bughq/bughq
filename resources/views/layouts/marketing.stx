@@ -22,7 +22,7 @@
 // the wording of two links.
 let signedIn = false
 try {
-  signedIn = !!(typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token'))
+  signedIn = !!(typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('auth-token'))
 }
 catch {
   signedIn = false

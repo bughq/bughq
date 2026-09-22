@@ -124,26 +124,20 @@ function json(data: unknown, status = 200, extraHeaders: Record<string, string> 
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS, ...extraHeaders } })
 }
 
-// Resolve the current user from a bearer token (API calls) or the `token`
-// cookie (the resolve form posts with cookies, no bearer). Used to owner-scope
-// the issue endpoints so no tenant can read/mutate another tenant's issues.
+// Resolve the current user from a bearer token (external API-token callers) or
+// the HttpOnly `auth-token` session cookie (the dashboard's triage fetches now
+// send credentials:'same-origin' with no bearer, and the plain HTML resolve
+// form POST carries only the cookie). Used to owner-scope the issue endpoints
+// so no tenant can read/mutate another tenant's issues.
 async function userFromRequest(request: any): Promise<any | null> {
   const authHeader = request.headers?.get?.('authorization') ?? ''
   let token = request.bearerToken?.() ?? authHeader.replace(/^Bearer\s+/i, '')
   if (!token) {
-    // `bughq_token`, which is the only session cookie this app has ever set
-    // (resources/stores/session.ts). This read `token=` and could never match:
-    // the pattern anchors on start-of-string or `;`, and in `bughq_token=…` the
-    // character before `token=` is `_`. Nothing anywhere writes a bare `token`
-    // cookie, so the cookie branch was dead.
-    //
-    // It only showed on /issue/{id}/status, the one caller with no other way in
-    // — a plain HTML form POST carries no Authorization header — so Resolve,
-    // Ignore and Reopen answered 401 on every click and dropped the user on a
-    // raw JSON error page. The other callers are fetches that send a bearer
-    // token, which is why the dead branch stayed invisible.
+    // `auth-token` is the single HttpOnly session cookie every auth entry point
+    // sets (app/Actions/Auth/authCookie.ts). Browser navigations and the plain
+    // HTML resolve form (/issue/{id}/status) carry only this cookie, no bearer.
     const cookie = request.headers?.get?.('cookie') ?? ''
-    const m = cookie.match(/(?:^|;)\s*bughq_token=([^;]+)/)
+    const m = cookie.match(/(?:^|;)\s*auth-token=([^;]+)/)
     if (m)
       token = decodeURIComponent(m[1])
   }

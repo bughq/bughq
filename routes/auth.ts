@@ -4,16 +4,26 @@ import { response, route } from '@stacksjs/router'
 /**
  * Auth endpoints, re-registered at the root with `.skipCsrf()`.
  *
- * These use the framework's default Auth actions (resolved by string), but the
- * defaults are CSRF-gated — which blocks the same-origin `fetch()` from the
- * login/register pages. Token auth is CSRF-immune (bearer tokens aren't sent
- * automatically by the browser the way cookies are), so skipping CSRF here is
- * safe; the rate limits are kept. User route files load before the framework
- * defaults, so these win on the duplicate method+path.
+ * These resolve to the app's own actions in app/Actions/Auth/* (LoginAction,
+ * RegisterAction, LogoutAction, VerifyTwoFactorLoginAction) — user route files
+ * load before the framework defaults, so these win on the duplicate
+ * method+path. Each minted session lives in a single HttpOnly `auth-token`
+ * cookie (buildAuthCookie); the client holds no bearer.
+ *
+ * CSRF: the auth cookie is SameSite=Lax and the client sends no double-submit
+ * token, so CSRF is skipped here (SameSite is the cross-site guard) and the
+ * same-origin `fetch()` from the login/register pages is not blocked. Rate
+ * limits are kept.
  */
 route.post('/login', 'Actions/Auth/LoginAction').skipCsrf().rateLimit(5, 'minute')
 route.post('/register', 'Actions/Auth/RegisterAction').skipCsrf().rateLimit(3, 'minute')
-route.post('/logout', 'Actions/Auth/LogoutAction').skipCsrf()
+// Second step for a 2FA-enabled account: exchange the LoginAction challenge +
+// TOTP code for a real session. Dormant until an enrollment UI exists, but
+// wired so an enabled account can never lock out.
+route.post('/verify-two-factor-login', 'Actions/Auth/VerifyTwoFactorLoginAction').skipCsrf().rateLimit(10, 'minute')
+// .middleware('auth') so the cookie is validated and Auth.logout() revokes the
+// exact token behind this session; keep skipCsrf (no CSRF token in play).
+route.post('/logout', 'Actions/Auth/LogoutAction').middleware('auth').skipCsrf()
 route.get('/api/me', 'Actions/MeAction').skipCsrf()
 
 // Password reset. The send side uses the framework's passwordResets helper

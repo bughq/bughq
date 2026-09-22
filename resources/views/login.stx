@@ -31,16 +31,29 @@ useHead({ title: 'Sign in - bughq' })
 </script>
 
 <script client>
-// Token auth via stx client directives. Uncontrolled inputs read from the submit
-// event; error/loading are signals.
+// Cookie auth via stx client directives. On success the server sets an HttpOnly
+// `auth-token` cookie (Set-Cookie) — this page stores nothing; it just POSTs
+// same-origin and navigates. Uncontrolled inputs read from the submit event;
+// error/loading/step are signals.
 const error = state('')
 const loading = state(false)
+// Two-step flow: 'credentials' -> (on a 2FA-enabled account) 'twofa'.
+const step = state('credentials')
+// The challenge minted by LoginAction when the account has 2FA on; exchanged
+// with the TOTP code at /verify-two-factor-login.
+const challengeToken = state('')
+// The "remember me" choice captured at step 1, re-sent with the 2FA code so a
+// 2FA account is issued the same session tier (7d vs 30d), not silently
+// downgraded to the baseline week.
+const rememberChoice = state(false)
 
-/** What POST /login answers with, on either outcome. */
+/** What POST /login and /verify-two-factor-login answer with. */
 interface LoginResponse {
   message?: string
   token?: string
   access_token?: string
+  requires_two_factor?: boolean
+  challenge_token?: string
   user?: unknown
 }
 
@@ -53,6 +66,12 @@ function fieldValue(form: HTMLFormElement, name: string): string {
   return el instanceof HTMLInputElement ? el.value : ''
 }
 
+/** A checkbox reads by `.checked`, not `.value` (which is the constant 'on'). */
+function fieldChecked(form: HTMLFormElement, name: string): boolean {
+  const el = form.elements.namedItem(name)
+  return el instanceof HTMLInputElement ? el.checked : false
+}
+
 async function handleSubmit(e: SubmitEvent): Promise<void> {
   e.preventDefault()
   if (loading())
@@ -62,23 +81,64 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
     return
   loading.set(true)
   error.set('')
+  const remember = fieldChecked(form, 'remember')
+  rememberChoice.set(remember)
   try {
     const res = await fetch('/login', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: fieldValue(form, 'email'), password: fieldValue(form, 'password') }),
+      body: JSON.stringify({ email: fieldValue(form, 'email'), password: fieldValue(form, 'password'), remember }),
     })
     const data: LoginResponse = await res.json().catch(() => ({}))
+    // A 2FA-enabled account: no session yet, just a challenge. Switch to the
+    // TOTP step and wait for the code.
+    if (data.requires_two_factor && data.challenge_token) {
+      challengeToken.set(data.challenge_token)
+      step.set('twofa')
+      return
+    }
     if (!res.ok) {
       error.set(data.message || 'Invalid email or password.')
       return
     }
-    const token = data.token || data.access_token || ''
-    // The cookie is what server-rendered pages authenticate from. The store owns
-    // its serialisation — path, max-age, samesite and the https-only `secure`.
-    useStore('session').token.set(token)
-    if (data.user)
-      localStorage.setItem('user', JSON.stringify(data.user))
+    // Session is established by the HttpOnly cookie the server set; nothing to
+    // store here.
+    navigate('/dashboard')
+  }
+  catch {
+    error.set('Something went wrong. Please try again.')
+  }
+  finally {
+    loading.set(false)
+  }
+}
+
+async function handleTwoFactor(e: SubmitEvent): Promise<void> {
+  e.preventDefault()
+  if (loading())
+    return
+  const form = e.target
+  if (!(form instanceof HTMLFormElement))
+    return
+  loading.set(true)
+  error.set('')
+  try {
+    const res = await fetch('/verify-two-factor-login', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challenge_token: challengeToken(), code: fieldValue(form, 'code'), remember: rememberChoice() }),
+    })
+    const data: LoginResponse = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      // Challenge tokens are single-use; a failed code sends the user back to
+      // step 1 to start over rather than retrying a spent challenge.
+      error.set(data.message || 'Invalid code — please sign in again.')
+      step.set('credentials')
+      challengeToken.set('')
+      return
+    }
     navigate('/dashboard')
   }
   catch {
@@ -105,11 +165,12 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       <p class="mt-2 text-sm text-subtle">Sign in to your account</p>
     </div>
 
-    <form @submit="handleSubmit" class="space-y-4">
-      @if (error())
-        <div class="px-3 py-2 text-sm rounded-lg err">{{ error() }}</div>
-      @endif
+    @if (error())
+      <div class="mb-4 px-3 py-2 text-sm rounded-lg err">{{ error() }}</div>
+    @endif
 
+    @if (step() === 'credentials')
+    <form @submit="handleSubmit" class="space-y-4">
       <div>
         <label for="login-email" class="block mb-1.5 font-medium text-muted text-xs">Email</label>
         <input name="email" id="login-email" type="email" required autocomplete="email" placeholder="you@example.com" class="px-3.5 py-2.5 w-full text-sm field">
@@ -122,16 +183,35 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
         <input name="password" id="login-password" type="password" required autocomplete="current-password" placeholder="••••••••" class="px-3.5 py-2.5 w-full text-sm field">
       </div>
 
+      <label for="login-remember" class="flex gap-2 items-center text-sm cursor-pointer select-none text-subtle">
+        <input name="remember" id="login-remember" type="checkbox" class="w-4 h-4 accent-[var(--accent)] cursor-pointer">
+        <span>Keep me signed in for 30 days</span>
+      </label>
+
       <button type="submit" :disabled="loading()" class="py-2.5 w-full font-semibold text-sm btn-accent">
         {{ loading() ? 'Signing in…' : 'Sign in' }}
       </button>
     </form>
+    @endif
+
+    @if (step() === 'twofa')
+    <form @submit="handleTwoFactor" class="space-y-4">
+      <p class="text-sm text-subtle">Enter the 6-digit code from your authenticator app.</p>
+      <div>
+        <label for="login-code" class="block mb-1.5 font-medium text-muted text-xs">Authentication code</label>
+        <input name="code" id="login-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required placeholder="123456" class="px-3.5 py-2.5 w-full text-sm field">
+      </div>
+      <button type="submit" :disabled="loading()" class="py-2.5 w-full font-semibold text-sm btn-accent">
+        {{ loading() ? 'Verifying…' : 'Verify & sign in' }}
+      </button>
+    </form>
+    @endif
 
     @if (oauthError)
     <div class="mt-4 px-3 py-2 text-sm rounded-lg err">{{ oauthError }}</div>
     @endif
 
-    @if (anyOauth)
+    @if (anyOauth && step() === 'credentials')
     <div class="my-5 divider">or</div>
 
     <div class="space-y-2.5">

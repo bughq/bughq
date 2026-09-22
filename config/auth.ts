@@ -47,37 +47,30 @@ export default {
   password: env.AUTH_PASSWORD_FIELD || 'password',
 
   /**
-   * Access-token expiry in milliseconds (default: 1 hour).
+   * Token expiry in milliseconds — the 7-day BASELINE session (default).
    *
-   * Access tokens are deliberately short-lived: a leaked bearer (logs,
-   * proxy, browser storage) is then usable for an hour, not a month. The
-   * paired refresh token (`refreshTokenExpiry`) carries the long-lived
-   * session and is rotated on use, so UX is unaffected.
+   * This is the entry-point default used where no per-login tier is chosen
+   * (registration, social sign-in). Interactive logins set the real session
+   * length per request from the "Keep me signed in" checkbox via
+   * `sessionExpiryMinutes()` (app/Actions/Auth/authCookie.ts) and
+   * `Auth.loginUsingId(id, { expiresInMinutes })`: unchecked -> 7 days,
+   * checked -> 30 days. That single number stamps BOTH the
+   * `oauth_access_tokens.expires_at` row and the HttpOnly `auth-token`
+   * cookie's Max-Age (via `buildAuthCookie(token, result.expiresIn)`), so the
+   * whole session honours the tier — not just the cookie. Nothing slides or
+   * extends it afterwards, so this is the real cap. The user keeps a
+   * never-log-out feel by checking "Keep me signed in", not by a long
+   * baseline. AUTH_TOKEN_EXPIRY overrides the baseline per environment.
    */
-  // 24 hours, absolute. Not a sliding window: the clock starts when the token is
-  // issued and is never extended by activity, so a session ends a day after
-  // sign-in whatever the user was doing. There is deliberately no idle expiry —
-  // being away from the keyboard does not end a session, reaching 24h does.
-  //
-  // The refresh token below carries the same 24h, so refreshing cannot outlive
-  // it either; a longer refresh window would make this number cosmetic.
-  // 30 days, matching loghq -- the one HQ app nobody gets logged out of.
-  //
-  // This was 24h (bughq) / 1h (analyticshq) on the reasoning below, and the
-  // reasoning is sound in the abstract: a leaked bearer is usable for the life
-  // of the token. In practice these are single-operator dashboards behind a
-  // login, the sign-out path revokes server-side, and being logged out mid-task
-  // was costing real time every day. If that trade stops being worth it, this
-  // is the one number to change -- and AUTH_TOKEN_EXPIRY overrides it per
-  // environment without a deploy.
-  tokenExpiry: env.AUTH_TOKEN_EXPIRY || 30 * 24 * 60 * 60 * 1000,
+  tokenExpiry: env.AUTH_TOKEN_EXPIRY || 7 * 24 * 60 * 60 * 1000,
 
   /**
-   * Refresh-token expiry in milliseconds. Held at 24h to match `tokenExpiry` —
-   * the refresh token is what a session's real length is measured by, so
-   * leaving it at 30 days would let a 24h access token be renewed for a month.
+   * Refresh-token expiry in milliseconds. NOT WIRED UP — there is no refresh
+   * exchange in this app (no /auth/refresh route, no client refresh loop); the
+   * session length is the `expiresInMinutes` stamped at login, and it is never
+   * renewed. Kept only because the framework AuthConfig type carries the field.
    */
-  refreshTokenExpiry: env.AUTH_REFRESH_TOKEN_EXPIRY || 30 * 24 * 60 * 60 * 1000,
+  refreshTokenExpiry: env.AUTH_REFRESH_TOKEN_EXPIRY || 7 * 24 * 60 * 60 * 1000,
 
   /**
    * The token rotation time in hours (default: 24 hours).

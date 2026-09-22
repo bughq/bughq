@@ -334,19 +334,6 @@ declare interface FormNote {
   ok: boolean
 }
 
-/** Auth headers for a bearer-token fetch. */
-/**
- * A `type`, not an `interface`, and that is load-bearing. These headers are
- * handed straight to `fetch`, whose HeadersInit wants a Record<string, string>.
- * An interface has no implicit index signature so it does not satisfy that, and
- * every `fetch(url, { headers: authHeaders() })` call failed to match an
- * overload. A type alias does get the index signature.
- */
-declare type AuthHeaders = {
-  'Authorization': string
-  'Content-Type': string
-}
-
 
 /* ---------------------------------------------------------------------------
  * Ambient globals live in this same file, not a sibling, because `stx typecheck

@@ -38,16 +38,20 @@ useSeoMeta({
       function pick(v: string): void { interval.set(v) }
 
       async function upgrade() {
-        const token = useStore('session').token()
-        if (!token) { navigate('/login'); return }
         loading.set(true)
         err.set('')
         try {
+          // /payments/checkout runs .middleware('auth'), which authenticates
+          // from the HttpOnly `auth-token` cookie sent with credentials — no
+          // bearer to read (it is unreadable in JS) and no pre-check. A signed-
+          // out visitor gets a 401 here and is sent to /login.
           const res = await fetch('/payments/checkout', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ interval: interval() }),
           })
+          if (res.status === 401) { navigate('/login'); return }
           const data = await res.json().catch(() => ({}))
           if (res.ok && data.url) { location.assign(data.url); return }
           err.set(data.error || 'Checkout is not available yet.')

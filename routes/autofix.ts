@@ -10,9 +10,17 @@ function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
+// Accept BOTH a bearer (external API-token callers) and the HttpOnly
+// `auth-token` cookie (AutofixPanel now sends credentials:'same-origin' with
+// no Authorization header).
 async function currentUser(request: any): Promise<any | null> {
   const header = request.headers?.get?.('authorization') ?? ''
-  const token = request.bearerToken?.() ?? header.replace(/^Bearer\s+/i, '')
+  let token = request.bearerToken?.() ?? header.replace(/^Bearer\s+/i, '')
+  if (!token) {
+    const cookie = request.headers?.get?.('cookie') ?? ''
+    const m = cookie.match(/(?:^|;)\s*auth-token=([^;]+)/)
+    if (m) token = decodeURIComponent(m[1])
+  }
   if (!token) return null
   try { return await Auth.getUserFromToken(token) }
   catch { return null }

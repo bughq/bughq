@@ -12,7 +12,7 @@ useSeoMeta({
 
 const { db } = await import('@stacksjs/database')
 
-const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
+const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('auth-token')) || ''
 let user = null
 if (token) {
   try {
@@ -79,9 +79,14 @@ function toggleTheme(): void {
   themeStore.toggle()
 }
 
-function logout() {
-  localStorage.removeItem('user')
-  useStore('session').signOut()
+async function logout() {
+  // POST /logout so the server revokes this token and clears the HttpOnly
+  // `auth-token` cookie, then leave. Errors are swallowed — the redirect is
+  // what the user sees either way.
+  try {
+    await fetch('/logout', { method: 'POST', credentials: 'same-origin' })
+  }
+  catch { /* offline or transient — leave anyway */ }
   window.location.assign('/login')
 }
 </script>
@@ -180,23 +185,13 @@ function logout() {
      inside comments, so the words alone produce a SyntaxError mid-navigation. -->
 <script>
 (function () {
-  // The bughq_token cookie is the single source of truth: it is what every
-  // <script server> block authenticates from, and the store writes it at sign-in.
-  // This guard only has to notice its absence and leave. It used to read a
-  // localStorage copy, mirror it into the cookie and reload — a second source for
-  // the same fact, with nothing keeping the two in step.
-  //
-  // Raw document.cookie because this is a bare <script> that runs before the
-  // signals runtime exists, so useStore is not defined yet.
-  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) { window.location.replace('/login'); return }
-  // The cookie WAS sent but the server still rendered the unauthenticated
-  // state, so the token is dead — expired, revoked, or replaced by a newer
-  // login. The presence test above cannot see that, because a dead token is
-  // still a present cookie. Clear it and go to login; without this the page
-  // wedges on "Loading…" with no fetch pending to ever replace it. Same
-  // recovery as dashboard.stx, which had it first.
+  // The session lives in an HttpOnly `auth-token` cookie the client cannot
+  // read, so the SSR verdict is the only source of truth: the server renders
+  // the #auth-pending marker whenever the cookie resolved no user — no cookie
+  // at all, or a dead one (expired, revoked, or replaced by a newer login).
+  // Either way the page would wedge on "Loading…", so bounce to /login. The
+  // cookie is cleared server-side on logout; nothing for JS to clear here.
   if (document.getElementById('auth-pending')) {
-    document.cookie = 'bughq_token=; path=/; max-age=0'
     window.location.replace('/login')
     return
   }

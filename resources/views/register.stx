@@ -111,6 +111,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
   try {
     const res = await fetch('/register', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: fieldValue(form, 'name'),
@@ -130,13 +131,9 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       error.set(data.message || 'Could not create the account.')
       return
     }
-    const token = data.token || data.access_token || ''
-    // Mirror the token into a cookie so server-rendered pages (the dashboard)
-    // can authenticate this user on plain navigation.
-    // See login.stx — the store owns cookie serialisation.
-    useStore('session').token.set(token)
-    if (data.user)
-      localStorage.setItem('user', JSON.stringify(data.user))
+    // Session is established by the HttpOnly `auth-token` cookie RegisterAction
+    // set (Set-Cookie); server-rendered pages authenticate from it on plain
+    // navigation. Nothing to store client-side.
     // New accounts have no apps yet: go to create-app — unless they arrived from
     // an invite link, in which case land on the dashboard where the join banner
     // is waiting for them to accept.

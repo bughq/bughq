@@ -59,27 +59,35 @@ function newChannelId(): string {
   return `ch_${globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 20)}`
 }
 
-// Resolve the authenticated user from the bearer token. The `auth` middleware
-// alias does not reliably populate `request.user()` on route handlers (see
-// CreateCheckoutAction), so we read the token and resolve it directly.
+// Resolve the authenticated user. The dashboard/settings client sends only the
+// HttpOnly `auth-token` cookie (credentials:'same-origin', no Authorization
+// header), while external API-token callers still send a bearer — accept BOTH.
+// The `auth` middleware alias does not reliably populate `request.user()` on
+// route handlers (see CreateCheckoutAction), so we resolve the token directly.
 async function currentUser(request: any): Promise<any | null> {
   const authHeader = request.headers?.get?.('authorization') ?? ''
-  const bearer = request.bearerToken?.() ?? authHeader.replace(/^Bearer\s+/i, '')
-  if (!bearer)
+  let token = request.bearerToken?.() ?? authHeader.replace(/^Bearer\s+/i, '')
+  if (!token) {
+    const cookie = request.headers?.get?.('cookie') ?? ''
+    const m = cookie.match(/(?:^|;)\s*auth-token=([^;]+)/)
+    if (m)
+      token = decodeURIComponent(m[1])
+  }
+  if (!token)
     return null
   try {
-    return await Auth.getUserFromToken(bearer)
+    return await Auth.getUserFromToken(token)
   }
   catch {
     return null
   }
 }
 
-// Resolve the user from the `bughq_token` cookie (browser navigations like the
-// /join link carry no bearer header, only the cookie login mirrors).
+// Resolve the user from the `auth-token` cookie (browser navigations like the
+// /join link carry no bearer header, only the HttpOnly session cookie).
 async function userFromCookie(request: any): Promise<any | null> {
   const cookie = request.headers?.get?.('cookie') ?? ''
-  const m = cookie.match(/(?:^|;)\s*bughq_token=([^;]+)/)
+  const m = cookie.match(/(?:^|;)\s*auth-token=([^;]+)/)
   if (!m)
     return null
   try {

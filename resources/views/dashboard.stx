@@ -1,7 +1,7 @@
 <script server>
-// bughq issues dashboard. Authenticates the current user from the token cookie
-// (mirrored from localStorage by login/register), loads THEIR projects
-// owner-scoped, and renders the active one (from ?project=, else the first).
+// bughq issues dashboard. Authenticates the current user from the HttpOnly
+// `auth-token` session cookie (set server-side at login/register), loads THEIR
+// projects owner-scoped, and renders the active one (from ?project=, else the first).
 // Users with no projects are sent to the create-app screen. Reads via db.unsafe.
 useSeoMeta({
   title: 'Issues - bughq',
@@ -68,8 +68,8 @@ const PAGE_SIZE = 25
 const pageParam = Number.parseInt(query.get('page') || '1', 10)
 const requestedPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
 
-// Authenticate from the token cookie (mirrored from localStorage by
-// login/register). requestContext works in server scripts as of the framework
+// Authenticate from the HttpOnly `auth-token` session cookie (set server-side
+// at login/register). requestContext works in server scripts as of the framework
 // fix; a project the user does not own is never resolved, so no tenant can read
 // another tenant's issues by guessing a project id.
 // `__token`, not `token`: the double underscore is the one prefix stx never
@@ -80,7 +80,7 @@ const requestedPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 
 // wanted it: every `token` in there is a function parameter for an INVITE
 // token. It was bridged because the names collide, and then I made that
 // explicit by naming it in defineClientPayload, which was the wrong call.
-const __token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
+const __token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('auth-token')) || ''
 /**
  * The identity fields these views read off the session. `Auth.getUserFromToken`
  * resolves a full User model instance; naming the narrow shape here is what the
@@ -504,9 +504,14 @@ function toggleTheme(): void {
   themeStore.toggle()
 }
 
-function signOut() {
-  localStorage.removeItem('user')
-  useStore('session').signOut()
+async function signOut() {
+  // POST /logout so the server revokes this token and clears the HttpOnly
+  // `auth-token` cookie, then leave. Errors are swallowed — a failed revoke
+  // must not strand the user on the dashboard; the redirect is what they see.
+  try {
+    await fetch('/logout', { method: 'POST', credentials: 'same-origin' })
+  }
+  catch { /* offline or transient — leave anyway */ }
   window.location.assign('/login')
 }
 
@@ -550,7 +555,8 @@ function joinInvite(token: string): void {
   joining.set(token)
   fetch('/api/invites/accept', {
     method: 'POST',
-    headers: useStore('session').authHeaders(),
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token }),
   })
     .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
@@ -615,7 +621,8 @@ function triage(id: string, to: string): void {
   triageError.set('')
   fetch(`/api/issues/${encodeURIComponent(id)}/resolve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...useStore('session').authHeaders() },
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: to }),
   })
     .then((r) => {
@@ -648,7 +655,8 @@ function snooze(id: string, preset: string): void {
   triageError.set('')
   fetch(`/api/issues/${encodeURIComponent(id)}/resolve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...useStore('session').authHeaders() },
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ snooze: preset }),
   })
     .then((r) => {
@@ -676,7 +684,8 @@ function wake(id: string): void {
   triageError.set('')
   fetch(`/api/issues/${encodeURIComponent(id)}/resolve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...useStore('session').authHeaders() },
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ snooze: null }),
   })
     .then((r) => {
@@ -722,15 +731,12 @@ function dismissUndo(): void {
   undoable.set(null)
 }
 
-const authToken = useStore('session').token()
-if (authToken) {
-  fetch('/api/me', { headers: { Authorization: `Bearer ${authToken}` } })
-    .then((r) => {
-      if (r.status === 401)
-        signOut()
-    })
-    .catch(() => { /* offline or transient — do not sign a valid session out */ })
-}
+fetch('/api/me', { credentials: 'same-origin' })
+  .then((r) => {
+    if (r.status === 401)
+      signOut()
+  })
+  .catch(() => { /* offline or transient — do not sign a valid session out */ })
 </script>
 
 
@@ -1385,27 +1391,19 @@ summary:focus-visible {
   </div>
 </div>
 
-<!-- Client guard: enforce the bearer token and mirror it into the cookie the
-     server authenticates from. The server already resolved the user's projects
-     and active project, and the chrome is plain markup in the fragment. -->
+<!-- Client guard: bounce unauthenticated visitors. The server already resolved
+     the user's projects and active project, and the chrome is plain markup in
+     the fragment. -->
 <script>
 (function () {
-  // The bughq_token cookie is the single source of truth: it is what every
-  // <script server> block authenticates from, and the store writes it at sign-in.
-  // This guard only has to notice its absence and leave. It used to read a
-  // localStorage copy, mirror it into the cookie and reload — a second source for
-  // the same fact, with nothing keeping the two in step.
-  //
-  // Raw document.cookie because this is a bare <script> that runs before the
-  // signals runtime exists, so useStore is not defined yet. Every other cookie
-  // access in this app goes through the session store.
-  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) { window.location.replace('/login'); return }
-  // The cookie WAS sent but the server still rendered the unauthenticated
-  // state: the token is dead (expired, revoked, or replaced by a newer
-  // login). Clear the stale credentials and go to login — without this the
-  // page wedges on "Loading…" forever.
+  // The session lives in an HttpOnly `auth-token` cookie the client cannot
+  // read, so the SSR verdict is the only source of truth: the server renders
+  // the #auth-pending marker whenever the cookie resolved no user — no cookie
+  // at all, or a dead one (expired, revoked, or replaced by a newer login).
+  // Either way the page would wedge on "Loading…" with no fetch pending, so
+  // bounce to /login. The cookie is cleared server-side on logout; there is
+  // nothing for JS to clear here.
   if (document.getElementById('auth-pending')) {
-    document.cookie = 'bughq_token=; path=/; max-age=0'
     window.location.replace('/login')
     return
   }

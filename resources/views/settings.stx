@@ -1,7 +1,7 @@
 <script server>
 // Per-project settings (owner-only admin surface): the API key, team members,
-// Slack/Discord alerts, and deletion. Authenticates from the bughq_token cookie
-// and resolves the active project from the bughq_project cookie (same browsing
+// Slack/Discord alerts, and deletion. Authenticates from the HttpOnly auth-token
+// cookie and resolves the active project from the bughq_project cookie (same browsing
 // preference the dashboard uses), scoped to projects the user OWNS — members can
 // view/triage issues but only an owner administers a project. Reads happen here
 // server-side; mutations go client-side to the owner-scoped /api endpoints.
@@ -30,7 +30,7 @@ const requestedProject = query.get('project')
 const justRotated = query.get('rotated') === '1'
 const cookieProject = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_project')) || ''
 
-const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
+const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('auth-token')) || ''
 /**
  * The identity fields these views read off the session. `Auth.getUserFromToken`
  * resolves a full User model instance; naming the narrow shape here is what the
@@ -391,7 +391,7 @@ function rotateKey() {
     rotating.set(true)
     fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/rotate-key`, {
       method: 'POST',
-      headers: authHeaders(),
+      credentials: 'same-origin',
     })
       .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
       .then((res) => {
@@ -443,10 +443,6 @@ function memberApi(path?: string): string {
   return `/api/projects/${encodeURIComponent(apiProjectId)}/members${path || ''}`
 }
 
-function authHeaders(): AuthHeaders {
-  return useStore('session').authHeaders()
-}
-
 // Both submit handlers read their fields through this. `form.elements.email` is
 // not wrong at runtime — the collection's legacy named getter resolves it — but
 // the type does not model that getter, and `e.target` is `EventTarget | null`,
@@ -470,7 +466,7 @@ function removeMember(id: string): void {
     return
   removing.set(id)
   inviteNote.set(null)
-  fetch(memberApi(`/${encodeURIComponent(id)}`), { method: 'DELETE', headers: authHeaders() })
+  fetch(memberApi(`/${encodeURIComponent(id)}`), { method: 'DELETE', credentials: 'same-origin' })
     .then((r) => {
       removing.set('')
       if (r.ok)
@@ -503,7 +499,7 @@ function resendInvite(id: string): void {
     return
   resending.set(id)
   inviteNote.set(null)
-  fetch(memberApi(), { method: 'POST', headers: authHeaders(), body: JSON.stringify({ email }) })
+  fetch(memberApi(), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
     .then(r => r.json().then(b => ({ ok: r.ok, b })))
     .then((res) => {
       resending.set('')
@@ -533,7 +529,7 @@ function inviteMember(e: SubmitEvent): void {
   }
   inviting.set(true)
   inviteNote.set(null)
-  fetch(memberApi(), { method: 'POST', headers: authHeaders(), body: JSON.stringify({ email }) })
+  fetch(memberApi(), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
     .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
     .then((res) => {
       inviting.set(false)
@@ -601,7 +597,8 @@ function toggleChannel(id: string): void {
   chEnabled.set({ ...chEnabled(), [id]: next })
   fetch(channelApi(`/${encodeURIComponent(id)}`), {
     method: 'PATCH',
-    headers: authHeaders(),
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ enabled: next }),
   })
     .then((r) => {
@@ -623,7 +620,7 @@ function testChannel(id: string): void {
     return
   testing.set(id)
   tested.set(null)
-  fetch(channelApi(`/${encodeURIComponent(id)}/test`), { method: 'POST', headers: authHeaders() })
+  fetch(channelApi(`/${encodeURIComponent(id)}/test`), { method: 'POST', credentials: 'same-origin' })
     .then((r) => {
       testing.set('')
       tested.set({ id, text: r.ok ? 'Sent ✓' : 'Failed' })
@@ -644,7 +641,7 @@ function removeChannel(id: string): void {
     return
   removing.set(id)
   whNote.set(null)
-  fetch(channelApi(`/${encodeURIComponent(id)}`), { method: 'DELETE', headers: authHeaders() })
+  fetch(channelApi(`/${encodeURIComponent(id)}`), { method: 'DELETE', credentials: 'same-origin' })
     .then((r) => {
       removing.set('')
       if (r.ok)
@@ -672,7 +669,8 @@ function addChannel(e: SubmitEvent): void {
   whNote.set(null)
   fetch(channelApi(), {
     method: 'POST',
-    headers: authHeaders(),
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ type: chType(), webhook_url: url, label: fieldValue(form, 'label').trim() }),
   })
     .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
@@ -811,7 +809,8 @@ function dzConfirm(): void {
   if (which === 'archive') {
     fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/archive`, {
       method: 'POST',
-      headers: authHeaders(),
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ archived: true }),
     })
       .then((r) => {
@@ -830,7 +829,7 @@ function dzConfirm(): void {
   }
 
   if (which === 'delete') {
-    fetch(`/api/projects/${encodeURIComponent(apiProjectId)}`, { method: 'DELETE', headers: authHeaders() })
+    fetch(`/api/projects/${encodeURIComponent(apiProjectId)}`, { method: 'DELETE', credentials: 'same-origin' })
       .then((r) => {
         if (!r.ok) {
           dzBusy.set(false)
@@ -856,7 +855,8 @@ function unarchive(): void {
   unarchiving.set(true)
   fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/archive`, {
     method: 'POST',
-    headers: authHeaders(),
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ archived: false }),
   })
     .then((r) => {
@@ -1269,27 +1269,15 @@ html { scroll-behavior: smooth; }
 
 <script>
 // Auth guard. Stays a plain blocking script rather than a client block: it has
-// to run before the page is worth rendering, and its whole job is to leave —
-// either to /login or through a reload once the cookie mirrors localStorage,
-// which server-rendered pages authenticate from.
+// to run before the page is worth rendering, and its whole job is to leave.
 (function () {
-  // The bughq_token cookie is the single source of truth: it is what every
-  // <script server> block authenticates from, and the store writes it at sign-in.
-  // This guard only has to notice its absence and leave. It used to read a
-  // localStorage copy, mirror it into the cookie and reload — a second source for
-  // the same fact, with nothing keeping the two in step.
-  //
-  // Raw document.cookie because this is a bare <script> that runs before the
-  // signals runtime exists, so useStore is not defined yet.
-  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) { window.location.replace('/login'); return }
-  // The cookie WAS sent but the server still rendered the unauthenticated
-  // state, so the token is dead — expired, revoked, or replaced by a newer
-  // login. The presence test above cannot see that, because a dead token is
-  // still a present cookie. Clear it and go to login; without this the page
-  // wedges on "Loading…" with no fetch pending to ever replace it. Same
-  // recovery as dashboard.stx, which had it first.
+  // The session lives in an HttpOnly `auth-token` cookie the client cannot
+  // read, so the SSR verdict is the only source of truth: the server renders
+  // the #auth-pending marker whenever the cookie resolved no user — no cookie
+  // at all, or a dead one (expired, revoked, or replaced by a newer login).
+  // Either way the page would wedge on "Loading…", so bounce to /login. The
+  // cookie is cleared server-side on logout; nothing for JS to clear here.
   if (document.getElementById('auth-pending')) {
-    document.cookie = 'bughq_token=; path=/; max-age=0'
     window.location.replace('/login')
     return
   }

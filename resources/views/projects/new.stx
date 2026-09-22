@@ -14,7 +14,7 @@ const { db } = await import('@stacksjs/database')
 // discovered a dead token from the 401 on submit — i.e. after you had typed a
 // name and picked a platform, both of which the redirect then threw away. The
 // cookie is present in both cases, so only resolving it tells the two apart.
-const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('bughq_token')) || ''
+const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('auth-token')) || ''
 let user = null
 if (token) {
   try {
@@ -62,8 +62,9 @@ if (user) {
 
 <script client>
 // Create-app screen. New users land here after signup. Creates a project via
-// the authenticated API (bearer from localStorage), then drops into that
-// project's dashboard, where the ingest snippet + key are shown.
+// the authenticated API (credentialed same-origin fetch on the HttpOnly
+// auth-token cookie), then drops into that project's dashboard, where the
+// ingest snippet + key are shown.
 const error = state('')
 const loading = state(false)
 
@@ -99,10 +100,8 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
   try {
     const res = await fetch('/api/projects', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': useStore('session').authHeaders().Authorization,
-      },
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, platform: fieldValue(form, 'platform') }),
     })
     const data = await res.json().catch(() => ({}))
@@ -213,16 +212,13 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
      inside comments, so the words alone produce a SyntaxError mid-navigation. -->
 <script>
 (function () {
-  // Raw document.cookie because this is a bare script that runs before the
-  // signals runtime exists, so useStore is not defined yet.
-  if (!/(^|;)\s*bughq_token=/.test(document.cookie)) { window.location.replace('/login'); return }
-  // The cookie WAS sent and the server still rendered the unauthenticated
-  // state, so the token is dead — expired, revoked, or replaced by a newer
-  // login. A presence test cannot see that; only the server's verdict can.
+  // The session lives in an HttpOnly `auth-token` cookie the client cannot
+  // read, so the server's verdict is the only source of truth: it renders the
+  // #auth-pending marker whenever the cookie resolved no user — no cookie at
+  // all, or a dead one (expired, revoked, or replaced by a newer login).
   // Leaving now is the whole point: this page's form is the one you lose work
   // in if the bounce waits for submit.
   if (document.getElementById('auth-pending')) {
-    document.cookie = 'bughq_token=; path=/; max-age=0'
     window.location.replace('/login')
   }
 })()
