@@ -43,11 +43,11 @@ export default new Action({
     // LoginAction, not retry.
     const userId = await consumeTwoFactorChallenge(challengeToken)
     if (!userId)
-      return response.unauthorized('This login attempt has expired — please sign in again.')
+      return response.unauthorized('This login attempt has expired - please sign in again.')
 
     const valid = await verifyTwoFactorLoginCode(userId, code)
     if (!valid)
-      return response.unauthorized('Invalid code — please sign in again.')
+      return response.unauthorized('Invalid code - please sign in again.')
 
     // Carry the "remember me" tier the user chose on step 1 through to the
     // session issued here, so a 2FA account is not silently downgraded to the
@@ -55,7 +55,7 @@ export default new Action({
     const expiresInMinutes = sessionExpiryMinutes(request.get('remember'))
     const result = await Auth.loginUsingId(userId, { expiresInMinutes })
     if (!result)
-      return response.unauthorized('Invalid code — please sign in again.')
+      return response.unauthorized('Invalid code - please sign in again.')
 
     const user = result.user
 

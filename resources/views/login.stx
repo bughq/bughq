@@ -134,7 +134,7 @@ async function handleTwoFactor(e: SubmitEvent): Promise<void> {
     if (!res.ok) {
       // Challenge tokens are single-use; a failed code sends the user back to
       // step 1 to start over rather than retrying a spent challenge.
-      error.set(data.message || 'Invalid code — please sign in again.')
+      error.set(data.message || 'Invalid code - please sign in again.')
       step.set('credentials')
       challengeToken.set('')
       return
