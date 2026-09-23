@@ -91,6 +91,16 @@ jobs:
           # Sanity (no secret printed): confirm the file has the 3 keys.
           echo "created .env.keys with $(grep -c '^DOTENV_PRIVATE_KEY' .env.keys) private keys"
 
+      - name: Verify production SMTP secret
+        if: needs.determine-environment.outputs.environment == 'production'
+        env:
+          BUGHQ_SMTP_PASSWORD: ${{ secrets.BUGHQ_SMTP_PASSWORD }}
+        run: |
+          if [ -z "$BUGHQ_SMTP_PASSWORD" ]; then
+            echo "::error::BUGHQ_SMTP_PASSWORD is not configured for the production environment"
+            exit 1
+          fi
+
       - name: Deploy (${{ needs.determine-environment.outputs.environment }})
         # Invoke the buddy CLI from node_modules directly rather than via the
         # ./buddy wrapper. The wrapper is built for the vendored/pantry layout
@@ -103,6 +113,9 @@ jobs:
           DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
           DOTENV_PRIVATE_KEY_STAGING: ${{ secrets.DOTENV_PRIVATE_KEY_STAGING }}
           DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT }}
+          # CI-only input. config/cloud.ts maps it to MAIL_PASSWORD in the
+          # production services without storing the credential in Git.
+          BUGHQ_SMTP_PASSWORD: ${{ secrets.BUGHQ_SMTP_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Provision/refresh bughq's own box + reconcile Porkbun DNS
           # (apex/www A upserted to the box IP + additive config/dns.ts sync).
