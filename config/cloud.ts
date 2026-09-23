@@ -1,3 +1,4 @@
+import process from 'node:process'
 import type { CloudConfig } from '@stacksjs/types'
 import type { CloudConfig as TsCloudConfig } from '@stacksjs/ts-cloud'
 import { servers } from '~/cloud/servers'
@@ -15,6 +16,19 @@ import { env } from '@stacksjs/env'
  *
  * @see https://github.com/stacksjs/ts-cloud
  */
+
+const productionSmtpEnv: Record<string, string> = env.APP_ENV === 'production'
+  ? {
+      MAIL_MAILER: 'smtp',
+      MAIL_HOST: 'mail.bughq.org',
+      MAIL_PORT: '587',
+      MAIL_USERNAME: 'noreply@bughq.org',
+      MAIL_PASSWORD: String(process.env.BUGHQ_SMTP_PASSWORD || ''),
+      MAIL_ENCRYPTION: 'tls',
+      MAIL_FROM_ADDRESS: 'noreply@bughq.org',
+      MAIL_FROM_NAME: 'BugHQ',
+    }
+  : {}
 
 // ts-cloud configuration for deployment
 export const tsCloud: TsCloudConfig = {
@@ -733,6 +747,7 @@ export const tsCloud: TsCloudConfig = {
       env: {
         APP_URL: 'https://bughq.org',
         API_URL: 'http://127.0.0.1:3023',
+        ...productionSmtpEnv,
       },
     },
 
@@ -743,7 +758,10 @@ export const tsCloud: TsCloudConfig = {
       start: 'bun node_modules/@stacksjs/actions/dist/serve/api.js',
       port: 3023,
       preStart: ['bun install'],
-      env: { HOST: '127.0.0.1' },
+      env: {
+        HOST: '127.0.0.1',
+        ...productionSmtpEnv,
+      },
     },
 
     // www → apex redirect.
