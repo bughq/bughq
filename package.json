@@ -78,7 +78,7 @@
     "@loghq/stacks": "^0.2.6",
     "@ts-analytics/tracking": "^0.1.15",
     "bun-query-builder": "^0.2.60",
-    "stacks": "^0.74.0",
+    "stacks": "^0.74.64",
     "stripe": "22.3.2"
   },
   "devDependencies": {
