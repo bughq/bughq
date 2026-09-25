@@ -4,7 +4,7 @@ import { Auth, createTwoFactorChallenge, getTwoFactorState } from '@stacksjs/aut
 import { User } from '@stacksjs/orm'
 import { response } from '@stacksjs/router'
 import { schema } from '@stacksjs/validation'
-import { buildAuthCookie, sessionExpiryMinutes } from './authCookie'
+import { buildAuthCookie, sessionExpiryMinutes } from '../../Support/authCookie'
 
 /**
  * Project override of the framework's default LoginAction (registered by
@@ -16,7 +16,7 @@ import { buildAuthCookie, sessionExpiryMinutes } from './authCookie'
  * HttpOnly `config.auth.defaultTokenName` ('auth-token') cookie. Every
  * server-rendered `.stx` page (dashboard, settings, projects, issue) and
  * every owner-scoped API route resolves "who's logged in" from this cookie
- * — the client no longer holds a bearer at all. See Actions/Auth/authCookie.ts.
+ * — the client no longer holds a bearer at all. See Support/authCookie.ts.
  */
 export default new Action({
   name: 'LoginAction',

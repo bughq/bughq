@@ -6,7 +6,7 @@ import { config } from '@stacksjs/config'
 import { db } from '@stacksjs/database'
 import { response } from '@stacksjs/router'
 import { GitHubProvider, GoogleProvider } from '@stacksjs/socials'
-import { buildAuthCookie } from './authCookie'
+import { buildAuthCookie } from '../../Support/authCookie'
 
 function makeDriver(provider: string): GitHubProvider | GoogleProvider | null {
   const svc = config.services as any

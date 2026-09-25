@@ -3,7 +3,7 @@ import { Action } from '@stacksjs/actions'
 import { Auth, consumeTwoFactorChallenge, verifyTwoFactorLoginCode } from '@stacksjs/auth'
 import { response } from '@stacksjs/router'
 import { schema } from '@stacksjs/validation'
-import { buildAuthCookie, sessionExpiryMinutes } from './authCookie'
+import { buildAuthCookie, sessionExpiryMinutes } from '../../Support/authCookie'
 
 /**
  * Project override of the framework's default VerifyTwoFactorLoginAction.
@@ -11,7 +11,7 @@ import { buildAuthCookie, sessionExpiryMinutes } from './authCookie'
  * Identical challenge/TOTP verification, plus the same HttpOnly cookie
  * mirroring LoginAction/RegisterAction do — otherwise a 2FA-enabled user
  * completes the second step but the server-rendered dashboard can't see
- * their session. See Actions/Auth/authCookie.ts.
+ * their session. See Support/authCookie.ts.
  *
  * Works today because migration 0000000032 supplies the two_factor_*
  * columns; dormant until an enrollment UI is added (there is no way to

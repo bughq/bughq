@@ -76,7 +76,7 @@ async function userFromRequest(request: any): Promise<any | null> {
   let token = request.bearerToken?.() ?? authHeader.replace(/^Bearer\s+/i, '')
   if (!token) {
     // `auth-token` is the single HttpOnly session cookie every auth entry point
-    // sets (app/Actions/Auth/authCookie.ts). Browser navigations and the plain
+    // sets (app/Support/authCookie.ts). Browser navigations and the plain
     // HTML resolve form (/issue/{id}/status) carry only this cookie, no bearer.
     const cookie = request.headers?.get?.('cookie') ?? ''
     const m = cookie.match(/(?:^|;)\s*auth-token=([^;]+)/)

@@ -52,7 +52,7 @@ export default {
    * This is the entry-point default used where no per-login tier is chosen
    * (registration, social sign-in). Interactive logins set the real session
    * length per request from the "Keep me signed in" checkbox via
-   * `sessionExpiryMinutes()` (app/Actions/Auth/authCookie.ts) and
+   * `sessionExpiryMinutes()` (app/Support/authCookie.ts) and
    * `Auth.loginUsingId(id, { expiresInMinutes })`: unchecked -> 7 days,
    * checked -> 30 days. That single number stamps BOTH the
    * `oauth_access_tokens.expires_at` row and the HttpOnly `auth-token`

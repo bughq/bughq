@@ -4,7 +4,7 @@ import { dispatch } from '@stacksjs/events'
 import { Auth, register } from '@stacksjs/auth'
 import { response } from '@stacksjs/router'
 import { schema } from '@stacksjs/validation'
-import { buildAuthCookie } from './authCookie'
+import { buildAuthCookie } from '../../Support/authCookie'
 
 /**
  * Project override of the framework's default RegisterAction (registered by
@@ -17,7 +17,7 @@ import { buildAuthCookie } from './authCookie'
  * just-registered user has a token in the response body but no cookie, so
  * the server-rendered dashboard can't resolve them during SSR and the
  * post-signup redirect lands on a "you need to sign in" empty state. See
- * Actions/Auth/authCookie.ts.
+ * Support/authCookie.ts.
  *
  * bughq has no team model, so there is no personal-team bootstrap here
  * (projects are owned directly by `owner_id`).
