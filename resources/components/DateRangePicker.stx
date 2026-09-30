@@ -21,10 +21,23 @@ const { summary, active } = defineProps<{ summary: string, active: boolean }>()
 </script>
 
 <script client>
-interface DrpCell { ymd: string, day: number, inMonth: boolean, future: boolean }
-interface DrpSel { range?: string, from?: string, to?: string }
-interface DrpBounds { from: string, to: string }
 // #region pure
+// ---- per-app configuration --------------------------------------------------
+// The only lines in this region that differ between the four HQ pickers; the
+// shared core below is kept byte-identical so a fix in one app ports cleanly.
+/** Spans bughq's server knows by name; these go out as ?range=, not ?from=&to=. */
+const PICK_SERVER_RANGES: string[] = ['24h', '7d', '30d', '90d', 'all']
+/** Query keys a period change clears, beyond the period keys themselves. */
+  // bughq's picker shares a view with a paginated list, so a new period
+  // must not leave the reader on page 5 of a different result set.
+const PICK_RESET_KEYS: string[] = ['page']
+
+// ---- shared core: byte-identical in analyticshq, bughq, loghq and statushq ---
+/** One day cell in a month grid. */
+interface PickCell { ymd: string, day: number, inMonth: boolean, future: boolean }
+/** A period: explicit local days, or a span the server knows by name (?range=). */
+type PickSelection = { from: string, to: string, range?: undefined } | { range: string, from?: undefined, to?: undefined }
+
 /** 'YYYY-MM-DD' for a local calendar day; m is 0-based like Date. */
 function pickYmd(y: number, m: number, d: number): string {
   return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
@@ -48,10 +61,10 @@ function pickShiftMonth(ym: string, n: number): string {
   return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`
 }
 /** Six weeks of cells starting on the Sunday on or before the 1st. */
-function pickGrid(ym: string, todayYmd: string): DrpCell[] {
+function pickGrid(ym: string, todayYmd: string): PickCell[] {
   const [y, m] = ym.split('-').map(Number)
   const first = new Date(y, m - 1, 1)
-  const cells: DrpCell[] = []
+  const cells: PickCell[] = []
   for (let i = 0; i < 42; i++) {
     const t = new Date(y, m - 1, 1 - first.getDay() + i)
     const s = pickYmd(t.getFullYear(), t.getMonth(), t.getDate())
@@ -59,16 +72,17 @@ function pickGrid(ym: string, todayYmd: string): DrpCell[] {
   }
   return cells
 }
-function pickOrder(a: string, b: string): DrpBounds {
+function pickOrder(a: string, b: string): { from: string, to: string } {
   return a <= b ? { from: a, to: b } : { from: b, to: a }
 }
 /** What a preset means on a given local day. Server-native spans go out as ?range=. */
-function pickPreset(key: string, todayYmd: string): DrpSel | null {
+function pickPreset(key: string, todayYmd: string): PickSelection | null {
   const { y, m } = pickParse(todayYmd)
+  if (PICK_SERVER_RANGES.includes(key))
+    return { range: key }
   switch (key) {
     case 'today': return { from: todayYmd, to: todayYmd }
     case 'yesterday': { const d = pickShift(todayYmd, -1); return { from: d, to: d } }
-    case '24h': case '7d': case '30d': case '90d': case 'all': return { range: key }
     case 'this-month': return { from: pickYmd(y, m, 1), to: todayYmd }
     case 'last-month': {
       const end = new Date(y, m, 0)
@@ -79,16 +93,20 @@ function pickPreset(key: string, todayYmd: string): DrpSel | null {
   }
   return null
 }
-/** The next URL: every other key stays (status); the period is replaced, page resets. */
-function pickQuery(search: string | Record<string, string>, sel: DrpSel): string {
+/** The next URL: every other key stays (site, filters, compare); the period is replaced. */
+function pickQuery(search: string | Record<string, string>, sel: PickSelection): string {
   const q = new URLSearchParams(search)
   q.delete('from')
   q.delete('to')
   q.delete('range')
-  q.delete('page') // bughq: changing the range resets to page 1
+  for (const key of PICK_RESET_KEYS)
+    q.delete(key)
   if (sel.range) {
     q.set('range', sel.range)
   }
+  // The guard narrows the union, so from/to are strings here rather than
+  // possibly-undefined; it also means a malformed selection writes nothing
+  // instead of the string "undefined".
   else if (sel.from && sel.to) {
     q.set('from', sel.from)
     q.set('to', sel.to)
@@ -136,13 +154,13 @@ function pickIsActive(key: string): boolean {
 function pickPresetClass(key: string): string {
   return pickIsActive(key) ? 'drp-preset is-active' : 'drp-preset'
 }
-function pickBounds(): DrpBounds | null {
+function pickBounds(): { from: string, to: string } | null {
   const a = selStart()
   if (a) return pickOrder(a, selHover() || a)
   if (pickUrlFrom && pickUrlTo) return { from: pickUrlFrom, to: pickUrlTo }
   return null
 }
-function pickCellClass(c: DrpCell): string {
+function pickCellClass(c: PickCell): string {
   const b = pickBounds()
   const inRange = !!b && c.ymd >= b.from && c.ymd <= b.to
   const edge = !!b && (c.ymd === b.from || c.ymd === b.to)
@@ -150,11 +168,11 @@ function pickCellClass(c: DrpCell): string {
     .filter(Boolean)
     .join(' ')
 }
-function pickCellLabel(c: DrpCell): string {
+function pickCellLabel(c: PickCell): string {
   const { y, m, d } = pickParse(c.ymd)
   return new Date(y, m, d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
-function pickDay(c: DrpCell): void {
+function pickDay(c: PickCell): void {
   if (c.future) return
   const a = selStart()
   if (!a) {
@@ -164,7 +182,7 @@ function pickDay(c: DrpCell): void {
   }
   navigate(pickQuery(useRoute().query, pickOrder(a, c.ymd)))
 }
-function pickHover(c: DrpCell): void {
+function pickHover(c: PickCell): void {
   if (selStart()) selHover.set(c.ymd)
 }
 function pickApply(key: string): void {
