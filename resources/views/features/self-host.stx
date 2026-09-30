@@ -10,11 +10,7 @@ useSeoMeta({
 
 @section('content')
     <main>
-      <nav class="shell subnav" aria-label="Breadcrumb">
-        <StxLink to="/">Home</StxLink><span class="sep">/</span>
-        <StxLink to="/#features">Features</StxLink><span class="sep">/</span>
-        <span>Self-hosting</span>
-      </nav>
+      <Breadcrumb className="shell subnav" :items="[{ label: 'Home', href: '/' }, { label: 'Features', href: '/#features' }, { label: 'Self-hosting' }]" />
 
       <section class="feat-hero shell">
         <span class="kicker">Self-host</span>

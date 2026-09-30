@@ -23,10 +23,7 @@ useSeoMeta({
 
 @section('content')
     <main>
-      <nav class="shell subnav" aria-label="Breadcrumb">
-        <StxLink to="/">Home</StxLink><span class="sep">/</span>
-        <span>Pricing</span>
-      </nav>
+      <Breadcrumb className="shell subnav" :items="[{ label: 'Home', href: '/' }, { label: 'Pricing' }]" />
 
       <script client>
       // Pricing / upgrade via stx client directives. Interval + state are signals; the
