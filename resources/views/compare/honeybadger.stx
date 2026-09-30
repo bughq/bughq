@@ -19,11 +19,7 @@ useSeoMeta({
 
 @section('content')
     <main>
-      <nav class="shell subnav" aria-label="Breadcrumb">
-        <StxLink to="/">Home</StxLink><span class="sep">/</span>
-        <StxLink to="/compare">Compare</StxLink><span class="sep">/</span>
-        <span>Honeybadger</span>
-      </nav>
+      <Breadcrumb className="shell subnav" :items="[{ label: 'Home', href: '/' }, { label: 'Compare', href: '/compare' }, { label: 'Honeybadger' }]" />
 
       <section class="feat-hero shell">
         <span class="kicker">Compare</span>
