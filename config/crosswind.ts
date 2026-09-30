@@ -155,6 +155,33 @@ export default {
         // the resolved chip below needs — `border-[var(--ok)]` is one of the
         // arbitrary border values this crosswind silently drops.
         ok: 'var(--ok)',
+
+        // --- @stacksjs/components' token vocabulary ------------------------
+        // The shipped components are written against their own semantic names
+        // (text-fg, bg-surface, border-line-strong, …) used 300+ times across
+        // the library. `line` and `accent` above already satisfy two of them;
+        // the rest resolved to nothing, so a colour-neutral component like
+        // <Table> or <Popover> rendered half-styled - `divide-y` applied a
+        // border WIDTH while `divide-line` supplied no colour.
+        //
+        // Aliasing them onto this palette makes those components render in this
+        // app's design, in both themes, with no per-call-site className. It is
+        // purely additive: nothing here currently uses these names, so no
+        // existing markup changes. See statushqorg/status#20.
+        //
+        // It does NOT fix <Button variant="primary">, which hard-codes
+        // bg-blue-500 rather than using its own vocabulary - that is
+        // stacksjs/stx#1993.
+        surface: 'var(--panel)',
+        'surface-sunken': 'var(--bg)',
+        'surface-raised': 'color-mix(in srgb, var(--accent) 8%, var(--panel))',
+        fg: 'var(--text)',
+        'fg-strong': 'var(--text)',
+        'fg-muted': 'var(--text-2)',
+        'fg-soft': 'var(--text-2)',
+        'fg-subtle': 'var(--text-3)',
+        'line-strong': 'color-mix(in srgb, var(--text-3) 55%, var(--border))',
+        'accent-solid': 'var(--accent)',
       },
       fontFamily: {
         sans: ['Space Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
