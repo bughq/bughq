@@ -213,13 +213,39 @@ export default {
    * properties it actually sets — anything it omits leaks through.
    *
    * That is why `.btn` is absent despite being the most duplicated class in the
-   * app. It has six different definitions across ten files, and two of them
-   * (account.stx, pricing.stx) deliberately set no background or colour because
-   * those pages colour their buttons via `.btn.primary`. A shared `btn` carrying
-   * `bg-accent text-white` would paint every plain button on those two pages.
-   * Same for `.btn-ghost` (four definitions, four files), `.icon-btn` (three),
-   * `.err` and `.field:focus`. Those need a decision about whether the pages
-   * SHOULD differ before they can be shared.
+   * app. Measured 2026-10-01, the six base definitions are not six copies of one
+   * button -- they are FOUR different buttons sharing a name:
+   *
+   *   outline   public/marketing.css   transparent bg, 1px border, var(--text).
+   *                                    Serves every marketing page; pricing.stx
+   *                                    adds only `.btn:disabled` on top of it.
+   *   panel     AutofixPanel.stx       bg var(--panel), var(--text-2), .8rem.
+   *             issue/[id].stx         Identical 12 properties; AutofixPanel
+   *                                    alone adds justify-content: center.
+   *   solid     projects/index.stx     bg var(--accent), var(--accent-ink),
+   *             settings.stx           radius 10px. settings.stx adds only a
+   *                                    background/opacity transition.
+   *   unpainted account.stx            radius + weight + transition ONLY. The
+   *                                    colour comes from `.btn-primary`, so a
+   *                                    shared `btn` with a background would
+   *                                    paint every plain button on that page.
+   *
+   * So a single shared `btn` is not a refactor, it is a repaint: it would have to
+   * pick one of outline / panel / solid and change the other three surfaces. The
+   * two PAIRS above (panel, solid) are genuine duplicates and could be shared
+   * today -- but each `.btn` here also anchors a local cascade of `:hover`,
+   * `:active`, `:disabled` and modifiers (`.btn-ghost`, `.btn-danger`,
+   * `.btn-primary`, `.btn-autofix`) that differ per file, so even the pairs move
+   * more than the base rule.
+   *
+   * `.btn-ghost` is worse, not better: three definitions, all three DIFFERENT
+   * (settings.stx paints a panel background, account.stx sets only border+colour,
+   * projects/index.stx sets radius+border+colour). `.btn-danger` and `.icon-btn`
+   * have one definition each and are not duplicated at all.
+   *
+   * The open question is a product one, not a technical one: SHOULD the marketing
+   * pages, the app shell and the account page have visually different buttons?
+   * Until someone answers that, sharing these repaints the app.
    */
   shortcuts: {
     // font-sans resolves to the same stack as var(--sans), so this is identical
