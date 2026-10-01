@@ -632,10 +632,10 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 .btn { display:inline-flex; align-items:center; gap:.4rem; padding:.4rem .8rem; border-radius:9px; font-size:.8rem; font-weight:600; border:1px solid var(--border); background:var(--panel); color:var(--text-2); cursor:pointer; transition: color .12s ease, border-color .12s ease, background-color .12s ease, transform .12s ease; }
 .btn:hover { color:var(--text); border-color:color-mix(in srgb, var(--accent) 40%, var(--border)); background:color-mix(in srgb, var(--accent) 6%, transparent); }
 .btn:active { transform: translateY(1px); }
-.btn-primary { color:#16a34a; border-color:rgba(34,197,94,.4); }
+.btn-resolve { color:#16a34a; border-color:rgba(34,197,94,.4); }
 /* Keep the resolve green on hover — the generic .btn:hover would otherwise
    swap it for the neutral text color. */
-.btn-primary:hover { color:#16a34a; border-color:rgba(34,197,94,.75); background:rgba(34,197,94,.1); }
+.btn-resolve:hover { color:#16a34a; border-color:rgba(34,197,94,.75); background:rgba(34,197,94,.1); }
 .backlink { color: var(--text-2); transition: color .12s ease; }
 .backlink:hover { color: var(--text); }
 .copybtn { font-family:var(--mono); font-size:.68rem; }
@@ -708,7 +708,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
               </form>
             @else
               <form method="POST" action="/issue/{{ issue.id }}/status?to=resolved">
-                <button type="submit" class="btn btn-primary">&#10003; Resolve</button>
+                <button type="submit" class="btn btn-resolve">&#10003; Resolve</button>
               </form>
             @endif
             @if (isIgnored)
