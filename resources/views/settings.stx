@@ -1046,10 +1046,10 @@ html { scroll-behavior: smooth; }
           <p class="mt-3.5 leading-relaxed text-subtle text-xs">
             Rotating generates a new key and <span style="color: var(--warn)">invalidates the current one immediately</span> — any SDK still sending the old key is rejected with <span class="mono">404 unknown project</span> until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
           </p>
-          @if (keyNote() && keyNote().ok)
+          @if (keyNote() && keyNote()?.ok)
             <span class="mt-2 text-xs note note-ok show" :text="noteText(keyNote())"></span>
           @endif
-          @if (keyNote() && !keyNote().ok)
+          @if (keyNote() && !keyNote()?.ok)
             <span class="mt-2 text-xs note note-err show" :text="noteText(keyNote())"></span>
           @endif
         </div>
@@ -1117,10 +1117,10 @@ html { scroll-behavior: smooth; }
               <button type="submit" :disabled="inviting()" :text="inviting() ? 'Inviting…' : 'Invite'" class="px-4 py-2.5 font-semibold text-sm btn">Invite</button>
             </div>
           </form>
-          @if (inviteNote() && inviteNote().ok)
+          @if (inviteNote() && inviteNote()?.ok)
             <span class="mt-2.5 text-xs note note-ok show" :text="noteText(inviteNote())"></span>
           @endif
-          @if (inviteNote() && !inviteNote().ok)
+          @if (inviteNote() && !inviteNote()?.ok)
             <span class="mt-2.5 text-xs note note-err show" :text="noteText(inviteNote())"></span>
           @endif
           @endif
@@ -1169,10 +1169,10 @@ html { scroll-behavior: smooth; }
             <input name="label" type="text" aria-label="Channel label (optional)" class="mb-3 px-3.5 py-2.5 w-full text-sm field" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
             <div class="flex gap-3 items-center">
               <button type="submit" :disabled="adding()" :text="adding() ? 'Adding…' : 'Add channel'" class="px-4 py-2.5 font-semibold text-sm btn">Add channel</button>
-              @if (whNote() && whNote().ok)
+              @if (whNote() && whNote()?.ok)
                 <span class="text-xs note note-ok show" :text="noteText(whNote())"></span>
               @endif
-              @if (whNote() && !whNote().ok)
+              @if (whNote() && !whNote()?.ok)
                 <span class="text-xs note note-err show" :text="noteText(whNote())"></span>
               @endif
             </div>

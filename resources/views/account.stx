@@ -125,10 +125,10 @@ fetch('/api/me', { credentials: 'same-origin' })
 
     <section class="mb-5 p-6 card">
       <div class="flex gap-4 items-center">
-        @if (user() && user().avatar)
+        @if (user() && user()?.avatar)
           <img class="h-14 w-14 avatar" :src="user()?.avatar" alt="" width="56" height="56">
         @endif
-        @if (!user() || !user().avatar)
+        @if (!user() || !user()?.avatar)
           <div class="grid place-items-center h-14 w-14 text-accent avatar" style="font-weight: 700; font-size: 1.25rem">{{ user() ? initial(user()?.name || user()?.email) : '' }}</div>
         @endif
         <div class="min-w-0">
@@ -140,7 +140,7 @@ fetch('/api/me', { credentials: 'same-origin' })
           @endif
           <div class="mt-1.5 text-muted text-sm">{{ user()?.email || '' }}</div>
         </div>
-        @if (user() && user().provider)
+        @if (user() && user()?.provider)
           <span class="ml-auto px-2.5 py-1 badge">{{ user()?.provider }}</span>
         @endif
       </div>
