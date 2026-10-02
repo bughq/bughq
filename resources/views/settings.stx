@@ -879,10 +879,27 @@ html { scroll-behavior: smooth; }
 .btn { background: var(--accent); color: var(--accent-ink); border-radius: 10px; transition: background 0.15s ease, opacity 0.15s ease; }
 .btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
 .btn:disabled { opacity: 0.55; cursor: default; }
-.btn-ghost { border: 1px solid var(--border); color: var(--text-2); border-radius: 9px; background: var(--panel); transition: color 0.15s ease, border-color 0.15s ease; }
-.btn-ghost:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
-.btn-danger { border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); color: var(--warn); border-radius: 9px; background: var(--panel); transition: all 0.15s ease; }
-.btn-danger:hover { color: #fff; background: var(--warn); border-color: var(--warn); }
+/* These three are <Button variant="ghost"> now, so this file has to beat the
+   component's own utilities on the properties it also sets: `text-fg-strong`,
+   `rounded-control`, `px-4 py-2 text-base` and `font-semibold`. Those are
+   single-class selectors of equal specificity to these, so source order would
+   otherwise decide the winner, and `!important` does not care about order.
+
+   The size lives here, in `.btn-dz`, rather than in utilities on the call site.
+   Crosswind scans RENDERED pages, and this one is behind an auth check, so a
+   utility that appears nowhere public is never generated: `flex-none` and
+   `whitespace-nowrap` sat on these two buttons and emitted no CSS at all.
+   `px-4` and `py-2.5` only worked here by luck, because public pages use them.
+   Hand-written CSS in this block always ships, so the override goes here.
+
+   Every rule in the family is marked, not just the base: an !important base
+   outranks its own un-marked :hover, which would stop the danger fill turning
+   its label white. */
+.btn-ghost { border: 1px solid var(--border); color: var(--text-2) !important; border-radius: 9px !important; background: var(--panel); transition: color 0.15s ease, border-color 0.15s ease; }
+.btn-ghost:hover { color: var(--text) !important; border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.btn-danger { border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); color: var(--warn) !important; border-radius: 9px !important; background: var(--panel); transition: all 0.15s ease; }
+.btn-danger:hover { color: #fff !important; background: var(--warn); border-color: var(--warn); }
+.btn-dz { flex: none; padding: 0.625rem 1rem !important; font-size: 0.875rem !important; line-height: 1.25rem !important; font-weight: 600 !important; white-space: nowrap; }
 /* .btn has had a disabled state since the start; .btn-danger never got one, and
    every :disabled binding in this file lands on a danger button — Rotate while a
    rotation is in flight, each Remove while its request is, and the confirm button
@@ -891,8 +908,8 @@ html { scroll-behavior: smooth; }
    red under the cursor, which reads as armed rather than unavailable. The hover
    override has to restore all three properties: `all 0.15s ease` above means a
    partial reset animates back to the danger fill. */
-.btn-danger:disabled { opacity: 0.55; cursor: default; }
-.btn-danger:disabled:hover { color: var(--warn); background: var(--panel); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
+.btn-danger:disabled { opacity: 0.55 !important; cursor: default; }
+.btn-danger:disabled:hover { color: var(--warn) !important; background: var(--panel); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
 .field:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 .badge { border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; padding: 2px 9px; }
 .badge-slack { color: #fff; background: var(--slack); }
@@ -1211,7 +1228,7 @@ html { scroll-behavior: smooth; }
             @if (activeProject.is_active === false)
               <button @click="unarchive" :disabled="unarchiving()" :text="unarchiving() ? 'Unarchiving…' : 'Unarchive'" class="flex-none px-4 py-2.5 font-semibold text-sm whitespace-nowrap btn-danger">Unarchive</button>
             @else
-              <button @click="dzOpen('archive')" class="flex-none px-4 py-2.5 font-semibold text-sm whitespace-nowrap btn-danger">Archive</button>
+              <Button variant="ghost" @click="dzOpen('archive')" className="btn-danger btn-dz">Archive</Button>
             @endif
           </div>
           <div class="dz-div"></div>
@@ -1221,7 +1238,7 @@ html { scroll-behavior: smooth; }
               <div class="mb-0.5 font-semibold text-sm">Delete this project</div>
               <p class="text-sm text-subtle">Permanently deletes <span class="text-muted mono">{{ activeProject?.name }}</span> and all of its issues, events, alert channels, and members. This cannot be undone.</p>
             </div>
-            <button @click="dzOpen('delete')" class="flex-none px-4 py-2.5 font-semibold text-sm whitespace-nowrap btn-danger">Delete</button>
+            <Button variant="ghost" @click="dzOpen('delete')" className="btn-danger btn-dz">Delete</Button>
           </div>
         </div>
       </section>
@@ -1247,7 +1264,7 @@ html { scroll-behavior: smooth; }
             @if (dzMismatch())
               <span class="w-full text-subtle text-xs">Doesn't match yet — type the name exactly.</span>
             @endif
-            <button @click="dzClose" type="button" class="px-4 py-2.5 font-medium text-sm btn-ghost">Cancel</button>
+            <Button variant="ghost" type="button" @click="dzClose" className="btn-ghost btn-dz">Cancel</Button>
             {{-- Static text as well as :text. The dialog markup is always in the
                  document, and :text only fills this in once the runtime binds —
                  so the HTML actually served carried a button with no content and
