@@ -125,12 +125,21 @@ fetch('/api/me', { credentials: 'same-origin' })
 
     <section class="mb-5 p-6 card">
       <div class="flex gap-4 items-center">
-        @if (user() && user()?.avatar)
-          <img class="h-14 w-14 avatar" :src="user()?.avatar" alt="" width="56" height="56">
-        @endif
-        @if (!user() || !user()?.avatar)
+        <!--
+          The initials sit underneath and the photo covers them, rather than the
+          two being @if/@else branches on the URL. A URL existing is not the same
+          as an image loading: /api/me can hand back an avatar that 404s from its
+          host, and branching on the URL alone left a broken one as an empty
+          circle. `onerror` is the native attribute, not stx's `@error`, because
+          stx only wires 25 event names and `error` is not among them -- an
+          `@error` here would render as an inert attribute and never fire.
+        -->
+        <div class="relative shrink-0 h-14 w-14">
           <div class="grid place-items-center h-14 w-14 text-accent avatar" style="font-weight: 700; font-size: 1.25rem">{{ user() ? initial(user()?.name || user()?.email) : '' }}</div>
-        @endif
+          @if (user()?.avatar)
+            <img class="absolute inset-0 h-14 w-14 avatar" :src="user()?.avatar" alt="" width="56" height="56" onerror="this.hidden = true">
+          @endif
+        </div>
         <div class="min-w-0">
           @if (!user())
             <div class="skeleton" style="width: 160px; height: 20px"></div>
