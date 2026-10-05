@@ -1,3 +1,21 @@
+<script server>
+// Server-decided auth, the same boolean the marketing layout computes.
+//
+// A partial's scope does not reach across an @include, so relying on the
+// layout's `signedIn` meant this condition read an undefined name and was
+// always falsy: a signed-in visitor saw "Log in / Get started" here, never
+// "Dashboard". loghq hit this and each of its partials owns its own copy for
+// exactly this reason.
+const signedIn = (() => {
+  try {
+    return !!(typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('auth-token'))
+  }
+  catch {
+    return false
+  }
+})()
+</script>
+
 <!-- Shared marketing nav, included on every marketing page via the stx include
      directive with the name SiteNav. One source of truth for the top nav, with
      two CSS-only mega-menu dropdowns (Features, Use cases). No JS: panels reveal
