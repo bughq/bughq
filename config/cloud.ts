@@ -740,6 +740,23 @@ export const tsCloud: TsCloudConfig = {
       // 3022 is bughq's slot on the shared box (localhost-only; rpx fronts it).
       start: 'bun node_modules/@stacksjs/buddy/dist/cli.js serve',
       port: 3022,
+      // Explicit, because `auto` is one eighth of the box and this box is
+      // shared three ways: 7751M/8 = 968M, and bughq's boot peak sits right on
+      // it. 6547e69 deployed at a 898M peak, 51M under the line; 8bd09d0
+      // peaked 1018M, 51M over, and MemoryHigh throttles rather than kills, so
+      // the new release crawled through startup and never joined :3022 before
+      // its health gate expired. The gate then kept the old release serving,
+      // which is why nothing went down and the only symptom was a red deploy.
+      //
+      // 1536M is ~50% over the peak that failed. Steady state is 260M, so this
+      // is headroom for the boot spike rather than a real reservation -- the
+      // box runs at 2.7G of 7.6G used.
+      //
+      // The api site needs none of this: it peaks at 173M against the same
+      // 968M. The scheduler is the opposite problem, declaring ts-cloud's 2G
+      // default for a 143M process, which is most of why the box reads 171%
+      // committed on paper.
+      memoryHigh: '1536M',
       // Migrations run in the deploy workflow's "Provision .env.keys + migrate"
       // step (after .env.keys is on the box, so it can decrypt) — not here in
       // preStart, which runs before decryption is possible.
