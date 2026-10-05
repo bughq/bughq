@@ -457,10 +457,6 @@ function fieldValue(target: EventTarget | null, name: string): string {
   return field instanceof HTMLInputElement ? field.value : ''
 }
 
-function removeLabel(id: string): string {
-  return removing() === id ? 'Removing…' : 'Remove'
-}
-
 function removeMember(id: string): void {
   if (removing())
     return
@@ -481,10 +477,6 @@ function removeMember(id: string): void {
 }
 
 const resending = state('')
-
-function resendLabel(id: string): string {
-  return resending() === id ? 'Sending…' : 'Resend'
-}
 
 /**
  * Send the invite email again. Posts the same address to the invite endpoint,
@@ -899,6 +891,7 @@ html { scroll-behavior: smooth; }
 .btn-ghost:hover { color: var(--text) !important; border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .btn-danger { border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); color: var(--warn) !important; border-radius: 9px !important; background: var(--panel); transition: all 0.15s ease; }
 .btn-danger:hover { color: #fff !important; background: var(--warn); border-color: var(--warn); }
+.btn-xs { padding: 0.375rem 0.625rem !important; font-size: 0.75rem !important; line-height: 1rem !important; font-weight: 500 !important; }
 .btn-dz { flex: none; padding: 0.625rem 1rem !important; font-size: 0.875rem !important; line-height: 1.25rem !important; font-weight: 600 !important; white-space: nowrap; }
 /* .btn has had a disabled state since the start; .btn-danger never got one, and
    every :disabled binding in this file lands on a danger button — Rotate while a
@@ -1093,7 +1086,7 @@ html { scroll-behavior: smooth; }
                 <div class="mt-0.5 text-subtle text-xs">Can view &amp; triage issues</div>
               </div>
               <span class="badge badge-soft">Member</span>
-              <button @click="removeMember('{{ m.id }}')" :disabled="removing() === '{{ m.id }}'" :text="removeLabel('{{ m.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-danger" title="Remove">Remove</button>
+              <Button variant="ghost" @click="removeMember('{{ m.id }}')" :loading="removing() === '{{ m.id }}'" className="btn-danger btn-xs" title="Remove">Remove</Button>
             </div>
           @endforeach
           @foreach (inviteView as i)
@@ -1109,9 +1102,9 @@ html { scroll-behavior: smooth; }
               @if (!i.failed)
                 <span class="badge badge-pending" title="Pending — becomes a member once they accept">Invited</span>
               @endif
-              <button @click="resendInvite('{{ i.id }}')" :disabled="resending() === '{{ i.id }}'" :text="resendLabel('{{ i.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Send the invite email again">Resend</button>
+              <Button variant="ghost" @click="resendInvite('{{ i.id }}')" :loading="resending() === '{{ i.id }}'" className="btn-ghost btn-xs" title="Send the invite email again">Resend</Button>
               <button @click="copyText('join-{{ i.id }}', '{{ i.join }}')" :text="copyLabel('join-{{ i.id }}', 'Copied ✓', 'Copy link')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Copy join link">Copy link</button>
-              <button @click="removeMember('{{ i.id }}')" :disabled="removing() === '{{ i.id }}'" :text="removeLabel('{{ i.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-danger" title="Revoke invite">Remove</button>
+              <Button variant="ghost" @click="removeMember('{{ i.id }}')" :loading="removing() === '{{ i.id }}'" className="btn-danger btn-xs" title="Revoke invite">Remove</Button>
             </div>
           @endforeach
         </div>
@@ -1167,7 +1160,7 @@ html { scroll-behavior: smooth; }
               </div>
               <button @click="testChannel('{{ c.id }}')" :disabled="testing() === '{{ c.id }}'" :text="testLabel('{{ c.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Send a test message">Test</button>
               <div class="tgl" @click="toggleChannel('{{ c.id }}')" :data-on="isOn('{{ c.id }}') ? '1' : '0'" :aria-checked="isOn('{{ c.id }}') ? 'true' : 'false'" data-on="{{ c.enabled ? '1' : '0' }}" role="switch" aria-checked="{{ c.enabled ? 'true' : 'false' }}" title="Enable / disable"></div>
-              <button @click="removeChannel('{{ c.id }}')" :disabled="removing() === '{{ c.id }}'" :text="removeLabel('{{ c.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-danger" title="Remove">Remove</button>
+              <Button variant="ghost" @click="removeChannel('{{ c.id }}')" :loading="removing() === '{{ c.id }}'" className="btn-danger btn-xs" title="Remove">Remove</Button>
             </div>
           @endforeach
           <div class="px-5 py-8 text-center panel" @if="noChannels()">
@@ -1226,7 +1219,7 @@ html { scroll-behavior: smooth; }
               @endif
             </div>
             @if (activeProject.is_active === false)
-              <button @click="unarchive" :disabled="unarchiving()" :text="unarchiving() ? 'Unarchiving…' : 'Unarchive'" class="flex-none px-4 py-2.5 font-semibold text-sm whitespace-nowrap btn-danger">Unarchive</button>
+              <Button variant="ghost" @click="unarchive" :loading="unarchiving()" className="btn-danger btn-dz">Unarchive</Button>
             @else
               <Button variant="ghost" @click="dzOpen('archive')" className="btn-danger btn-dz">Archive</Button>
             @endif
@@ -1272,7 +1265,13 @@ html { scroll-behavior: smooth; }
                  technology reads if it gets there first. "Confirm" is a safe
                  default because the dialog cannot be open before that binding
                  has run, and :text owns the label from then on. --}}
-            <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :text="dzConfirmLabel()" type="button" class="px-4 py-2.5 font-semibold text-sm btn-danger" disabled>Confirm</button>
+            {{-- `:label` rather than slot text: this one is "Archive project" or
+                 "Delete project" depending on which danger action opened the
+                 dialog, so a static slot would have pinned it to one word. The
+                 label span is client-decided and x-cloaked until hydration, which
+                 costs nothing here because the dialog only ever appears after a
+                 click. --}}
+            <Button variant="ghost" type="button" @click="dzConfirm" disabled :disabled="dzBusy() || !dzMatches()" :label="dzConfirmLabel()" className="btn-danger btn-dz" />
           </div>
           @if (dzNote())
             <span class="mt-2.5 text-xs note note-err show" :text="noteText(dzNote())"></span>
