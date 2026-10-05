@@ -697,6 +697,42 @@ const dzAction = state<'archive' | 'delete' | null>(null)
 const dzTyped = state('')
 /** The confirm-phrase input, for focus on open. Registered by ref="dzInput". */
 const dzInput = useRef<HTMLInputElement>('dzInput')
+
+// ---- dialog focus management ----
+//
+// The overlay carried role="dialog" aria-modal="true" and behaved like neither
+// past the opening focus: Tab walked straight out of the card into the page
+// behind it, the page kept scrolling under the overlay, and closing dropped a
+// keyboard user at the top of the document rather than back on the control
+// they opened it from. For a dialog that deletes a project this is the wrong
+// behaviour to ship.
+//
+// Ported from loghq's settings dialog, which hit the same three gaps and was
+// measured in a browser. <Dialog> now has a trap, a scroll lock and Escape --
+// it did not when loghq wrote this -- but it still has no focus restore, and
+// adopting it here would mean reworking this card's markup and CSS for one of
+// the three. The trap is the defect; this is the smaller change that fixes it.
+const dzPanel = useRef('dzPanel')
+const dzScrollLocked = useScrollLock()
+let dzRestoreFocusTo: HTMLElement | null = null
+
+/**
+ * Focusable descendants of the card, in DOM order.
+ *
+ * Enumerated from the ref'd element rather than the document, which is what the
+ * strict validator wants and why this is not a DOM-guard violation. The confirm
+ * button is :disabled until the typed phrase matches, so the tail of this list
+ * changes as the gate opens and it is recomputed per keystroke rather than
+ * cached.
+ */
+function dzFocusables(): HTMLElement[] {
+  const panel = dzPanel.current as HTMLElement | null
+  if (!panel)
+    return []
+  return Array.from(
+    panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'),
+  )
+}
 const dzBusy = state(false)
 const dzNote = state<FormNote | null>(null)
 const unarchiving = state(false)
@@ -724,7 +760,9 @@ function dzCopy(): { title: string, desc: string, confirm: string, busy: string 
   return which ? DZ[which] : { title: '', desc: '', confirm: '', busy: '' }
 }
 
-function dzOpen(which: 'archive' | 'delete'): void {
+function dzOpen(which: 'archive' | 'delete', e?: Event): void {
+  dzRestoreFocusTo = (e?.currentTarget as HTMLElement | null) ?? null
+  dzScrollLocked.set(true)
   dzAction.set(which)
   dzTyped.set('')
   dzNote.set(null)
@@ -749,6 +787,11 @@ function dzClose(): void {
   dzTyped.set('')
   dzNote.set(null)
   dzBusy.set(false)
+  dzScrollLocked.set(false)
+  // Back to the control that opened it, so a keyboard user is not dropped at
+  // the top of the document.
+  dzRestoreFocusTo?.focus()
+  dzRestoreFocusTo = null
 }
 
 function dzType(e: Event): void {
@@ -763,8 +806,28 @@ function dzType(e: Event): void {
 // outlive the fragment swap when you navigate away from /settings and stack up
 // one dead handler per visit — the same leak class as the .shell bug.
 function dzKey(e: KeyboardEvent): void {
-  if (e.key === 'Escape')
+  if (e.key === 'Escape') {
     dzClose()
+    return
+  }
+  if (e.key !== 'Tab')
+    return
+  // `e.target` is the focused element for a keydown, so this needs no
+  // document.activeElement -- which the DOM guard prohibits and which would
+  // have been the obvious way to write it.
+  const items = dzFocusables()
+  if (items.length === 0)
+    return
+  const first = items[0]
+  const last = items[items.length - 1]
+  if (e.shiftKey && e.target === first) {
+    e.preventDefault()
+    last.focus()
+  }
+  else if (!e.shiftKey && e.target === last) {
+    e.preventDefault()
+    first.focus()
+  }
 }
 
 function dzBackdrop(e: MouseEvent): void {
@@ -1222,7 +1285,7 @@ html { scroll-behavior: smooth; }
             @if (activeProject.is_active === false)
               <Button variant="ghost" @click="unarchive" :loading="unarchiving()" className="btn-danger btn-dz">Unarchive</Button>
             @else
-              <Button variant="ghost" @click="dzOpen('archive')" className="btn-danger btn-dz">Archive</Button>
+              <Button variant="ghost" @click="dzOpen('archive', $event)" className="btn-danger btn-dz">Archive</Button>
             @endif
           </div>
           <div class="dz-div"></div>
@@ -1232,7 +1295,7 @@ html { scroll-behavior: smooth; }
               <div class="mb-0.5 font-semibold text-sm">Delete this project</div>
               <p class="text-sm text-subtle">Permanently deletes <span class="text-muted mono">{{ activeProject?.name }}</span> and all of its issues, events, alert channels, and members. This cannot be undone.</p>
             </div>
-            <Button variant="ghost" @click="dzOpen('delete')" className="btn-danger btn-dz">Delete</Button>
+            <Button variant="ghost" @click="dzOpen('delete', $event)" className="btn-danger btn-dz">Delete</Button>
           </div>
         </div>
       </section>
@@ -1243,7 +1306,7 @@ html { scroll-behavior: smooth; }
            the runtime keeps it in step from there. Keeping the dialog mounted is
            also what lets dzOpen focus the field. --}}
       <div class="dz-overlay" :hidden="dzAction() === null" hidden @click="dzBackdrop" @keydown="dzKey">
-        <div class="dz-card panel" role="dialog" aria-modal="true" aria-labelledby="dz-title">
+        <div ref="dzPanel" class="dz-card panel" role="dialog" aria-modal="true" aria-labelledby="dz-title">
           <div id="dz-title" class="mb-1 font-semibold text-base" :text="dzCopy().title"></div>
           <p class="mb-4 text-muted text-sm" :text="dzCopy().desc"></p>
           <label for="dz-confirm" class="block mb-1.5 text-subtle text-xs">Type <span class="text-muted mono">{{ activeProject?.name }}</span> to confirm</label>
