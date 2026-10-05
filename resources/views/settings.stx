@@ -1266,13 +1266,7 @@ html { scroll-behavior: smooth; }
                  technology reads if it gets there first. "Confirm" is a safe
                  default because the dialog cannot be open before that binding
                  has run, and :text owns the label from then on. --}}
-            {{-- `:label` rather than slot text: this one is "Archive project" or
-                 "Delete project" depending on which danger action opened the
-                 dialog, so a static slot would have pinned it to one word. The
-                 label span is client-decided and x-cloaked until hydration, which
-                 costs nothing here because the dialog only ever appears after a
-                 click. --}}
-            <Button variant="ghost" type="button" @click="dzConfirm" disabled :disabled="dzBusy() || !dzMatches()" :label="dzConfirmLabel()" className="btn-danger btn-dz" />
+            <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :text="dzConfirmLabel()" type="button" class="px-4 py-2.5 font-semibold text-sm btn-danger" disabled>Confirm</button>
           </div>
           @if (dzNote())
             <span class="mt-2.5 text-xs note note-err show" :text="noteText(dzNote())"></span>
