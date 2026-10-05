@@ -56,8 +56,41 @@ if (!home.includes(contract.homeText)) throw new Error(`Homepage does not contai
 const login = await readWithRetry('/login')
 if (!/<(?:form|main)\b/i.test(login)) throw new Error('Login smoke response does not contain an application form or main region.')
 
+/*
+ * Unresolved stx expressions in the SERVED html.
+ *
+ * This has to run against a served page, because the two render paths disagree:
+ * `bun run build` resolves a component's expressions fine, while `buddy serve`
+ * — what production actually runs — can ship the component's own template
+ * verbatim. That is how every <Button> on this app went live reading
+ * `class="{{ buttonClasses }}"`, a bare unstyled element, while the build output
+ * was correct and lint, tsc, stx typecheck, the tests and release:validate were
+ * all clean. No check over dist/ can see it.
+ *
+ * Attributes specifically: the visual gate already looks for `{{` but reads
+ * `document.body.innerText`, which never contains an attribute value. That blind
+ * spot is the whole reason this shipped, so this is the half worth gating on.
+ * A served attribute value never legitimately contains `{{`.
+ */
+function unresolvedAttributes(html: string): string[] {
+  const found = new Set<string>()
+  for (const m of html.matchAll(/\s([a-zA-Z_:@][\w:.-]*)\s*=\s*"([^"]*\{\{[^"]*)"/g))
+    found.add(`${m[1]}="${m[2].trim()}"`)
+  return [...found]
+}
+
+for (const [label, body] of [['homepage', home], ['login', login]] as const) {
+  const leftovers = unresolvedAttributes(body)
+  if (leftovers.length > 0) {
+    throw new Error(
+      `Deployed ${label} ships ${leftovers.length} unresolved stx expression(s) in attributes, `
+      + `so a component rendered its own template instead of its output: ${leftovers.join(', ')}`,
+    )
+  }
+}
+
 const robots = await readWithRetry('/robots.txt')
 if (robots.includes('http://localhost')) throw new Error('Deployed robots.txt contains a localhost URL.')
 if (!robots.includes(new URL(baseUrl).hostname)) throw new Error(`Deployed robots.txt does not name ${new URL(baseUrl).hostname}.`)
 
-console.log(`Deployment smoke passed for ${baseUrl}: homepage, login, and robots metadata are live.`)
+console.log(`Deployment smoke passed for ${baseUrl}: homepage, login, robots metadata, and no unresolved stx expressions.`)
