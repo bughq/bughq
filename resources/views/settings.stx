@@ -868,9 +868,9 @@ html { scroll-behavior: smooth; }
 .wordmark-link:hover { opacity: 0.75; }
 .sec { scroll-margin-top: 84px; }
 .sec-title { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); }
-.btn { background: var(--accent); color: var(--accent-ink); border-radius: 10px; transition: background 0.15s ease, opacity 0.15s ease; }
-.btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
-.btn:disabled { opacity: 0.55; cursor: default; }
+.btn { background: var(--accent) !important; color: var(--accent-ink) !important; border-radius: 10px !important; transition: background 0.15s ease, opacity 0.15s ease; }
+.btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000) !important; }
+.btn:disabled { opacity: 0.55 !important; cursor: default; }
 /* These three are <Button variant="ghost"> now, so this file has to beat the
    component's own utilities on the properties it also sets: `text-fg-strong`,
    `rounded-control`, `px-4 py-2 text-base` and `font-semibold`. Those are
@@ -891,6 +891,7 @@ html { scroll-behavior: smooth; }
 .btn-ghost:hover { color: var(--text) !important; border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .btn-danger { border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); color: var(--warn) !important; border-radius: 9px !important; background: var(--panel); transition: all 0.15s ease; }
 .btn-danger:hover { color: #fff !important; background: var(--warn); border-color: var(--warn); }
+.btn-sm { padding: 0.5rem 0.75rem !important; font-size: 0.875rem !important; line-height: 1.25rem !important; font-weight: 500 !important; }
 .btn-xs { padding: 0.375rem 0.625rem !important; font-size: 0.75rem !important; line-height: 1rem !important; font-weight: 500 !important; }
 .btn-dz { flex: none; padding: 0.625rem 1rem !important; font-size: 0.875rem !important; line-height: 1.25rem !important; font-weight: 600 !important; white-space: nowrap; }
 /* .btn has had a disabled state since the start; .btn-danger never got one, and
@@ -1048,7 +1049,7 @@ html { scroll-behavior: smooth; }
             <code :text="keyDisplay()" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm truncate field mono" style="letter-spacing:0.01em">{{ keyMask }}</code>
             <button @click="toggleReveal" :text="revealed() ? 'Hide' : 'Reveal'" class="px-3 py-2 font-medium text-sm btn-ghost">Reveal</button>
             <button @click="copyText('key', currentKey())" :text="copyLabel('key')" class="px-3 py-2 font-medium text-sm btn-ghost">Copy</button>
-            <button @click="rotateKey" :disabled="rotating()" class="px-3 py-2 font-medium text-sm btn-danger">Rotate</button>
+            <Button variant="ghost" @click="rotateKey" :loading="rotating()" className="btn-danger btn-sm">Rotate</Button>
           </div>
           {{-- The same 404 the rotate confirm quotes, for the reason spelled out
                in the note above rotateKey: a retired key resolves to no project,
@@ -1124,7 +1125,7 @@ html { scroll-behavior: smooth; }
           <form @submit="inviteMember">
             <div class="flex flex-wrap gap-2 items-center">
               <input name="email" type="email" aria-label="Teammate email address" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm field" placeholder="teammate@company.com" autocomplete="off">
-              <button type="submit" :disabled="inviting()" :text="inviting() ? 'Inviting…' : 'Invite'" class="px-4 py-2.5 font-semibold text-sm btn">Invite</button>
+              <Button type="submit" variant="ghost" :loading="inviting()" className="btn btn-dz">Invite</Button>
             </div>
           </form>
           @if (inviteNote() && inviteNote()?.ok)
@@ -1178,7 +1179,7 @@ html { scroll-behavior: smooth; }
             <input name="webhook_url" type="url" aria-label="Webhook URL" class="mb-2 px-3.5 py-2.5 w-full text-sm field mono" :placeholder="urlPlaceholder()" placeholder="https://hooks.slack.com/services/…" autocomplete="off" spellcheck="false">
             <input name="label" type="text" aria-label="Channel label (optional)" class="mb-3 px-3.5 py-2.5 w-full text-sm field" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
             <div class="flex gap-3 items-center">
-              <button type="submit" :disabled="adding()" :text="adding() ? 'Adding…' : 'Add channel'" class="px-4 py-2.5 font-semibold text-sm btn">Add channel</button>
+              <Button type="submit" variant="ghost" :loading="adding()" className="btn btn-dz">Add channel</Button>
               @if (whNote() && whNote()?.ok)
                 <span class="text-xs note note-ok show" :text="noteText(whNote())"></span>
               @endif
