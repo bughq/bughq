@@ -269,28 +269,11 @@ export default {
     // and set no background of their own, so a shared `btn` would paint every
     // plain button on those pages accent. This owns one of the six and leaves
     // the rest to their pages.
-    // `!` on exactly the five properties <Button> also sets.
-    //
-    // The six call sites are <Button className="btn-accent"> now, and a
-    // component's utilities and this shortcut are both single-class
-    // selectors -- equal specificity, so source order decides and crosswind
-    // sorts its output by category rather than by generation. Without `!`
-    // the override is PARTIAL: measured, this shortcut beat the component's
-    // radius and background but lost its padding, which is worse than not
-    // overriding at all. `!` does not care about order.
-    //
-    // Only those five carry it. `w-full` comes from Button's own fullWidth,
-    // and leaving the rest unmarked keeps a per-site className useful.
-    //
-    // py/text moved in from the call sites, which all declared
-    // `py-2.5 w-full font-semibold text-sm` identically. shadow-none because
-    // Button's primary variant adds shadow-md and these buttons never had one.
-    'btn-accent': 'bg-accent text-accent-ink !rounded-[10px] !py-2.5 !text-sm '
-      + '!shadow-none hover:!shadow-none font-semibold '
+    'btn-accent': 'bg-accent text-accent-ink rounded-[10px] '
       + '[transition:transform_0.12s_ease,opacity_0.15s_ease] '
       + 'hover:bg-[color-mix(in_srgb,var(--accent)_88%,#000)] '
       + 'active:translate-y-px '
-      + 'disabled:!opacity-60 disabled:cursor-default',
+      + 'disabled:opacity-60 disabled:cursor-default',
 
     // Raised surface. Three copies, byte-identical.
     panel: 'bg-panel border border-solid border-line rounded-[12px]',

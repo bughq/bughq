@@ -189,9 +189,9 @@ input[readonly].field { opacity: 0.85; }
         <input name="password" id="register-password" type="password" required autocomplete="new-password" placeholder="At least 8 characters" class="px-3.5 py-2.5 w-full text-sm field">
       </div>
 
-      <Button type="submit" :loading="loading()" fullWidth className="btn-accent">
+      <button type="submit" :disabled="loading()" class="py-2.5 w-full font-semibold text-sm btn-accent">
         {{ loading() ? 'Creating account…' : 'Create account' }}
-      </Button>
+      </button>
     </form>
 
     @if (anyOauth)

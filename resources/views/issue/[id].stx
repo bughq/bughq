@@ -629,22 +629,16 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 .kv dd { color:var(--text); font-family:var(--mono); word-break:break-word; padding:.2rem 0; }
 .jsonblock { font-family:var(--mono); font-size:.72rem; line-height:1.5; color:var(--text-2); white-space:pre-wrap; word-break:break-word; padding:.7rem 1rem 1rem; margin:0; }
 
-/* `!important` on the five properties <Button variant="ghost"> also sets:
-   padding, radius, font-size, gap and colour. Marked across the whole family,
-   not just here -- an !important base outranks its own un-marked :hover and
-   `.btn-resolve`, which would have turned the resolve button neutral and
-   undone the override the comment below describes. `.copybtn` carries it for
-   the same reason: its .68rem would otherwise lose to this .8rem. */
-.btn { display:inline-flex; align-items:center; gap:.4rem !important; padding:.4rem .8rem !important; border-radius:9px !important; font-size:.8rem !important; font-weight:600; border:1px solid var(--border); background:var(--panel); color:var(--text-2) !important; cursor:pointer; transition: color .12s ease, border-color .12s ease, background-color .12s ease, transform .12s ease; }
-.btn:hover { color:var(--text) !important; border-color:color-mix(in srgb, var(--accent) 40%, var(--border)); background:color-mix(in srgb, var(--accent) 6%, transparent); }
+.btn { display:inline-flex; align-items:center; gap:.4rem; padding:.4rem .8rem; border-radius:9px; font-size:.8rem; font-weight:600; border:1px solid var(--border); background:var(--panel); color:var(--text-2); cursor:pointer; transition: color .12s ease, border-color .12s ease, background-color .12s ease, transform .12s ease; }
+.btn:hover { color:var(--text); border-color:color-mix(in srgb, var(--accent) 40%, var(--border)); background:color-mix(in srgb, var(--accent) 6%, transparent); }
 .btn:active { transform: translateY(1px); }
-.btn-resolve { color:#16a34a !important; border-color:rgba(34,197,94,.4); }
+.btn-resolve { color:#16a34a; border-color:rgba(34,197,94,.4); }
 /* Keep the resolve green on hover — the generic .btn:hover would otherwise
    swap it for the neutral text color. */
-.btn-resolve:hover { color:#16a34a !important; border-color:rgba(34,197,94,.75); background:rgba(34,197,94,.1); }
+.btn-resolve:hover { color:#16a34a; border-color:rgba(34,197,94,.75); background:rgba(34,197,94,.1); }
 .backlink { color: var(--text-2); transition: color .12s ease; }
 .backlink:hover { color: var(--text); }
-.copybtn { font-family:var(--mono); font-size:.68rem !important; }
+.copybtn { font-family:var(--mono); font-size:.68rem; }
 .theme-btn .ic-sun, .theme-btn .ic-moon { display: none; }
 .theme-btn[data-t="light"] .ic-sun { display: block; }
 .theme-btn[data-t="dark"] .ic-moon { display: block; }
@@ -710,20 +704,20 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
           <div class="flex flex-wrap gap-2 items-center mt-4">
             @if (isResolved)
               <form method="POST" action="/issue/{{ issue.id }}/status?to=unresolved">
-                <Button type="submit" variant="ghost" className="btn">Reopen</Button>
+                <button type="submit" class="btn">Reopen</button>
               </form>
             @else
               <form method="POST" action="/issue/{{ issue.id }}/status?to=resolved">
-                <Button type="submit" variant="ghost" className="btn btn-resolve">&#10003; Resolve</Button>
+                <button type="submit" class="btn btn-resolve">&#10003; Resolve</button>
               </form>
             @endif
             @if (isIgnored)
               <form method="POST" action="/issue/{{ issue.id }}/status?to=unresolved">
-                <Button type="submit" variant="ghost" className="btn">Unignore</Button>
+                <button type="submit" class="btn">Unignore</button>
               </form>
             @else
               <form method="POST" action="/issue/{{ issue.id }}/status?to=ignored">
-                <Button type="submit" variant="ghost" className="btn">Ignore</Button>
+                <button type="submit" class="btn">Ignore</button>
               </form>
             @endif
           </div>

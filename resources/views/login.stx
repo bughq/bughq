@@ -188,9 +188,9 @@ async function handleTwoFactor(e: SubmitEvent): Promise<void> {
         <span>Keep me signed in for 30 days</span>
       </label>
 
-      <Button type="submit" :loading="loading()" fullWidth className="btn-accent">
+      <button type="submit" :disabled="loading()" class="py-2.5 w-full font-semibold text-sm btn-accent">
         {{ loading() ? 'Signing in…' : 'Sign in' }}
-      </Button>
+      </button>
     </form>
     @endif
 
@@ -201,9 +201,9 @@ async function handleTwoFactor(e: SubmitEvent): Promise<void> {
         <label for="login-code" class="block mb-1.5 font-medium text-muted text-xs">Authentication code</label>
         <input name="code" id="login-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required placeholder="123456" class="px-3.5 py-2.5 w-full text-sm field">
       </div>
-      <Button type="submit" :loading="loading()" fullWidth className="btn-accent">
+      <button type="submit" :disabled="loading()" class="py-2.5 w-full font-semibold text-sm btn-accent">
         {{ loading() ? 'Verifying…' : 'Verify & sign in' }}
-      </Button>
+      </button>
     </form>
     @endif
 
