@@ -61,6 +61,14 @@ jobs:
       - name: Validate the production artifact
         run: bun run release:validate
 
+      - name: Validate the serve path renders components
+        # Before the deploy, not after: `buddy serve` renders views from source
+        # and resolves components differently from `bun run build`, so every
+        # build-based gate above can be green while the served page ships a
+        # component's raw template (stacksjs/stx#2037). This is the only gate
+        # that renders the way production does.
+        run: bun run serve:validate
+
       # Attach deploys over SSH to the shared box (same DEPLOY_SSH_KEY authorized
       # on the box). Derive the .pub from the private key so one secret suffices.
       - name: Add deploy SSH key
