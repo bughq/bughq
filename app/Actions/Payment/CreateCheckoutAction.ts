@@ -2,6 +2,7 @@ import type { RequestInstance } from '@stacksjs/types'
 import { Action } from '@stacksjs/actions'
 import { Auth } from '@stacksjs/auth'
 import { config } from '@stacksjs/config'
+import { isBillable } from '@stacksjs/orm'
 import { getPrice } from '@stacksjs/payments'
 import { response } from '@stacksjs/router'
 
@@ -23,6 +24,10 @@ export default new Action({
     const user = bearer ? await Auth.getUserFromToken(bearer) : await request.user()
     if (!user)
       return response.unauthorized('Authentication required')
+    // The token resolves the framework's User, whose type has no billing
+    // methods; this checks the record really has them, and narrows to them.
+    if (!isBillable(user))
+      return response.json({ error: 'Billing is not available yet. Please try again soon.' }, 503)
 
     const body = (request as any).jsonBody ?? {}
     const interval = body.interval === 'yearly' ? 'yearly' : 'monthly'
@@ -33,11 +38,12 @@ export default new Action({
       if (!price)
         return response.json({ error: 'Billing is not configured yet.' }, 400)
 
-      const checkout = await user.checkout([{ priceId: price.id, quantity: 1 }], {
+      const checkout = await user.checkout({
         mode: 'subscription',
-        allowPromotions: true,
-        success_url: `${config.app.url}/dashboard?upgraded=1`,
-        cancel_url: `${config.app.url}/pricing`,
+        lines: [{ price: price.id, quantity: 1 }],
+        allowPromotionCodes: true,
+        successUrl: `${config.app.url}/dashboard?upgraded=1`,
+        cancelUrl: `${config.app.url}/pricing`,
       })
 
       return response.json({ url: checkout.url })
