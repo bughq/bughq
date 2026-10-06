@@ -105,7 +105,7 @@ fetch('/api/me', { credentials: 'same-origin' })
 
 <div class="min-h-[100dvh]">
   <header class="flex items-center justify-between mx-auto px-5 md:px-6 h-16 max-w-3xl">
-    <a href="/" class="text-lg wordmark">bughq</a>
+    <StxLink to="/" class="text-lg wordmark">bughq</StxLink>
     <div class="flex gap-2.5 items-center">
       <StxLink to="/dashboard" class="px-3.5 py-2 text-sm btn btn-ghost">Dashboard</StxLink>
       <button @click="logout" class="px-3.5 py-2 text-sm btn btn-ghost">Log out</button>
@@ -183,7 +183,7 @@ fetch('/api/me', { credentials: 'same-origin' })
     </section>
 
     <p class="text-sm text-subtle">
-      Signed in with a private token. <a href="/" class="text-accent">Back to site</a>
+      Signed in with a private token. <StxLink to="/" class="text-accent">Back to site</StxLink>
     </p>
   </div>
 </div>

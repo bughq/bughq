@@ -138,7 +138,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 <div class="flex items-center justify-center px-5 py-12 min-h-[100dvh]">
   <div class="max-w-md w-full">
     <div class="mb-8 text-center">
-      <a href="/" class="text-2xl wordmark">bughq</a>
+      <StxLink to="/" class="text-2xl wordmark">bughq</StxLink>
     </div>
 
     @if (!user)
@@ -181,7 +181,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       @if (atProjectLimit)
         <div class="px-4 py-3 text-sm rounded-[10px] limit-note">
           You already have {{ ownedCount === 1 ? 'an app' : `${ownedCount} apps` }} on Free, which covers {{ freeProjects === 1 ? 'one' : freeProjects }}.
-          <a href="/pricing" class="text-accent">Pro</a> lifts that, and brings your team with it.
+          <StxLink to="/pricing" class="text-accent">Pro</StxLink> lifts that, and brings your team with it.
         </div>
       @endif
       {{-- Two buttons under a server @if, not one with a mixed expression.
@@ -191,7 +191,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
            to choke on. Server decides which button exists; the client only ever
            animates the one it owns. --}}
       @if (atProjectLimit)
-        <a href="/pricing" class="block py-2.5 w-full font-semibold text-center text-sm btn-accent">Upgrade to add another app</a>
+        <StxLink to="/pricing" class="block py-2.5 w-full font-semibold text-center text-sm btn-accent">Upgrade to add another app</StxLink>
       @endif
       @if (!atProjectLimit)
         <button type="submit" :disabled="loading()" class="py-2.5 w-full font-semibold text-sm btn-accent">

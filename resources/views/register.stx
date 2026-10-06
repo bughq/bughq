@@ -163,7 +163,7 @@ input[readonly].field { opacity: 0.85; }
 <div class="flex items-center justify-center px-5 py-12 min-h-[100dvh]">
   <div class="max-w-sm w-full">
     <div class="mb-8 text-center">
-      <a href="/" class="text-2xl wordmark">bughq</a>
+      <StxLink to="/" class="text-2xl wordmark">bughq</StxLink>
       <p class="mt-2 text-sm text-subtle">Create your account</p>
     </div>
 

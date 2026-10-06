@@ -60,10 +60,10 @@ const signedIn = (() => {
     </div>
 
     @if (signedIn)
-      <a class="btn nav-cta primary sm" href="/dashboard">Dashboard</a>
+      <StxLink class="btn nav-cta primary sm" to="/dashboard">Dashboard</StxLink>
     @else
-      <a class="nav-login" href="/login">Log in</a>
-      <a class="btn nav-cta primary sm" href="/register">Sign up</a>
+      <StxLink class="nav-login" to="/login">Log in</StxLink>
+      <StxLink class="btn nav-cta primary sm" to="/register">Sign up</StxLink>
     @endif
 
     <details class="nav-menu">
@@ -90,10 +90,10 @@ const signedIn = (() => {
         <StxLink to="/docs">Docs</StxLink>
         <a href="https://github.com/stacksjs/bughq">GitHub</a>
         @if (signedIn)
-          <a class="btn primary sm" href="/dashboard">Dashboard</a>
+          <StxLink class="btn primary sm" to="/dashboard">Dashboard</StxLink>
         @else
-          <a href="/login">Log in</a>
-          <a class="btn primary sm" href="/register">Sign up</a>
+          <StxLink to="/login">Log in</StxLink>
+          <StxLink class="btn primary sm" to="/register">Sign up</StxLink>
         @endif
       </div>
     </details>

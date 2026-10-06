@@ -45,10 +45,10 @@
       <StxLink to="/pricing">Pricing</StxLink>
       <a href="https://github.com/stacksjs/bughq">GitHub</a>
       @if (signedIn)
-        <a href="/dashboard">Dashboard</a>
+        <StxLink to="/dashboard">Dashboard</StxLink>
       @else
-        <a href="/login">Log in</a>
-        <a href="/register">Get started</a>
+        <StxLink to="/login">Log in</StxLink>
+        <StxLink to="/register">Get started</StxLink>
       @endif
     </div>
   </div>
