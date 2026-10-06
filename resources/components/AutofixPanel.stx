@@ -356,9 +356,9 @@ loadAutofix(true)
           <label for="autofix-branch">Base branch</label>
           <input id="autofix-branch" class="autofix-input" type="text" placeholder="auto-detect" :value="branchInput()" @input="updateBranch" autocomplete="off">
         </div>
-        <button type="button" class="btn" @click="saveRepository(false)" :disabled="repositorySaving() || !repositoryInput()">
+        <Button type="button" variant="ghost" @click="saveRepository(false)" :loading="repositorySaving()" :disabled="!repositoryInput()" className="btn">
           Connect
-        </button>
+        </Button>
       </div>
     </div>
     <p :class="ownerSetupClass()" class="text-muted">The project owner needs to connect a GitHub repository before Autofix can run.</p>
@@ -419,7 +419,7 @@ loadAutofix(true)
 
     <div :class="retryClass()">
       <span class="text-subtle text-xs">The previous run stopped safely. No partial pull request was opened.</span>
-      <button type="button" class="btn" @click="startAutofix" :disabled="autofixStarting()">Retry Autofix</button>
+      <Button type="button" variant="ghost" @click="startAutofix" :loading="autofixStarting()" className="btn">Retry Autofix</Button>
     </div>
   </div>
 

@@ -194,9 +194,9 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
         <StxLink to="/pricing" class="block py-2.5 w-full font-semibold text-center text-sm btn-accent">Upgrade to add another app</StxLink>
       @endif
       @if (!atProjectLimit)
-        <button type="submit" :disabled="loading()" class="py-2.5 w-full font-semibold text-sm btn-accent">
+        <Button type="submit" :loading="loading()" fullWidth className="btn-accent">
           {{ loading() ? 'Creating…' : 'Create app' }}
-        </button>
+        </Button>
       @endif
     </form>
     @endif
