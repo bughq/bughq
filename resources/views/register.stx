@@ -173,20 +173,20 @@ input[readonly].field { opacity: 0.85; }
 
     <form @submit="handleSubmit" class="space-y-4">
       @if (error())
-        <div class="px-3 py-2 text-sm rounded-lg err">{{ error() }}</div>
+        <div id="form-error" role="alert" class="px-3 py-2 text-sm rounded-lg err">{{ error() }}</div>
       @endif
 
       <div>
         <label for="register-name" class="block mb-1.5 font-medium text-muted text-xs">Name</label>
-        <input name="name" id="register-name" type="text" required autocomplete="name" placeholder="Ada Lovelace" class="px-3.5 py-2.5 w-full text-sm field">
+        <input name="name" id="register-name" type="text" required autocomplete="name" placeholder="Ada Lovelace" class="px-3.5 py-2.5 w-full text-sm field" :aria-invalid="error() ? 'true' : 'false'" :aria-describedby="error() ? 'form-error' : ''">
       </div>
       <div>
         <label for="register-email" class="block mb-1.5 font-medium text-muted text-xs">Email</label>
-        <input name="email" id="register-email" type="email" required autocomplete="email" placeholder="you@example.com" class="px-3.5 py-2.5 w-full text-sm field" value="{{ inviteEmail }}" @if (inviteEmail) readonly @endif>
+        <input name="email" id="register-email" type="email" required autocomplete="email" placeholder="you@example.com" class="px-3.5 py-2.5 w-full text-sm field" value="{{ inviteEmail }}" @if (inviteEmail) readonly @endif :aria-invalid="error() ? 'true' : 'false'" :aria-describedby="error() ? 'form-error' : ''">
       </div>
       <div>
         <label for="register-password" class="block mb-1.5 font-medium text-muted text-xs">Password</label>
-        <input name="password" id="register-password" type="password" required autocomplete="new-password" placeholder="At least 8 characters" class="px-3.5 py-2.5 w-full text-sm field">
+        <input name="password" id="register-password" type="password" required autocomplete="new-password" placeholder="At least 8 characters" class="px-3.5 py-2.5 w-full text-sm field" :aria-invalid="error() ? 'true' : 'false'" :aria-describedby="error() ? 'form-error' : ''">
       </div>
 
       <Button type="submit" :loading="loading()" fullWidth className="btn-accent">
