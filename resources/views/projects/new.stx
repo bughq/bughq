@@ -156,12 +156,12 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 
     <form @submit="handleSubmit" class="space-y-4">
       @if (error())
-        <div class="px-3 py-2 text-sm rounded-lg err">{{ error() }}</div>
+        <div id="form-error" role="alert" class="px-3 py-2 text-sm rounded-lg err">{{ error() }}</div>
       @endif
 
       <div>
         <label for="new-app-name" class="block mb-1.5 font-medium text-muted text-xs">App name</label>
-        <input name="name" id="new-app-name" type="text" required autofocus placeholder="Acme Web" class="px-3.5 py-2.5 w-full text-sm field">
+        <input name="name" id="new-app-name" type="text" required autofocus placeholder="Acme Web" class="px-3.5 py-2.5 w-full text-sm field" :aria-invalid="error() ? 'true' : 'false'" :aria-describedby="error() ? 'form-error' : ''">
       </div>
       <div>
         <label for="new-app-platform" class="block mb-1.5 font-medium text-muted text-xs">Platform</label>
