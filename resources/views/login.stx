@@ -189,7 +189,7 @@ async function handleTwoFactor(e: SubmitEvent): Promise<void> {
       </label>
 
       <Button type="submit" :loading="loading()" fullWidth className="btn-accent">
-        Sign in
+        {{ loading() ? 'Signing in…' : 'Sign in' }}
       </Button>
     </form>
     @endif
@@ -202,7 +202,7 @@ async function handleTwoFactor(e: SubmitEvent): Promise<void> {
         <input name="code" id="login-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required placeholder="123456" class="px-3.5 py-2.5 w-full text-sm field" :aria-invalid="error() ? 'true' : 'false'" :aria-describedby="error() ? 'login-error' : ''">
       </div>
       <Button type="submit" :loading="loading()" fullWidth className="btn-accent">
-        Verify &amp; sign in
+        {{ loading() ? 'Verifying…' : 'Verify &amp; sign in' }}
       </Button>
     </form>
     @endif

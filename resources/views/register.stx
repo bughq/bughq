@@ -190,7 +190,7 @@ input[readonly].field { opacity: 0.85; }
       </div>
 
       <Button type="submit" :loading="loading()" fullWidth className="btn-accent">
-        Create account
+        {{ loading() ? 'Creating account…' : 'Create account' }}
       </Button>
     </form>
 
