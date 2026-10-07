@@ -195,7 +195,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       @endif
       @if (!atProjectLimit)
         <Button type="submit" :loading="loading()" fullWidth className="btn-accent">
-          {{ loading() ? 'Creating…' : 'Create app' }}
+          Create app
         </Button>
       @endif
     </form>
