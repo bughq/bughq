@@ -140,6 +140,16 @@ export default {
   // merging with it, which is what makes the block below safe to add.
   theme: {
     extend: {
+      borderRadius: {
+        /*
+         * `rounded-panel` is @stacksjs/components' radius role name:
+         * <EmptyState variant="panel"> renders `bg-panel rounded-panel
+         * ring-1 ring-line`. Without this it resolves to nothing and the
+         * panel renders square. Pointed at this app's own panel radius:
+         * the `panel` shortcut above uses rounded-[12px].
+         */
+        panel: '12px',
+      },
       colors: {
         canvas: 'var(--bg)',
         panel: 'var(--panel)',

@@ -1227,9 +1227,11 @@ html { scroll-behavior: smooth; }
               <Button variant="ghost" @click="removeChannel('{{ c.id }}')" :loading="removing() === '{{ c.id }}'" className="btn-danger btn-xs" title="Remove">Remove</Button>
             </div>
           @endforeach
-          <div class="px-5 py-8 text-center panel" @if="noChannels()">
-            <div class="mb-1 font-medium text-sm">No chat alerts yet</div>
-            <div class="text-subtle text-xs">Add a Slack or Discord webhook below to start getting pinged.</div>
+          {{-- The reactive @if stays on a plain wrapper: a component taking a
+               parent binding is the stx#2037 shape, and this one does not need
+               to be the component. --}}
+          <div @if="noChannels()">
+            <EmptyState title="No chat alerts yet" description="Add a Slack or Discord webhook below to start getting pinged." />
           </div>
         </div>
         <div class="px-5 py-5 panel">
