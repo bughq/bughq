@@ -80,7 +80,7 @@
     "@stacksjs/components": "0.2.395",
     "@stacksjs/stx": "0.2.395",
     "@ts-analytics/tracking": "^0.1.15",
-    "bun-plugin-stx": "0.2.382",
+    "bun-plugin-stx": "0.2.395",
     "bun-query-builder": "^0.2.60",
     "stacks": "^0.75.79",
     "stripe": "22.3.2"
