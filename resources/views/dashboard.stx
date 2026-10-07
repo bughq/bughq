@@ -1161,7 +1161,7 @@ summary:focus-visible {
       <span :text="undoLabel()"></span>
       <span class="flex gap-2 items-center">
         <button @click="undoTriage" class="px-3 py-1 font-semibold text-xs undo-btn">Undo</button>
-        <button @click="dismissUndo" class="px-2 py-1 text-xs undo-x" title="Dismiss">&times;</button>
+        <button @click="dismissUndo" class="px-2 py-1 text-xs undo-x" aria-label="Dismiss" title="Dismiss">&times;</button>
       </span>
     </div>
     <div class="flex items-center mb-3 px-4 py-2.5 text-sm undo-err undo-strip" @if="triageError()">
@@ -1265,26 +1265,26 @@ summary:focus-visible {
           <div class="flex gap-1.5 items-center justify-end row-actions shrink-0 w-24">
             @if (issue.status !== 'resolved')
               <button @click="triage('{{ issue.id }}', 'resolved')" :disabled="triaging() === '{{ issue.id }}'"
-                class="act act-resolve" title="Resolve — alerts again only if it comes back">&#10003;</button>
+                class="act act-resolve" aria-label="Resolve" title="Resolve — alerts again only if it comes back">&#10003;</button>
             @endif
             @if (issue.status !== 'ignored')
               <button @click="triage('{{ issue.id }}', 'ignored')" :disabled="triaging() === '{{ issue.id }}'"
-                class="act act-ignore" title="Ignore — stays counted, never alerts">&#8856;</button>
+                class="act act-ignore" aria-label="Ignore" title="Ignore — stays counted, never alerts">&#8856;</button>
             @endif
             @if (issue.status !== 'unresolved')
               <button @click="triage('{{ issue.id }}', 'unresolved')" :disabled="triaging() === '{{ issue.id }}'"
-                class="act act-reopen" title="Reopen">&#8617;</button>
+                class="act act-reopen" aria-label="Reopen" title="Reopen">&#8617;</button>
             @endif
             {{-- Snooze. A <details> rather than a signal-driven popover: it is
                  native disclosure, closes on its own, needs no open-state
                  bookkeeping per row, and works before hydration. --}}
             @if (issue.snoozed_until && snoozeLeft(issue.snoozed_until))
               <button @click="wake('{{ issue.id }}')" :disabled="triaging() === '{{ issue.id }}'"
-                class="act act-wake" title="Wake now — back to Unresolved">&#9200;</button>
+                class="act act-wake" aria-label="Wake now" title="Wake now — back to Unresolved">&#9200;</button>
             @endif
             @if (!snoozeLeft(issue.snoozed_until))
               <details class="snooze-wrap">
-                <summary class="act act-snooze" title="Snooze — hide until later, keeps counting">&#9925;</summary>
+                <summary class="act act-snooze" aria-label="Snooze" title="Snooze — hide until later, keeps counting">&#9925;</summary>
                 <div class="snooze-menu">
                   <button @click="snooze('{{ issue.id }}', '1h')" class="snooze-opt">1 hour</button>
                   <button @click="snooze('{{ issue.id }}', '4h')" class="snooze-opt">4 hours</button>
