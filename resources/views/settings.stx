@@ -991,7 +991,7 @@ html { scroll-behavior: smooth; }
    partial reset animates back to the danger fill. */
 .btn-danger:disabled { opacity: 0.55 !important; cursor: default; }
 .btn-danger:disabled:hover { color: var(--warn) !important; background: var(--panel); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
-.field:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.field:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); box-shadow: none; }
 .badge { border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; padding: 2px 9px; }
 .badge-slack { color: #fff; background: var(--slack); }
 .badge-discord { color: #fff; background: var(--discord); }

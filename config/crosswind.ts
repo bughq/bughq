@@ -162,6 +162,28 @@ function pageCss(): string {
     // utility and wins. Nothing competes with `.cmp-note`, so it is fine here.
     '.cmp-note { margin-top: 1rem; color: var(--text-3); font-size: 0.86rem; line-height: 1.55; max-width: 68ch; }',
 
+    // The auth flow: login, register, forgot-password, reset-password and
+    // projects/new. All five declared `.field:focus` and `.err` identically, and
+    // login and register declared `.divider` identically too.
+    //
+    // Two pages outside this set declare the same names differently and KEEP
+    // their own scoped blocks for now, so both had to be made explicit rather
+    // than left to the cascade: settings.stx's `.field:focus` sets no
+    // box-shadow and pricing.stx's `.err` sets no background, and without
+    // saying so they would have inherited those from here. Each now states the
+    // absence. Remove those two declarations when those files are hoisted and
+    // the family can be reconciled properly.
+    `
+    .err { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
+    .divider { display: flex; align-items: center; gap: 0.75rem; color: var(--text-3); font-size: 12px; }
+    .divider::before, .divider::after { content: ""; height: 1px; flex: 1; background: var(--border); }
+    /* Was a 5-property cssText string assigned to a createElement'd <p>. */
+    .invite-hint { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); }
+    input[readonly].field { opacity: 0.85; }
+    .ok { background: color-mix(in srgb, #22c55e 12%, transparent); color: #16a34a; }
+    .limit-note { border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--text-2); margin-bottom: 0.75rem; }
+    `,
+
     // views/index.stx: the hero code frame and the open-source band.
     //
     // `.hero-code .code-bar` is NOT here. It differed from marketing.css's
@@ -395,7 +417,16 @@ export default {
     mono: 'font-mono',
 
     // Text input. Six copies, byte-identical.
-    field: 'bg-canvas border border-solid border-line rounded-[10px] text-ink',
+    //
+    // The focus ring is part of the shortcut rather than a preflight rule. As
+    // `.field:focus` in pageCss it lost its border-color: a preflight lands in
+    // @layer tc-base while this shortcut is unlayered, so `.field`'s own
+    // border-line beat the layered `.field:focus`. The box-shadow still applied
+    // because nothing else set one, which is exactly how that kind of break
+    // hides. Here both are unlayered and the focus variant wins normally.
+    field: 'bg-canvas border border-solid border-line rounded-[10px] text-ink '
+      + 'focus:outline-none focus:border-accent '
+      + 'focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_16%,transparent)]',
 
     // The primary submit button on the five auth-shaped forms: /login,
     // /register, /forgot-password, /reset-password and /projects/new. All five

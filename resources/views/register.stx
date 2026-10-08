@@ -150,15 +150,6 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 </script>
 
 
-<style>
-.field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
-.err { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
-/* Was a 5-property `cssText` string assigned to a createElement'd <p>. */
-.invite-hint { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); }
-input[readonly].field { opacity: 0.85; }
-.divider { display: flex; align-items: center; gap: 0.75rem; color: var(--text-3); font-size: 12px; }
-.divider::before, .divider::after { content: ""; height: 1px; flex: 1; background: var(--border); }
-</style>
 
 <div class="flex items-center justify-center px-5 py-12 min-h-[100dvh]">
   <div class="max-w-sm w-full">

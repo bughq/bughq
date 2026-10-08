@@ -17,7 +17,7 @@ useSeoMeta({
       .seg { border: 1px solid var(--border); border-radius: 999px; }
       .seg button { border-radius: 999px; cursor: pointer; background: transparent; color: var(--text-2); border: none; }
       .seg button.on { background: var(--accent); color: var(--accent-ink); }
-      .err { color: #ef4444; }
+      .err { background: transparent; color: #ef4444; }
     </style>
 @endpush
 
