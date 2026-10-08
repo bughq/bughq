@@ -308,6 +308,12 @@ function reloadPage(): void {
 // its own restore timer.
 const copied = state('')
 
+// Restores the idle labels a short moment after a copy. Debounced rather than a
+// bare timer: a second copy restarts the window instead of stacking one timer
+// per click, and because only the most recent call is ever pending there is no
+// longer anything to check about which button armed it.
+const clearCopied = useDebounce(() => copied.set(''), 1400)
+
 function copyLabel(which: string, done?: string, idle?: string): string {
   return copied() === which ? (done || 'Copied') : (idle || 'Copy')
 }
@@ -328,10 +334,7 @@ function copyCode(): void {
 function copyText(which: string, text: string): void {
   const mark = () => {
     copied.set(which)
-    setTimeout(() => {
-      if (copied() === which)
-        copied.set('')
-    }, 1400)
+    clearCopied()
   }
   if (navigator.clipboard && navigator.clipboard.writeText && text)
     navigator.clipboard.writeText(text).then(mark, mark)
@@ -583,6 +586,11 @@ const testing = state('')
 // rather than one per row, which is why it has to carry the id alongside the text.
 const tested = state<{ id: string, text: string } | null>(null)
 
+// Clears the per-channel test result. Same reasoning as clearCopied: the
+// restart makes the id check unnecessary, since a newer test cancels the
+// pending clear rather than racing it.
+const clearTested = useDebounce(() => tested.set(null), 2400)
+
 function channelApi(path?: string): string {
   return `/api/projects/${encodeURIComponent(apiProjectId)}/channels${path || ''}`
 }
@@ -634,11 +642,7 @@ function testChannel(id: string): void {
     .then((r) => {
       testing.set('')
       tested.set({ id, text: r.ok ? 'Sent ✓' : 'Failed' })
-      setTimeout(() => {
-        const t = tested()
-        if (t && t.id === id)
-          tested.set(null)
-      }, 2400)
+      clearTested()
     })
     .catch(() => {
       testing.set('')
@@ -715,6 +719,11 @@ const dzAction = state<'archive' | 'delete' | null>(null)
 const dzTyped = state('')
 /** The confirm-phrase input, for focus on open. Registered by ref="dzInput". */
 const dzInput = useRef<HTMLInputElement>('dzInput')
+
+// The field is inside a :hidden dialog and has to be visible before it can take
+// focus, hence the short delay. Debounced so the composable owns the timer and
+// drops it on destroy.
+const focusDzInput = useDebounce(() => dzInput.current?.focus(), 20)
 
 // ---- dialog focus management ----
 //
@@ -793,11 +802,8 @@ function dzOpen(which: 'archive' | 'delete', e?: Event): void {
   //
   // useRef(name) reads componentScope.$refs[name] and exposes `.current`; the
   // markup registers it with ref="dzInput" (signals.ts:1012, 2353). The 20ms
-  // delay is unchanged — the field is inside a :hidden dialog and has to be
-  // visible before it can take focus.
-  setTimeout(() => {
-    dzInput.current?.focus()
-  }, 20)
+  // delay is unchanged, and now lives with the ref at the top of the block.
+  focusDzInput()
 }
 
 function dzClose(): void {

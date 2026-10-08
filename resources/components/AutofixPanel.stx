@@ -177,23 +177,18 @@ function stageActive(stage: number): boolean {
 
 // The poll re-arms itself while a run is active. Nothing used to cancel it, so
 // navigating away from an issue left it fetching every 2.2s for the life of the
-// tab — and SPA navigation never reloads the page, so it never stopped. Holding
-// the handle and clearing it in onDestroy is what bounds it to this page.
-let pollHandle: ReturnType<typeof setTimeout> | null = null
-
-function schedulePoll(): void {
-  cancelPoll()
-  pollHandle = setTimeout(() => { pollHandle = null; loadAutofix(true) }, 2200)
-}
-
-function cancelPoll(): void {
-  if (pollHandle !== null) {
-    clearTimeout(pollHandle)
-    pollHandle = null
-  }
-}
-
-onDestroy(cancelPoll)
+// tab — and SPA navigation never reloads the page, so it never stopped.
+// useTimeout stops itself on destroy, which is what now bounds it to this page,
+// and its start() stops any pending run first, so re-arming cannot double up.
+//
+// Not useInterval: this re-arms only once a response has come back, so the 2.2s
+// is a gap between requests. A fixed interval would fire regardless of how long
+// a fetch took and could overlap two polls.
+//
+// useTimeout starts on creation, so it is stopped straight away and only armed
+// from loadAutofix().
+const poll = useTimeout(() => loadAutofix(true), 2200)
+poll.stop()
 
 async function loadAutofix(schedule: boolean = true): Promise<void> {
   try {
@@ -206,7 +201,7 @@ async function loadAutofix(schedule: boolean = true): Promise<void> {
     if (!repositoryInput() && data.repository) repositoryInput.set(data.repository)
     if (!branchInput() && data.repository_branch) branchInput.set(data.repository_branch)
     autofixError.set('')
-    if (schedule && activeRun(data.run)) schedulePoll()
+    if (schedule && activeRun(data.run)) poll.start()
   }
   catch (error) {
     autofixError.set(error instanceof Error ? error.message : 'Could not load Autofix.')
