@@ -131,6 +131,39 @@ function paletteCss(): string {
   ].join('\n')
 }
 
+/**
+ * Page-level rules that genuinely cannot be utilities, hoisted out of per-page
+ * `<style>` blocks (stx-standards rule 3, §11.1).
+ *
+ * Why this is not cosmetic. The SPA router only manages `style[data-crosswind]`
+ * and `style[data-stx-page]`; an unmarked `<style>` rendered into the head by
+ * the entry page is never removed (`stx-router/dist/client.js:418`). Verified in
+ * the browser: entering on /pricing and navigating to / left pricing's own
+ * 665-char block live, and a `.card` element on the home page picked up
+ * pricing's `var(--surface)` background. Rules that live here land inside the
+ * single `style[data-crosswind]` tag instead, which the router treats as
+ * durable, so they apply deliberately everywhere rather than accidentally
+ * wherever the visitor happened to enter.
+ *
+ * Only put a rule here when it cannot be expressed as a utility or a shortcut.
+ * A structural selector qualifies; a bag of properties on one class does not,
+ * that is a `shortcuts` entry.
+ */
+function pageCss(): string {
+  return [
+    // The /compare/* tables, which declared this identically in eight pages.
+    //
+    // Only `.cmp-note` lives here. The column highlight is a `cmp-hl` shortcut
+    // instead, because it has to beat `.cmp-cell { background: var(--surface) }`
+    // in public/marketing.css. That file is unlayered and everything returned
+    // from a preflight lands in `@layer tc-base`, and an unlayered rule wins
+    // over a layered one whatever the specificity. As a preflight the highlight
+    // silently stopped applying; as a shortcut it compiles to an unlayered
+    // utility and wins. Nothing competes with `.cmp-note`, so it is fine here.
+    '.cmp-note { margin-top: 1rem; color: var(--text-3); font-size: 0.86rem; line-height: 1.55; max-width: 68ch; }',
+  ].join('\n')
+}
+
 export default {
   // `content` is deliberately absent. stx collects classes by scanning the
   // rendered page rather than globbing the source, and pins `content: []` after
@@ -341,6 +374,13 @@ export default {
       + 'hover:text-ink hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] '
       + '[&_svg]:w-[17px] [&_svg]:h-[17px]',
 
+    // The bughq column of a /compare/* table: every second cell of each group of
+    // three. Structural, so it needs the arbitrary-variant form rather than a
+    // class on each cell. Lives here rather than in a preflight so that it is
+    // unlayered and outranks marketing.css's `.cmp-cell` background; see the
+    // note in pageCss().
+    'cmp-hl': '[&_.cmp-cell:nth-child(3n+2)]:bg-[var(--accent-soft)]',
+
     // Third-party sign-in button on /login and /register. Two copies, identical.
     'oauth-btn': 'border border-solid border-line rounded-[10px] text-ink bg-panel '
       + '[transition:border-color_0.15s_ease,transform_0.12s_ease] '
@@ -349,6 +389,7 @@ export default {
   },
   preflights: [
     { getCSS: paletteCss },
+    { getCSS: pageCss },
   ],
   preflight: true,
   minify: false,
