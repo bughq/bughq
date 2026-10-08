@@ -162,6 +162,22 @@ function pageCss(): string {
     // utility and wins. Nothing competes with `.cmp-note`, so it is fine here.
     '.cmp-note { margin-top: 1rem; color: var(--text-3); font-size: 0.86rem; line-height: 1.55; max-width: 68ch; }',
 
+    // views/index.stx: the hero code frame and the open-source band.
+    //
+    // `.hero-code .code-bar` is NOT here. It differed from marketing.css's
+    // `.code-bar` only in gap (0.55 vs 0.6rem) and padding (0.8 vs 0.75rem),
+    // and marketing.css is unlayered, so as a preflight it would have lost and
+    // the hero would have silently taken the marketing values. Those two
+    // numbers are utilities on the element now and the rest of the rule, which
+    // was identical, is gone.
+    `
+      .hero-code { border: 1px solid var(--border); border-radius: var(--r); background: var(--code-bg); overflow: hidden; }
+      .hero-code .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--accent); }
+      .open-band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.25rem; border: 1px solid var(--border); border-radius: var(--r); padding: 1.75rem 2rem; background: var(--surface); }
+      .open-band p { margin: 0; max-width: 52ch; color: var(--text-2); font-size: 1rem; line-height: 1.55; }
+      .open-band strong { color: var(--text); font-weight: 600; }
+    `,
+
     // partials/SiteNav.stx: the CSS-only mega menu. Hover plus :focus-within on a
     // descendant, a ::after caret, and a pseudo-element hover bridge, so there is
     // nothing for a utility to attach to. No `.mega-*` name appears in

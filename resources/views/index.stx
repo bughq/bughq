@@ -54,14 +54,6 @@ useSeoMeta({
 @extends('marketing')
 
 @push('styles')
-<style>
-      .hero-code { border: 1px solid var(--border); border-radius: var(--r); background: var(--code-bg); overflow: hidden; }
-      .hero-code .code-bar { display: flex; align-items: center; gap: 0.55rem; padding: 0.8rem 1rem; border-bottom: 1px solid rgba(148,163,184,0.14); }
-      .hero-code .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--accent); }
-      .open-band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.25rem; border: 1px solid var(--border); border-radius: var(--r); padding: 1.75rem 2rem; background: var(--surface); }
-      .open-band p { margin: 0; max-width: 52ch; color: var(--text-2); font-size: 1rem; line-height: 1.55; }
-      .open-band strong { color: var(--text); font-weight: 600; }
-    </style>
 @endpush
 
 @section('content')
@@ -93,7 +85,7 @@ useSeoMeta({
         </div>
 
         <div class="hero-code reveal" style="animation-delay: 0.08s">
-          <div class="code-bar">
+          <div class="code-bar gap-[0.55rem] py-[0.8rem]">
             <span class="dot" aria-hidden="true"></span>
             <span class="chart-cap">app/error-boundary.ts</span>
           </div>
