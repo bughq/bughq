@@ -1412,6 +1412,13 @@ summary:focus-visible {
   // Either way the page would wedge on "Loading…" with no fetch pending, so
   // bounce to /login. The cookie is cleared server-side on logout; there is
   // nothing for JS to clear here.
+  //
+  // A plain <script>, so none of the composables are in scope. It has to stay
+  // that way: <script client> runs after hydration, and the whole point here
+  // is to bounce before the user is shown a "Loading…" that will never
+  // resolve. useRef() would also be the wrong tool for a marker the server
+  // either rendered or did not.
+  // stx-strict-ignore-next-line document.getElementById
   if (document.getElementById('auth-pending')) {
     // stx-strict-ignore-next-line window.location location.replace()
     window.location.replace('/login')
@@ -1422,15 +1429,24 @@ summary:focus-visible {
   // alert emails). The server already rendered that project; persist the
   // choice into the cookie and scrub the param so the address bar stays a
   // clean /dashboard.
+  // stx-strict-ignore-next-line window.location
   var qs = new URLSearchParams(window.location.search)
   // Bound once. Calling qs.get twice let the truthiness test and the value that
   // gets written come from separate reads, which is why the second was still
   // `string | null` to the checker.
   var deepLinkProject = qs.get('project')
   if (deepLinkProject) {
+    // useCookie() is the replacement and is not in scope in a plain block.
+    // stx-strict-ignore-next-line document.cookie
     document.cookie = 'bughq_project=' + encodeURIComponent(deepLinkProject) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
     qs.delete('project')
     var rest = qs.toString()
+    // Scrubbing the address bar without navigating. navigate() is the named
+    // replacement for window.history, but navigate(url, { replace: true })
+    // routes: it re-renders the page at the new URL. replaceState exists
+    // precisely to change the URL and nothing else, and there is no composable
+    // for that, so this one is not merely out of scope but unreplaceable.
+    // stx-strict-ignore-next-line window.history window.location
     window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''))
   }
 
