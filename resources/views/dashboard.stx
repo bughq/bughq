@@ -510,7 +510,7 @@ async function signOut() {
     await fetch('/logout', { method: 'POST', credentials: 'same-origin' })
   }
   catch { /* offline or transient — leave anyway */ }
-  window.location.assign('/login')
+  navigate('/login', { reload: true })
 }
 
 // Invite banner. The rows are server-rendered, so each one's token is baked
@@ -521,13 +521,17 @@ const joining = state('')
 
 // Switching project writes the browsing-preference cookie and reloads onto the
 // same filters. The target URL is rendered server-side into data-target because
-// pageUrl() lives in the server block; navigate() is deliberately not used —
-// the router no-ops on a same-URL navigation (client.js:299) and this
-// intentionally re-renders the same URL with a different cookie.
+// pageUrl() lives in the server block.
+//
+// `reload: true` is load-bearing. A plain navigate() would no-op here, because
+// the router skips a same-URL navigation and this intentionally re-renders the
+// same URL with a different cookie. With reload the router is bypassed
+// altogether and the browser performs a real document load, which is what
+// re-reads the cookie server-side.
 function switchProject(e: Event): void {
   const el = e.target as HTMLSelectElement
   useStore('session').project.set(el.value)
-  window.location.href = el.dataset.target || '/dashboard'
+  navigate(el.dataset.target || '/dashboard', { reload: true })
 }
 
 function dismissInvite(token: string): void {
@@ -561,7 +565,7 @@ function joinInvite(token: string): void {
       }
       // Joining switches the active project, which the server reads on render.
       useStore('session').project.set(res.b.project)
-      window.location.assign('/dashboard')
+      navigate('/dashboard', { reload: true })
     })
     .catch(() => joining.set(''))
 }

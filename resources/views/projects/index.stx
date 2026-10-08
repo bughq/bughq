@@ -87,7 +87,7 @@ async function logout() {
     await fetch('/logout', { method: 'POST', credentials: 'same-origin' })
   }
   catch { /* offline or transient — leave anyway */ }
-  window.location.assign('/login')
+  navigate('/login', { reload: true })
 }
 </script>
 

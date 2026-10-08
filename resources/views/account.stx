@@ -61,7 +61,7 @@ async function logout() {
     await fetch('/logout', { method: 'POST', credentials: 'same-origin' })
   }
   catch { /* best effort: leave anyway */ }
-  window.location.assign('/login')
+  navigate('/login', { reload: true })
 }
 
 // Runs on hydration, including after a fragment swap onto this page. The session

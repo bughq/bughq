@@ -287,6 +287,21 @@ function toggleTheme(): void {
   themeStore.toggle()
 }
 
+// A full document reload, routed. location.reload() is the natural call but
+// window.location is prohibited in a client block and there is no reload
+// composable, so useRoute() supplies the current URL and navigate() with
+// reload performs the document load. `replace` keeps it out of the history,
+// which is what location.reload() does.
+//
+// Not refresh(): that swaps server-rendered content without a document load
+// and leaves this block's signals standing, so the in-flight flags the callers
+// set just before calling this would stay set and strand their buttons.
+function reloadPage(): void {
+  const route = useRoute()
+  const query = new URLSearchParams(route.query).toString()
+  navigate(`${route.path}${query ? `?${query}` : ''}${route.hash}`, { replace: true, reload: true })
+}
+
 
 // One signal names whichever button most recently copied, so every Copy button
 // on the page shares the same "Copied" affordance without any of them holding
@@ -326,7 +341,9 @@ function copyText(which: string, text: string): void {
 
 function switchProject(e: Event): void {
   useStore('session').project.set((e.target as HTMLSelectElement).value)
-  window.location.href = '/settings'
+  // Same URL on purpose, so reload is what makes it re-read the cookie: a
+  // plain navigate() would be skipped as a same-URL navigation.
+  navigate('/settings', { reload: true })
 }
 
 // The path segment every /api/projects/… call below is built from. `projectId`
@@ -417,9 +434,10 @@ function rotateKey() {
         //
         // ?rotated=1 carries the confirmation across the reload so the note and
         // the revealed key survive it.
-        const url = new URL(window.location.href)
-        url.searchParams.set('rotated', '1')
-        navigate(url.toString(), { replace: true, reload: true })
+        const route = useRoute()
+        const query = new URLSearchParams(route.query)
+        query.set('rotated', '1')
+        navigate(`${route.path}?${query.toString()}${route.hash}`, { replace: true, reload: true })
       })
       .catch(() => {
         rotating.set(false)
@@ -502,7 +520,7 @@ function resendInvite(id: string): void {
       // Reload for the same reason the invite form does: the row's delivery
       // state is server-rendered, and the point of resending is to see whether
       // it changed.
-      window.location.reload()
+      reloadPage()
     })
     .catch(() => {
       resending.set('')
@@ -533,7 +551,7 @@ function inviteMember(e: SubmitEvent): void {
       // the email and join URL but no invite id, and without an id the row would
       // have no handle for a later Remove. Reloading is cheaper than inventing a
       // second round-trip to go find it.
-      window.location.reload()
+      reloadPage()
     })
     .catch(() => {
       inviting.set(false)
@@ -674,7 +692,7 @@ function addChannel(e: SubmitEvent): void {
       }
       // Same reason as an invite: the row has to come back from the server, which
       // is what masks the webhook URL. The response never echoes the secret.
-      window.location.reload()
+      reloadPage()
     })
     .catch(() => {
       adding.set(false)
@@ -870,7 +888,7 @@ function dzConfirm(): void {
     })
       .then((r) => {
         if (r.ok) {
-          window.location.reload()
+          reloadPage()
           return
         }
         dzBusy.set(false)
@@ -894,7 +912,7 @@ function dzConfirm(): void {
         // The project this page is scoped to no longer exists, so the cookie
         // pointing at it has to go before the next page tries to resolve it.
         useStore('session').project.set('')
-        window.location.assign('/projects')
+        navigate('/projects', { reload: true })
       })
       .catch(() => {
         dzBusy.set(false)
@@ -916,7 +934,7 @@ function unarchive(): void {
   })
     .then((r) => {
       if (r.ok)
-        window.location.reload()
+        reloadPage()
       else
         unarchiving.set(false)
     })

@@ -50,7 +50,10 @@ useSeoMeta({
           })
           if (res.status === 401) { navigate('/login'); return }
           const data = await res.json().catch(() => ({}))
-          if (res.ok && data.url) { location.assign(data.url); return }
+          // An absolute third-party checkout URL. navigate() with reload bypasses
+          // the router and performs a real document load, which is the only
+          // sensible thing to do with an off-site address.
+          if (res.ok && data.url) { navigate(data.url, { reload: true }); return }
           err.set(data.error || 'Checkout is not available yet.')
         }
         catch {
