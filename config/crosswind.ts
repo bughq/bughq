@@ -162,6 +162,53 @@ function pageCss(): string {
     // utility and wins. Nothing competes with `.cmp-note`, so it is fine here.
     '.cmp-note { margin-top: 1rem; color: var(--text-3); font-size: 0.86rem; line-height: 1.55; max-width: 68ch; }',
 
+    // components/AutofixPanel.stx. Every selector here is `.autofix-*`, unique to
+    // this component, so nothing competes and the layer does not matter. The four
+    // rules that reach a `.btn` stayed in the component: issue/[id].stx, the only
+    // page that renders it, declares its own unlayered `.btn` with !important.
+    `
+.autofix-hidden { display:none !important; }
+/* AI Autofix */
+.autofix-card { width:100%; min-width:0; overflow:hidden; background:var(--panel); border:1px solid var(--border); border-radius:14px; }
+.autofix-top { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.1rem; border-bottom:1px solid var(--border-2); }
+.autofix-title { display:flex; align-items:center; gap:.65rem; font-weight:700; letter-spacing:-.015em; }
+.autofix-title i { color:var(--accent); }
+.autofix-status { font-family:var(--mono); font-size:.7rem; color:var(--text-3); }
+.autofix-setup { padding:1rem 1.1rem 1.15rem; background:var(--panel-2); }
+.autofix-fields { display:grid; grid-template-columns:minmax(0,1fr) minmax(9rem,.35fr) auto; gap:.65rem; align-items:end; }
+.autofix-field label { display:block; margin-bottom:.35rem; color:var(--text-3); font-size:.7rem; font-weight:600; }
+.autofix-input { width:100%; border:1px solid var(--border); border-radius:9px; background:var(--panel); color:var(--text); padding:.55rem .7rem; font-family:var(--mono); font-size:.76rem; outline:none; }
+.autofix-input:focus { border-color:color-mix(in srgb,var(--accent) 65%,var(--border)); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent); }
+.btn-autofix { color:#fff; background:color-mix(in srgb,var(--accent) 78%,#0b0f19); border-color:transparent; white-space:nowrap; }
+.btn-autofix:hover { color:#fff; background:color-mix(in srgb,var(--accent) 88%,#0b0f19); border-color:transparent; }
+.autofix-run { padding:1.1rem; }
+.autofix-progress { height:3px; overflow:hidden; background:var(--border); }
+.autofix-progress span { display:block; height:100%; background:var(--accent); transition:transform .35s ease; transform-origin:left; }
+.autofix-step { border-top:1px solid var(--border-2); }
+.autofix-step summary { display:flex; align-items:center; gap:.75rem; padding:.9rem 1rem; cursor:pointer; list-style:none; }
+.autofix-step summary::-webkit-details-marker { display:none; }
+.autofix-step summary:hover { background:var(--panel-2); }
+.autofix-step .step-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:var(--panel-2); color:var(--text-3); }
+.autofix-step.done .step-icon, .autofix-step.active .step-icon { color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
+.autofix-step .step-copy { flex:1; min-width:0; }
+.autofix-step .step-name { font-size:.83rem; font-weight:650; }
+.autofix-step .step-state { margin-top:.1rem; color:var(--text-3); font-size:.7rem; }
+.autofix-step .step-chevron { color:var(--text-3); transition:transform .16s ease; }
+.autofix-step[open] .step-chevron { transform:rotate(90deg); }
+.autofix-detail { padding:.1rem 1rem 1rem 3.75rem; color:var(--text-2); font-size:.8rem; line-height:1.55; }
+.autofix-plan { display:grid; gap:.55rem; }
+.autofix-plan li { display:grid; grid-template-columns:1.15rem 1fr; gap:.55rem; }
+.autofix-file { padding:.6rem .7rem; border-radius:9px; background:var(--panel-2); }
+.autofix-file + .autofix-file { margin-top:.45rem; }
+.autofix-error { margin:0 1rem 1rem; padding:.7rem .8rem; border-radius:9px; color:#ef4444; background:rgba(239,68,68,.08); font-size:.78rem; }
+.autofix-value { color:var(--text-2); line-height:1.55; white-space:pre-wrap; }
+.autofix-value::after { content:attr(data-value); }
+.autofix-skeleton { height:.75rem; border-radius:5px; background:linear-gradient(90deg,var(--border),var(--panel-2),var(--border)); background-size:200% 100%; animation:autofix-shimmer 1.4s ease infinite; }
+@keyframes autofix-shimmer { to { background-position:-200% 0; } }
+@media (prefers-reduced-motion: reduce) { .autofix-progress span { transition:none; } .autofix-skeleton { animation:none; } }
+@media (max-width:767px) { .autofix-fields { grid-template-columns:1fr; } .autofix-detail { padding-left:1rem; } .autofix-top { align-items:flex-start; } }
+    `,
+
     // The auth flow: login, register, forgot-password, reset-password and
     // projects/new. All five declared `.field:focus` and `.err` identically, and
     // login and register declared `.divider` identically too.
