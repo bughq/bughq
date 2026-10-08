@@ -1043,7 +1043,12 @@ summary:focus-visible {
 
     @if (user && needsOnboarding)
       <div class="py-24 text-center text-sm text-subtle">Setting up your workspace…</div>
-      <script>window.location.replace('/projects/new')</script>
+      <script>
+        // A pre-paint bounce into onboarding. navigate() is not in scope: a plain
+        // <script> receives no auto-imports, and this has to beat first paint.
+        // stx-strict-ignore-next-line window.location location.replace()
+        window.location.replace('/projects/new')
+      </script>
     @endif
 
     @if (user && !needsOnboarding)
@@ -1404,6 +1409,7 @@ summary:focus-visible {
   // bounce to /login. The cookie is cleared server-side on logout; there is
   // nothing for JS to clear here.
   if (document.getElementById('auth-pending')) {
+    // stx-strict-ignore-next-line window.location location.replace()
     window.location.replace('/login')
     return
   }

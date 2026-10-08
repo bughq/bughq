@@ -419,7 +419,7 @@ function rotateKey() {
         // the revealed key survive it.
         const url = new URL(window.location.href)
         url.searchParams.set('rotated', '1')
-        window.location.replace(url.toString())
+        navigate(url.toString(), { replace: true, reload: true })
       })
       .catch(() => {
         rotating.set(false)
@@ -1031,7 +1031,12 @@ html { scroll-behavior: smooth; }
     @endif
 
     @if (needsOnboarding)
-      <script>window.location.replace('/projects/new')</script>
+      <script>
+        // A pre-paint bounce into onboarding. navigate() is not in scope: a plain
+        // <script> receives no auto-imports, and this has to beat first paint.
+        // stx-strict-ignore-next-line window.location location.replace()
+        window.location.replace('/projects/new')
+      </script>
     @endif
 
     @if (user && activeProject)
@@ -1354,6 +1359,7 @@ html { scroll-behavior: smooth; }
   // Either way the page would wedge on "Loading…", so bounce to /login. The
   // cookie is cleared server-side on logout; nothing for JS to clear here.
   if (document.getElementById('auth-pending')) {
+    // stx-strict-ignore-next-line window.location location.replace()
     window.location.replace('/login')
     return
   }

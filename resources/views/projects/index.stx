@@ -190,6 +190,7 @@ async function logout() {
   // Either way the page would wedge on "Loading…", so bounce to /login. The
   // cookie is cleared server-side on logout; nothing for JS to clear here.
   if (document.getElementById('auth-pending')) {
+    // stx-strict-ignore-next-line window.location location.replace()
     window.location.replace('/login')
     return
   }

@@ -62,10 +62,7 @@ export default {
     failOnViolation: false,
     // Pre-paint auth and theme guards legitimately need these — they must run
     // before render and their whole job is to leave the page.
-    allowPatterns: [
-      'location.replace',
-      'location.reload',
-    ],
+    allowPatterns: [],
   },
 
   // SPA router. Both values are load-bearing and deliberately explicit.
