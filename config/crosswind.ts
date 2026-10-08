@@ -210,7 +210,7 @@ function pageCss(): string {
   .mega { position: relative; display: inline-flex; align-items: center; }
   .mega-trigger { display: inline-flex; align-items: center; gap: 0.32rem; cursor: pointer; }
   .mega-trigger::after {
-    content: "\25BE"; font-size: 0.62em; line-height: 1; color: var(--text-3);
+    content: "\\25BE"; font-size: 0.62em; line-height: 1; color: var(--text-3);
     transition: transform 0.18s ease, color 0.18s ease;
   }
   .mega:hover .mega-trigger, .mega:focus-within .mega-trigger { color: var(--text); }
