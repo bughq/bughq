@@ -1,9 +1,11 @@
 <!-- Shared marketing footer used on every marketing page.
      One source of truth for the site-wide footer, mirroring how SiteNav is shared.
      Adds an ohdear.com-style multi-column layout with a dedicated "Compare" column
-     that links the alternatives index plus one page per competitor. Styles live in
-     the scoped <style> block below (public/marketing.css is out of scope for this
-     change) and reuse bughq's existing design tokens so the footer matches the site. -->
+     that links the alternatives index plus one page per competitor. The styles are
+     in config/crosswind.ts under pageCss(), not here: a scoped block in this file
+     would be rendered into the head of whichever page the visitor entered on and
+     never removed again (stx-standards rule 3). They still reuse bughq's existing
+     design tokens, so the footer matches the site. -->
 <footer class="footer shell">
   <div class="footer-cols">
     <div class="footer-col">
@@ -62,26 +64,3 @@
   </div>
 </footer>
 
-<style>
-  /* Multi-column footer. Reuses the same tokens as the rest of marketing.css. */
-  .footer-cols {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr 1fr 1fr;
-    gap: 2rem 2.5rem;
-    padding: 1rem 0 2.25rem;
-  }
-  .footer-col { display: flex; flex-direction: column; gap: 0.6rem; }
-  .footer-col h4 {
-    margin: 0 0 0.35rem; font-family: var(--mono); font-size: 0.7rem;
-    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); font-weight: 600;
-  }
-  .footer-col a { color: var(--text-2); font-size: 0.9rem; line-height: 1.4; transition: color 0.16s ease; }
-  .footer-col a:hover { color: var(--text); }
-
-  @media (max-width: 900px) {
-    .footer-cols { grid-template-columns: 1fr 1fr; gap: 1.75rem 2rem; }
-  }
-  @media (max-width: 560px) {
-    .footer-cols { grid-template-columns: 1fr; }
-  }
-</style>

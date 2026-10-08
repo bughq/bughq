@@ -161,6 +161,85 @@ function pageCss(): string {
     // silently stopped applying; as a shortcut it compiles to an unlayered
     // utility and wins. Nothing competes with `.cmp-note`, so it is fine here.
     '.cmp-note { margin-top: 1rem; color: var(--text-3); font-size: 0.86rem; line-height: 1.55; max-width: 68ch; }',
+
+    // partials/SiteNav.stx: the CSS-only mega menu. Hover plus :focus-within on a
+    // descendant, a ::after caret, and a pseudo-element hover bridge, so there is
+    // nothing for a utility to attach to. No `.mega-*` name appears in
+    // marketing.css, so the cascade layer does not matter here.
+    `
+  /* CSS-only mega menu. Reveal on hover + keyboard focus (:focus-within).
+     Tokens are the same variables the rest of marketing.css uses. */
+  .mega { position: relative; display: inline-flex; align-items: center; }
+  .mega-trigger { display: inline-flex; align-items: center; gap: 0.32rem; cursor: pointer; }
+  .mega-trigger::after {
+    content: "\25BE"; font-size: 0.62em; line-height: 1; color: var(--text-3);
+    transition: transform 0.18s ease, color 0.18s ease;
+  }
+  .mega:hover .mega-trigger, .mega:focus-within .mega-trigger { color: var(--text); }
+  .mega:hover .mega-trigger::after, .mega:focus-within .mega-trigger::after { transform: rotate(180deg); color: var(--accent); }
+
+  .mega-panel {
+    position: absolute; top: 100%; left: 50%; z-index: 50;
+    margin-top: 14px;
+    display: grid; grid-template-columns: repeat(2, minmax(216px, 1fr)); gap: 0.12rem;
+    min-width: 484px; padding: 0.55rem;
+    background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transform: translateX(-50%) translateY(6px);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+  }
+  /* invisible hover bridge so the pointer can cross the 14px gap */
+  .mega-panel::before { content: ""; position: absolute; top: -14px; left: 0; right: 0; height: 14px; }
+  .mega:hover .mega-panel, .mega:focus-within .mega-panel {
+    opacity: 1; visibility: visible; pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+  }
+  .mega-panel a { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.62rem 0.72rem; border-radius: var(--r-sm); }
+  .mega-panel a:hover { background: var(--surface-2); }
+  .mega-t { color: var(--text); font-size: 0.9rem; font-weight: 600; letter-spacing: -0.01em; }
+  .mega-d { color: var(--text-3); font-size: 0.8rem; line-height: 1.4; }
+
+  .nav-menu-group {
+    padding: 0.55rem 0.7rem 0.2rem; font-family: var(--mono); font-size: 0.68rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3);
+  }
+  .nav-menu-group:not(:first-child) { margin-top: 0.35rem; border-top: 1px solid var(--border); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mega-trigger::after, .mega-panel { transition: none; }
+  }
+  @media (max-width: 900px) {
+    /* desktop mega hidden with .nav-links; the <details> menu takes over */
+    .mega-panel { display: none; }
+  }
+    `,
+
+    // partials/SiteFooter.stx: the multi-column footer grid and its two
+    // breakpoints. Same reasoning, and `.footer-*` is used nowhere else.
+    `
+  /* Multi-column footer. Reuses the same tokens as the rest of marketing.css. */
+  .footer-cols {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 2rem 2.5rem;
+    padding: 1rem 0 2.25rem;
+  }
+  .footer-col { display: flex; flex-direction: column; gap: 0.6rem; }
+  .footer-col h4 {
+    margin: 0 0 0.35rem; font-family: var(--mono); font-size: 0.7rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); font-weight: 600;
+  }
+  .footer-col a { color: var(--text-2); font-size: 0.9rem; line-height: 1.4; transition: color 0.16s ease; }
+  .footer-col a:hover { color: var(--text); }
+
+  @media (max-width: 900px) {
+    .footer-cols { grid-template-columns: 1fr 1fr; gap: 1.75rem 2rem; }
+  }
+  @media (max-width: 560px) {
+    .footer-cols { grid-template-columns: 1fr; }
+  }
+    `,
   ].join('\n')
 }
 
