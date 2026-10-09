@@ -339,6 +339,14 @@ export default {
     extend: {
       borderRadius: {
         /*
+         * The shape roles, same mechanism as the colours above:
+         * `rounded-control` and `rounded-pill` resolve as
+         * `var(--stx-radius-*, <stock>)` and the stock values are
+         * `0.375rem` / `9999px`. Pointed at this app's own radii.
+         */
+        control: '10px',
+        pill: '999px',
+        /*
          * `rounded-panel` is @stacksjs/components' radius role name:
          * <EmptyState variant="panel"> renders `bg-panel rounded-panel
          * ring-1 ring-line`. Without this it resolves to nothing and the
@@ -389,6 +397,83 @@ export default {
         'fg-subtle': 'var(--text-3)',
         'line-strong': 'color-mix(in srgb, var(--text-3) 55%, var(--border))',
         'accent-solid': 'var(--accent)',
+
+        // The rest of that vocabulary, added 2026-10-09 so <Badge>, <Tooltip>,
+        // <DateRangePicker> and the other role-styled components render in this
+        // palette rather than the library's.
+        //
+        // These MUST be theme.colors entries, not `--stx-*` declarations in a
+        // preflight. stx resolves each role as `var(--stx-<name>, <light value>)`
+        // and emits its own `:root`/`.dark` block for them; its docs say an app
+        // overrides by setting the variable "from its own stylesheet, which comes
+        // after". A preflight comes BEFORE, and lands in @layer tc-base, where an
+        // unlayered rule beats it whatever the specificity — measured: a
+        // preflight `:root { --stx-accent-soft: … }` left every soft variant on
+        // the library's light colours (1.05:1 in dark mode) while the roles
+        // already aliased here resolved correctly at 19.23:1. Replacing the
+        // colour outright sidesteps the variable, and the whole question.
+        //
+        // The `.dark` half of stx's block never applies here anyway: this app
+        // themes with `[data-theme]` and sets `darkClass: null`, so without these
+        // every library component would keep its LIGHT values in dark mode.
+        content: 'var(--text)',
+        page: 'var(--bg)',
+        field: 'var(--panel)',
+        'field-hover': 'color-mix(in srgb, var(--accent) 8%, var(--panel))',
+        'surface-hover': 'color-mix(in srgb, var(--accent) 8%, var(--panel))',
+        'surface-sunken-hover': 'color-mix(in srgb, var(--accent) 6%, var(--bg))',
+        'surface-raised-hover': 'color-mix(in srgb, var(--accent) 12%, var(--panel))',
+        'line-hover': 'color-mix(in srgb, var(--text-3) 40%, var(--border))',
+        link: 'var(--accent)',
+        'link-hover': 'var(--accent)',
+        'accent-solid-hover': 'var(--accent)',
+        'accent-soft': 'var(--accent-soft)',
+        'accent-soft-ink': 'var(--accent)',
+
+        // Status roles. This design has two: success (`--ok`) and danger
+        // (`--warn`, named for the state rather than the hue — it is red in both
+        // themes). There is no amber, cyan or purple here, so warning, info and
+        // secondary take the neutral treatment instead of the library's
+        // light-mode defaults, which would not re-theme. A <Badge variant="warning">
+        // reads as neutral in this app, by choice.
+        success: 'var(--ok)',
+        'success-ink': 'var(--bg)',
+        'success-solid': 'var(--ok)',
+        'success-solid-hover': 'var(--ok)',
+        'success-soft': 'color-mix(in srgb, var(--ok) 16%, var(--panel))',
+        'success-soft-ink': 'var(--ok)',
+        danger: 'var(--warn)',
+        'danger-ink': 'var(--bg)',
+        'danger-fg': 'var(--warn)',
+        'danger-fg-subtle': 'color-mix(in srgb, var(--warn) 70%, var(--panel))',
+        'danger-focus': 'color-mix(in srgb, var(--warn) 45%, transparent)',
+        'danger-line': 'color-mix(in srgb, var(--warn) 34%, transparent)',
+        'danger-solid': 'var(--warn)',
+        'danger-solid-hover': 'var(--warn)',
+        'danger-soft': 'color-mix(in srgb, var(--warn) 16%, var(--panel))',
+        'danger-soft-ink': 'var(--warn)',
+        warning: 'var(--text-2)',
+        'warning-ink': 'var(--bg)',
+        'warning-solid': 'var(--text-2)',
+        'warning-solid-hover': 'var(--text-2)',
+        'warning-soft': 'color-mix(in srgb, var(--text-3) 16%, var(--panel))',
+        'warning-soft-ink': 'var(--text-2)',
+        info: 'var(--text-2)',
+        'info-ink': 'var(--bg)',
+        'info-solid': 'var(--text-2)',
+        'info-solid-hover': 'var(--text-2)',
+        'info-soft': 'color-mix(in srgb, var(--text-3) 16%, var(--panel))',
+        'info-soft-ink': 'var(--text-2)',
+        secondary: 'var(--text-2)',
+        'secondary-ink': 'var(--bg)',
+        'secondary-solid': 'var(--text-2)',
+        'secondary-solid-hover': 'var(--text-2)',
+        'secondary-soft': 'color-mix(in srgb, var(--text-3) 16%, var(--panel))',
+        'secondary-soft-ink': 'var(--text-2)',
+
+        // Used by the library's tooltips and toasts, which invert.
+        inverse: 'var(--text)',
+        'inverse-ink': 'var(--bg)',
       },
       fontFamily: {
         sans: ['Space Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
