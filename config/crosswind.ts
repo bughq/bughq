@@ -427,7 +427,11 @@ export default {
         link: 'var(--accent)',
         'link-hover': 'var(--accent)',
         'accent-solid-hover': 'var(--accent)',
-        'accent-soft': 'var(--accent-soft)',
+        // color-mix, not `var(--accent-soft)`: that variable is declared in
+        // public/marketing.css, which only the marketing pages link, so on a
+        // dashboard page it is undefined and `background-color: var(--accent-soft)`
+        // is invalid at computed-value time — the badge renders with NO fill.
+        'accent-soft': 'color-mix(in srgb, var(--accent) 16%, var(--panel))',
         'accent-soft-ink': 'var(--accent)',
 
         // Status roles. This design has two: success (`--ok`) and danger
