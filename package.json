@@ -83,7 +83,7 @@
     "bun-plugin-stx": "0.2.401",
     "bun-query-builder": "^0.2.60",
     "stacks": "^0.75.79",
-    "stripe": "22.3.2"
+    "stripe": "23.0.0"
   },
   "devDependencies": {
     "better-dx": "^0.2.15"
