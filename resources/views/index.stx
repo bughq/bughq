@@ -53,9 +53,6 @@ useSeoMeta({
 
 @extends('marketing')
 
-@push('styles')
-@endpush
-
 @section('content')
     {{-- Bare main element, .shell on each section below: the SPA router keeps
          this outer element across a fragment swap, so a class here would leak

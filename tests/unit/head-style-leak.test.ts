@@ -52,11 +52,20 @@ describe('head style leak', () => {
     expect(head).toContain('@stack(\'styles\')')
   })
 
-  test('no view pushes a <style> into the styles stack', () => {
-    for (const [file, source] of views) {
-      for (const match of source.matchAll(/@push\(['"]styles['"]\)([\s\S]*?)@endpush/g))
-        expect(`${file}: ${/<style/.test(match[1])}`).toBe(`${file}: false`)
-    }
+  test('no view pushes to the styles stack at all', () => {
+    /*
+     * Stricter than it needs to be, deliberately. Only pricing.stx ever put a
+     * <style> in there; the other nine pushes were empty, left behind when the
+     * /compare tables and the home page moved into crosswind.ts. An empty
+     * push is an invitation to fill it, and filling it is the bug above, so
+     * the stack is now unused rather than merely unoccupied.
+     *
+     * If a view ever does need head CSS -- a font-face, a print sheet -- it
+     * goes in the layout, where it belongs to every page by design instead of
+     * to whichever page the visitor happened to enter on.
+     */
+    for (const [file, source] of views)
+      expect(`${file}: ${/@push\(['"]styles['"]\)/.test(source)}`).toBe(`${file}: false`)
   })
 
   test('pricing.stx carries no <style> block at all', () => {

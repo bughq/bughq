@@ -8,9 +8,6 @@ useSeoMeta({
 
 @extends('marketing')
 
-@push('styles')
-@endpush
-
 @section('content')
     <main>
       <Breadcrumb className="shell subnav" :items="[{ label: 'Home', href: '/' }, { label: 'Compare', href: '/compare' }, { label: 'Airbrake' }]" />
