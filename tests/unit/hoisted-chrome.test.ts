@@ -8,7 +8,7 @@
  * ONLY the byte-identical ones moved, and that boundary is what this file
  * guards. A shortcut is global the moment it exists, so hoisting a selector
  * that means different things on different pages is a behaviour change rather
- * than a refactor. `.btn`, `.card`, `.btn-ghost`, `.pill`, `.seg` and
+ * than a refactor. `.btn`, `.btn-ghost`, `.pill`, `.seg` and
  * `.btn:disabled` all still differ between the files that declare them, and
  * they stay page-scoped.
  *
@@ -64,6 +64,8 @@ describe('hoisted shared chrome', () => {
     const generator = new engine.CSSGenerator(mergeCssConfig(engine.defaultConfig || engine.config, theme).config)
     generator.generate('theme-btn')
     generator.generate('wordmark-link')
+    generator.generate('card')
+    generator.generate('card-lift')
     const css = generator.toCSS(false, false).replace(/\s+/g, ' ')
 
     // The icon swap, which is the functional half: get these selectors wrong
@@ -76,6 +78,25 @@ describe('hoisted shared chrome', () => {
     expect(css).toContain('color: inherit;')
     expect(css).toContain('transition: opacity 0.15s ease;')
     expect(css).toContain('.wordmark-link:hover { opacity: 0.75; }')
+
+    // The three properties account.stx and issue/[id].stx each declared.
+    expect(css).toContain('.card { background-color: var(--panel); border-width: 1px; '
+      + 'border-style: solid; border-color: var(--border); border-radius: 14px; }')
+
+    /*
+     * card-lift's hover, asserted because the obvious spelling of it emits
+     * nothing. `hover:[border-color:…]` -- the arbitrary-property form the
+     * rest of this config reaches for -- parses and produces no rule at all,
+     * so the tiles would have kept their transition and quietly lost the
+     * border they transition TO. `hover:border-[color-mix(…)]` is what works.
+     *
+     * Only /projects uses this, only when the account has an app, so nothing
+     * public renders it and a silent miss would surface as a reviewer saying
+     * the hover feels broken rather than as a failure anywhere.
+     */
+    expect(css).toContain('.card-lift { transition: border-color 0.15s ease,transform 0.12s ease; }')
+    expect(css).toContain('.card-lift:hover { border-color: color-mix(in srgb,var(--accent) 45%,var(--border)); '
+      + 'transform: translateY(-1px); }')
   })
 
   test('the selectors that still differ per page are NOT hoisted', () => {
@@ -87,8 +108,17 @@ describe('hoisted shared chrome', () => {
      * test attached, not a side effect of tidying.
      */
     const shortcuts = theme.shortcuts as Record<string, string>
-    for (const name of ['btn', 'card', 'btn-ghost', 'pill', 'seg'])
+    for (const name of ['btn', 'btn-ghost', 'pill', 'seg'])
       expect(`${name}: ${name in shortcuts}`).toBe(`${name}: false`)
+
+    // `card` left this list once the three files that disagreed about it came
+    // down to one meaning: account.stx and issue/[id].stx declared it
+    // byte-identically, pricing.stx's `var(--surface)` / `var(--r)` version is
+    // `card-tier`, and projects/index.stx's transition-only version is
+    // `card-lift`. That is the shape the other four still need.
+    expect(`card: ${'card' in shortcuts}`).toBe('card: true')
+    for (const [file, source] of views)
+      expect(`${file}: ${/^\.card[\s:{]/m.test(source)}`).toBe(`${file}: false`)
   })
 
   test('the hoisted names are declared nowhere else', () => {

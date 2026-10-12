@@ -570,7 +570,6 @@ function copyStack() {
   --code:#0f172a; --code-bg:#f8fafc; --app-tint:rgba(225,29,72,0.07); --app-bar:#e11d48;
 }
 body { background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
-.card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
 .card-head { display:flex; align-items:center; gap:.5rem; padding:.7rem 1rem; border-bottom:1px solid var(--border-2); font-size:.72rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); }
 .pill { display:inline-flex; align-items:center; gap:.35rem; padding:.15rem .55rem; border-radius:999px; font-size:.7rem; font-weight:600; letter-spacing:.02em; }
 

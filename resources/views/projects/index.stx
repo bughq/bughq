@@ -93,8 +93,6 @@ async function logout() {
 
 
 <style>
-.card { transition: border-color 0.15s ease, transform 0.12s ease; }
-.card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); transform: translateY(-1px); }
 .btn { background: var(--accent); color: var(--accent-ink); border-radius: 10px; }
 .btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
 .btn-ghost { border: 1px solid var(--border); color: var(--text); border-radius: 10px; }
@@ -133,7 +131,7 @@ async function logout() {
 
     @if (user)
       @forelse (projects as p)
-        <StxLink to="/dashboard?project={{ p.id }}" class="flex gap-4 items-center mb-3 px-5 py-4 card panel">
+        <StxLink to="/dashboard?project={{ p.id }}" class="flex gap-4 items-center mb-3 px-5 py-4 card-lift panel">
           <span class="flex items-center justify-center shrink-0 h-9 w-9 font-semibold rounded-lg" style="background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--accent)">{{ (p.name || '?').charAt(0).toUpperCase() }}</span>
           <div class="flex-1 min-w-0">
             <div class="font-semibold truncate">{{ p.name }}</div>

@@ -619,6 +619,40 @@ export default {
     panel: 'bg-panel border border-solid border-line rounded-[12px]',
 
     /*
+     * The app's card. account.stx and issue/[id].stx declared this
+     * byte-identically -- 15 call sites, two copies of three properties.
+     *
+     * It was held back while a third file disagreed about what `.card` meant:
+     * pricing.stx painted `var(--surface)` at `var(--r)`, which are
+     * marketing.css's variables and resolve to nothing on an app page, so a
+     * global `card` would have been a repaint rather than a hoist. pricing is
+     * on `card-tier` now, so the name is free.
+     *
+     * 14px rather than the 12px `panel` uses, which is the one thing here that
+     * looks like drift and is not: `rounded-panel` is @stacksjs/components'
+     * radius role and is pointed at 12px so <EmptyState variant="panel">
+     * matches the panels it sits among. These cards have always been 14.
+     */
+    card: 'bg-panel border border-solid border-line rounded-[14px]',
+
+    /*
+     * The app tiles on /projects, which are whole-card links and the only
+     * cards in the app that react to the pointer. Painting comes from `panel`
+     * on the same element, so this is the reaction and nothing else -- which
+     * is why it could not stay named `card` once that name became the painted
+     * one above: the tile would have picked up a second border-radius.
+     *
+     * The hover border-color is `hover:border-[color-mix(…)]` rather than the
+     * arbitrary-property form. `hover:[border-color:…]` parses and emits
+     * NOTHING -- the variant does not reach that form -- which is the silent
+     * kind of miss this config keeps running into, so it is measured against
+     * the generated sheet rather than read.
+     */
+    'card-lift': '[transition:border-color_0.15s_ease,transform_0.12s_ease] '
+      + 'hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] '
+      + 'hover:-translate-y-px',
+
+    /*
      * The two plan cards on /pricing, and the reason this pair exists at all.
      *
      * pricing.stx declared them in `@push('styles')`, which the marketing

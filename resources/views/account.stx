@@ -87,7 +87,6 @@ fetch('/api/me', { credentials: 'same-origin' })
 
 
 <style>
-.card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
 .btn { border-radius: 10px; transition: transform 0.12s ease, opacity 0.15s ease, background-color 0.15s ease; font-weight: 600; }
 .btn:active { transform: translateY(1px); }
 .btn-primary { background: var(--accent); color: var(--accent-ink); }
