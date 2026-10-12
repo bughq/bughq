@@ -12,10 +12,18 @@
  * `.btn:disabled` all still differ between the files that declare them, and
  * they stay page-scoped.
  *
- * That is safe because the router swaps them out: bughq's page <style> blocks
+ * That is safe because the router swaps them out: these page <style> blocks
  * sit INSIDE <main>, which is the router's container, so a page's rules live
- * exactly as long as the page does. Measured rather than assumed, and it is
- * why these conflicts are not a leak and do not need renaming.
+ * exactly as long as the page does. Re-measured 2026-10-13 against the served
+ * pages rather than the sources: account, projects/index, settings, dashboard
+ * and both of issue/[id]'s blocks are inside the container, so their
+ * collisions are confined to the page that declares them.
+ *
+ * pricing.stx was the exception and is the reason that sentence needs a date.
+ * It pushed its block into <head>, where nothing removes it, so its `.card`
+ * DID repaint other pages. Fixed by moving those eight rules out; see
+ * tests/unit/head-style-leak.test.ts, which now keeps the <head> empty of
+ * pushed styles so that the claim above stays true of the whole app.
  */
 import { describe, expect, test } from 'bun:test'
 import { readdirSync, readFileSync, statSync } from 'node:fs'

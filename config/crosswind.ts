@@ -618,6 +618,36 @@ export default {
     // Raised surface. Three copies, byte-identical.
     panel: 'bg-panel border border-solid border-line rounded-[12px]',
 
+    /*
+     * The two plan cards on /pricing, and the reason this pair exists at all.
+     *
+     * pricing.stx declared them in `@push('styles')`, which the marketing
+     * layout renders into <head> (layouts/marketing.stx:56). The SPA router
+     * only removes `style[data-crosswind]` and `style[data-stx-page]`, so a
+     * block in the head outlives the page that pushed it: entering on /pricing
+     * and clicking through left all eight of its rules live for the rest of the
+     * session, and its `.card` -- `var(--surface)`, radius `var(--r)` -- then
+     * repainted every `.card` on every app page, which mean a panel at 14px.
+     * Measured 2026-10-13: of the seven views still carrying a <style> block,
+     * pricing was the ONLY one outside <main>, and so the only one that leaked.
+     *
+     * `-pro` is a complete card rather than a modifier on top of `card-tier`.
+     * The two differ on border-color, and a modifier would have had to beat the
+     * base on it: both are single-class selectors, so specificity ties and
+     * source order decides, and crosswind sorts its output by category rather
+     * than by generation. Spelling the pro card out in full removes the
+     * question instead of answering it with `!important`.
+     *
+     * `--surface` and `--r` come from public/marketing.css, not from the
+     * preflights below, so these two belong to the marketing pages. The
+     * palette here has no --surface: `bg-surface` is an alias onto --panel for
+     * @stacksjs/components, which is a different colour.
+     */
+    'card-tier': 'bg-[var(--surface)] border border-solid border-line rounded-[var(--r)]',
+    'card-tier-pro': 'bg-[var(--surface)] border border-solid rounded-[var(--r)] '
+      + '[border-color:color-mix(in_srgb,var(--accent)_55%,var(--border))] '
+      + '[box-shadow:0_12px_40px_color-mix(in_srgb,var(--accent)_12%,transparent)]',
+
     // Metadata chip on an issue row: status, environment, release, "new in this
     // release". Quiet by default — this sits under the title and must not
     // compete with it or with the level colour on the same row.
