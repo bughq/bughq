@@ -742,8 +742,6 @@ fetch('/api/me', { credentials: 'same-origin' })
 /* bughq - Space Grotesk display + JetBrains Mono for numerics/code.
    One accent (rose), off-black/off-white, auto light+dark, radius lock 12px. */
 .mono { font-feature-settings: 'tnum' 1; }
-.wordmark-link { color: inherit; text-decoration: none; transition: opacity 0.15s ease; }
-.wordmark-link:hover { opacity: 0.75; }
 .row-wrap { transition: background-color 0.15s ease; }
 .row-wrap:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
 .row-link { text-decoration: none; color: inherit; }
@@ -819,9 +817,6 @@ select.panel:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--b
 @media (prefers-reduced-motion: reduce) { .reveal { animation: none; opacity: 1; transform: none; } }
 summary { list-style: none; cursor: pointer; }
 summary::-webkit-details-marker { display: none; }
-.theme-btn .ic-sun, .theme-btn .ic-moon { display: none; }
-.theme-btn[data-t="light"] .ic-sun { display: block; }
-.theme-btn[data-t="dark"] .ic-moon { display: block; }
 @media (max-width: 639px) {
   /* Keep every project control reachable without making the document wider
      than the phone. Identity and utilities stay above app navigation. */

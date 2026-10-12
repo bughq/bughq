@@ -695,6 +695,36 @@ export default {
      */
     'notice-box': 'px-3 text-sm rounded-lg',
 
+    /*
+     * The theme toggle's icon swap and the wordmark link, hoisted out of the
+     * page <style> blocks that each carried their own copy: the three
+     * theme-btn rules were byte-identical in dashboard, settings, issue/[id]
+     * and projects/index, and the two wordmark rules in dashboard and settings.
+     * Sixteen rule instances, one definition.
+     *
+     * ONLY the byte-identical ones. A shortcut is global the moment it exists,
+     * so hoisting a selector that means different things on different pages
+     * would be a behaviour change, not a refactor: `.btn`, `.card`,
+     * `.btn-ghost`, `.pill`, `.seg` and `.btn:disabled` all still differ
+     * between the files that declare them, and they stay where they are.
+     * `.btn:active` is identical in account.stx and issue/[id].stx, and is
+     * NOT hoisted either, because settings and projects have a `.btn` with no
+     * :active and a global rule would start nudging those buttons too.
+     *
+     * The call sites already read `class="icon-btn theme-btn"` and
+     * `class="wordmark-link"`, so the names are deliberately unchanged and no
+     * markup moves.
+     *
+     * The attribute form is what makes this expressible at all: `[&_.ic-sun]`
+     * for a descendant and `[&[data-t="light"]_.ic-sun]` for a descendant under
+     * a state on the element itself. `[color:inherit]` rather than
+     * `text-[inherit]`, which crosswind reads as a font-size.
+     */
+    'theme-btn': '[&_.ic-sun]:hidden [&_.ic-moon]:hidden '
+      + '[&[data-t="light"]_.ic-sun]:block [&[data-t="dark"]_.ic-moon]:block',
+    'wordmark-link': '[color:inherit] no-underline '
+      + '[transition:opacity_0.15s_ease] hover:opacity-75',
+
     // Slack and Discord brand fills, the one pair of badges whose colour is not
     // a role. Not variants: both are a vendor's own colour and mean nothing in
     // this palette, so they override <Badge variant="default"> rather than

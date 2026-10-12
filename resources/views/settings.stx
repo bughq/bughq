@@ -951,8 +951,6 @@ function unarchive(): void {
 
 <style>
 html { scroll-behavior: smooth; }
-.wordmark-link { color: inherit; text-decoration: none; transition: opacity 0.15s ease; }
-.wordmark-link:hover { opacity: 0.75; }
 .sec { scroll-margin-top: 84px; }
 .sec-title { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); }
 .btn { background: var(--accent) !important; color: var(--accent-ink) !important; border-radius: 10px !important; transition: background 0.15s ease, opacity 0.15s ease; }
@@ -1007,9 +1005,6 @@ html { scroll-behavior: smooth; }
    rather than an inline style assignment. */
 .note-ok { color: var(--ok); }
 .note-err { color: var(--accent); }
-.theme-btn .ic-sun, .theme-btn .ic-moon { display: none; }
-.theme-btn[data-t="light"] .ic-sun { display: block; }
-.theme-btn[data-t="dark"] .ic-moon { display: block; }
 .tabnav { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
 .tabnav::-webkit-scrollbar { display: none; }
 .tabnav a { flex: none; color: var(--text-2); border: 1px solid var(--border); border-radius: 999px; transition: color .15s ease, border-color .15s ease; }
