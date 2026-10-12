@@ -57,6 +57,35 @@ describe('component palette contract', () => {
     expect(offenders).toEqual([])
   })
 
+  test('the quiet text scale stays monotonic, so a separator cannot shout', () => {
+    /*
+     * The library asks for four steps of quiet text and this palette has
+     * three, so two roles share a value. Which two is the whole point.
+     *
+     * fg-soft used to be --text-2, identical to fg-muted. Nothing rendered it
+     * -- none of the 53 <EmptyState> sites passes an `icon` and there is no
+     * <Badge dot> -- so it was invisible, and the contract test above could not
+     * see it either: that one asserts every role is MAPPED, not that the
+     * mapping means anything. <Breadcrumb> paints separators with fg-soft and
+     * its links with fg-muted, so the two being equal is a divider as loud as
+     * the labels it divides.
+     *
+     * Asserted as an ordering rather than as literal values so re-theming the
+     * palette cannot quietly reintroduce it.
+     */
+    const steps = ['fg', 'fg-muted', 'fg-soft', 'fg-subtle'] as const
+    const rank = { 'var(--text)': 0, 'var(--text-2)': 1, 'var(--text-3)': 2 } as Record<string, number>
+    const ranks = steps.map((role) => {
+      const value = colors[role] ?? colors['fg-strong']
+      expect(rank[value]).toBeDefined()
+      return rank[value]
+    })
+    // Never louder as it goes quieter, and at least one real step down.
+    for (let i = 1; i < ranks.length; i++)
+      expect(ranks[i]).toBeGreaterThanOrEqual(ranks[i - 1])
+    expect(colors['fg-soft']).not.toBe(colors['fg-muted'])
+  })
+
   test('this palette has two status hues, and says so deliberately', () => {
     expect(colors.success).toBe('var(--ok)')
     // --warn is named for the state, not the hue: it is this palette's red.
