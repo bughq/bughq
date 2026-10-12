@@ -111,16 +111,29 @@ describe('settings status badges', () => {
     expect(badgeFor(html, 'Discord')).toContain('badge-discord')
   })
 
-  test('the two invite tooltips survive, which the component alone would not do', async () => {
+  test('every tooltip on a library component survives, which the component alone would not do', async () => {
     const { html } = await renderSettings()
-    expect(html).toContain('title="The invite email was not delivered, but the join link still works if you share it"')
-    expect(html).toContain('title="Pending, and becomes a member once they accept"')
-    // A title handed to <Badge> is recorded as a prop and dropped from the DOM,
-    // so the wrapper is load-bearing. Both tooltips are on one, and on nothing
-    // else: <Button> renders display:contents wrappers of its own, untitled.
-    const titled = [...html.matchAll(/<span style="display:contents" title="[^"]*">([\s\S]*?)<\/span>\s*<\/span>/g)]
-    expect(titled).toHaveLength(2)
-    for (const wrapper of titled) expect(wrapper[1]).toContain('rounded-pill')
+    /*
+     * A component forwards `className` and its own declared props. Everything
+     * else -- title, id, data-*, aria-* it does not declare -- is recorded in
+     * data-stx-props and never written to the element (stacksjs/stx#2063). The
+     * failure is invisible, because the component still renders: four Buttons
+     * on this page had been dropping their tooltips silently since they were
+     * migrated. So each one sits on a wrapper, and these assertions are for the
+     * wrapper rather than for the attribute.
+     */
+    const titles = [
+      'The invite email was not delivered, but the join link still works if you share it',
+      'Pending, and becomes a member once they accept',
+      'Send the invite email again',
+      'Revoke invite',
+    ]
+    for (const title of titles)
+      expect(html).toContain(`<span class="inline-flex" title="${title}">`)
+
+    // Nothing is passing a title INTO a component any more. The two that said
+    // no more than their own label were dropped rather than wrapped.
+    expect(html).not.toMatch(/data-stx-props="[^"]*title/)
   })
 
   test('this view no longer declares the badge rules that leaked between pages', () => {

@@ -1172,7 +1172,7 @@ html { scroll-behavior: smooth; }
                 <div class="mt-0.5 text-subtle text-xs">Can view &amp; triage issues</div>
               </div>
               <Badge variant="primary" size="sm" className="badge-hq">Member</Badge>
-              <Button variant="ghost" @click="removeMember('{{ m.id }}')" :loading="removing() === '{{ m.id }}'" className="btn-danger btn-xs" title="Remove">Remove</Button>
+              <Button variant="ghost" @click="removeMember('{{ m.id }}')" :loading="removing() === '{{ m.id }}'" className="btn-danger btn-xs">Remove</Button>
             </div>
           @endforeach
           @foreach (inviteView as i)
@@ -1182,25 +1182,33 @@ html { scroll-behavior: smooth; }
                 <div class="font-medium text-sm truncate">{{ i.email }}</div>
                 <div class="text-xs mt-0.5 {{ i.failed ? 'note-failed' : 'text-subtle' }}">{{ i.note }}</div>
               </div>
-              {{-- The tooltip sits on a wrapper because <Badge> renders its own
-                   <span> and forwards only `className`: a `title` passed to the
-                   component is recorded in data-stx-props and never reaches the
-                   element, so the tooltip would disappear silently. The wrapper
-                   is display:contents, so the badge stays a direct flex item of
-                   the row and the gaps around it do not move. --}}
+              {{-- The tooltips on this row, on the Badge and on both Buttons,
+                   sit on a wrapper because a library component forwards
+                   `className` and its own declared props and nothing else: a
+                   `title` on the component tag is recorded in data-stx-props and
+                   never reaches the DOM. Filed as stacksjs/stx#2063.
+
+                   inline-flex, so the wrapper is exactly the box its child
+                   already was: the row is `flex items-center gap-3.5`, and a
+                   shrink-wrapped flex item in place of the old one leaves every
+                   gap where it was. --}}
               @if (i.failed)
-                <span style="display:contents" title="The invite email was not delivered, but the join link still works if you share it">
+                <span class="inline-flex" title="The invite email was not delivered, but the join link still works if you share it">
                   <Badge variant="danger" size="sm" className="badge-hq">Undelivered</Badge>
                 </span>
               @endif
               @if (!i.failed)
-                <span style="display:contents" title="Pending, and becomes a member once they accept">
+                <span class="inline-flex" title="Pending, and becomes a member once they accept">
                   <Badge variant="secondary" size="sm" className="badge-hq">Invited</Badge>
                 </span>
               @endif
-              <Button variant="ghost" @click="resendInvite('{{ i.id }}')" :loading="resending() === '{{ i.id }}'" className="btn-ghost btn-xs" title="Send the invite email again">Resend</Button>
+              <span class="inline-flex" title="Send the invite email again">
+                <Button variant="ghost" @click="resendInvite('{{ i.id }}')" :loading="resending() === '{{ i.id }}'" className="btn-ghost btn-xs">Resend</Button>
+              </span>
               <button @click="copyText('join-{{ i.id }}', '{{ i.join }}')" :text="copyLabel('join-{{ i.id }}', 'Copied ✓', 'Copy link')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Copy join link">Copy link</button>
-              <Button variant="ghost" @click="removeMember('{{ i.id }}')" :loading="removing() === '{{ i.id }}'" className="btn-danger btn-xs" title="Revoke invite">Remove</Button>
+              <span class="inline-flex" title="Revoke invite">
+                <Button variant="ghost" @click="removeMember('{{ i.id }}')" :loading="removing() === '{{ i.id }}'" className="btn-danger btn-xs">Remove</Button>
+              </span>
             </div>
           @endforeach
         </div>
@@ -1256,7 +1264,7 @@ html { scroll-behavior: smooth; }
               </div>
               <button @click="testChannel('{{ c.id }}')" :disabled="testing() === '{{ c.id }}'" :text="testLabel('{{ c.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Send a test message">Test</button>
               <div class="tgl" @click="toggleChannel('{{ c.id }}')" :data-on="isOn('{{ c.id }}') ? '1' : '0'" :aria-checked="isOn('{{ c.id }}') ? 'true' : 'false'" data-on="{{ c.enabled ? '1' : '0' }}" role="switch" aria-checked="{{ c.enabled ? 'true' : 'false' }}" title="Enable / disable"></div>
-              <Button variant="ghost" @click="removeChannel('{{ c.id }}')" :loading="removing() === '{{ c.id }}'" className="btn-danger btn-xs" title="Remove">Remove</Button>
+              <Button variant="ghost" @click="removeChannel('{{ c.id }}')" :loading="removing() === '{{ c.id }}'" className="btn-danger btn-xs">Remove</Button>
             </div>
           @endforeach
           {{-- The reactive @if stays on a plain wrapper: a component taking a
