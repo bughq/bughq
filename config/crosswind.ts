@@ -674,6 +674,27 @@ export default {
     // to sort this shortcut after the component.
     'badge-hq': '!text-[11px] !font-semibold !tracking-[0.02em] !px-[9px]',
 
+    /*
+     * The box an inline form notice sits in: the error banner above a form and
+     * the confirmation that replaces it. Eight sites across the five
+     * auth-shaped views spelled `px-3 text-sm rounded-lg` out in full,
+     * identically.
+     *
+     * Geometry only, and that is load-bearing rather than tidy. `.err` is
+     * declared in the preflight below, which is LAYERED, and pricing.stx
+     * deliberately overrides it unlayered with `background: transparent` for
+     * its own smaller notice. Folding the colour in here would make `.err` an
+     * unlayered shortcut too, so pricing's override would stop winning on layer
+     * and start tying on specificity with source order deciding. Leaving the
+     * colour where it is keeps that override deterministic.
+     *
+     * The vertical padding stays at the call site for a different reason:
+     * errors sit at py-2 and confirmations at py-3 across this app, analyticshq
+     * and loghq alike, so it is a real axis rather than an oversight. Folding
+     * in the more common one would mean `!py-3` on a quarter of the sites.
+     */
+    'notice-box': 'px-3 text-sm rounded-lg',
+
     // Slack and Discord brand fills, the one pair of badges whose colour is not
     // a role. Not variants: both are a vendor's own colour and mean nothing in
     // this palette, so they override <Badge variant="default"> rather than

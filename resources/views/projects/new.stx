@@ -151,7 +151,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 
     <form @submit="handleSubmit" class="space-y-4">
       @if (error())
-        <div id="form-error" role="alert" class="px-3 py-2 text-sm rounded-lg err">{{ error() }}</div>
+        <div id="form-error" role="alert" class="py-2 err notice-box">{{ error() }}</div>
       @endif
 
       <div>
