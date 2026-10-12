@@ -992,16 +992,6 @@ html { scroll-behavior: smooth; }
 .btn-danger:disabled { opacity: 0.55 !important; cursor: default; }
 .btn-danger:disabled:hover { color: var(--warn) !important; background: var(--panel); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
 .field:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); box-shadow: none; }
-.badge { border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; padding: 2px 9px; }
-.badge-slack { color: #fff; background: var(--slack); }
-.badge-discord { color: #fff; background: var(--discord); }
-.badge-soft { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--accent); }
-.badge-owner { background: color-mix(in srgb, var(--accent) 16%, var(--panel)); color: var(--accent); }
-.badge-pending { background: color-mix(in srgb, var(--text-3) 18%, var(--panel)); color: var(--text-2); }
-/* Undelivered invites. --warn is the palette's danger colour (btn-danger uses
-   it too); a distinct class name rather than `text-warn` so this can never
-   collide with a generated utility of the same name. */
-.badge-failed { background: color-mix(in srgb, var(--warn) 16%, var(--panel)); color: var(--warn); }
 .note-failed { color: var(--warn); }
 .tgl { width: 38px; height: 22px; border-radius: 999px; background: var(--border); position: relative; transition: background 0.15s ease; cursor: pointer; flex: none; }
 .tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 999px; background: #fff; transition: transform 0.15s ease; }
@@ -1114,7 +1104,7 @@ html { scroll-behavior: smooth; }
             @else
               <p class="text-sm text-subtle">Wire bughq into <span class="text-muted mono">{{ activeProject?.name }}</span> to start capturing errors — they group into issues automatically.</p>
             @endif
-            <span class="shrink-0 badge badge-soft">{{ guide.label }}</span>
+            <Badge variant="primary" size="sm" className="shrink-0 badge-hq">{{ guide.label }}</Badge>
           </div>
           @if (guide.install)
             <div class="relative mb-2">
@@ -1164,12 +1154,15 @@ html { scroll-behavior: smooth; }
         <div class="flex flex-col gap-2.5 mb-4">
           <!-- Owner (always first, not removable) -->
           <div class="flex gap-3.5 items-center px-4 py-3.5 panel">
-            <span class="grid place-items-center shrink-0 h-8 w-8 font-semibold rounded-lg badge-owner">{{ (ownerEmail || '?').charAt(0).toUpperCase() }}</span>
+            {{-- The initial square borrowed `.badge-owner` for its fill. That class
+                 was a badge rule, so it has gone with the rest of them; the two
+                 role tokens below are what it resolved to anyway. --}}
+            <span class="grid place-items-center shrink-0 h-8 w-8 font-semibold text-accent-soft-ink bg-accent-soft rounded-lg">{{ (ownerEmail || '?').charAt(0).toUpperCase() }}</span>
             <div class="flex-1 min-w-0">
               <div class="font-medium text-sm truncate">{{ ownerEmail }}</div>
               <div class="mt-0.5 text-subtle text-xs">Full access</div>
             </div>
-            <span class="badge badge-owner">Owner</span>
+            <Badge variant="primary" size="sm" className="badge-hq">Owner</Badge>
           </div>
           @foreach (memberView as m)
             <div class="flex gap-3.5 items-center px-4 py-3.5 panel" @if="!gone().includes('{{ m.id }}')">
@@ -1178,7 +1171,7 @@ html { scroll-behavior: smooth; }
                 <div class="font-medium text-sm truncate">{{ m.email }}</div>
                 <div class="mt-0.5 text-subtle text-xs">Can view &amp; triage issues</div>
               </div>
-              <span class="badge badge-soft">Member</span>
+              <Badge variant="primary" size="sm" className="badge-hq">Member</Badge>
               <Button variant="ghost" @click="removeMember('{{ m.id }}')" :loading="removing() === '{{ m.id }}'" className="btn-danger btn-xs" title="Remove">Remove</Button>
             </div>
           @endforeach
@@ -1189,11 +1182,21 @@ html { scroll-behavior: smooth; }
                 <div class="font-medium text-sm truncate">{{ i.email }}</div>
                 <div class="text-xs mt-0.5 {{ i.failed ? 'note-failed' : 'text-subtle' }}">{{ i.note }}</div>
               </div>
+              {{-- The tooltip sits on a wrapper because <Badge> renders its own
+                   <span> and forwards only `className`: a `title` passed to the
+                   component is recorded in data-stx-props and never reaches the
+                   element, so the tooltip would disappear silently. The wrapper
+                   is display:contents, so the badge stays a direct flex item of
+                   the row and the gaps around it do not move. --}}
               @if (i.failed)
-                <span class="badge badge-failed" title="The invite email was not delivered — the join link still works if you share it">Undelivered</span>
+                <span style="display:contents" title="The invite email was not delivered, but the join link still works if you share it">
+                  <Badge variant="danger" size="sm" className="badge-hq">Undelivered</Badge>
+                </span>
               @endif
               @if (!i.failed)
-                <span class="badge badge-pending" title="Pending — becomes a member once they accept">Invited</span>
+                <span style="display:contents" title="Pending, and becomes a member once they accept">
+                  <Badge variant="secondary" size="sm" className="badge-hq">Invited</Badge>
+                </span>
               @endif
               <Button variant="ghost" @click="resendInvite('{{ i.id }}')" :loading="resending() === '{{ i.id }}'" className="btn-ghost btn-xs" title="Send the invite email again">Resend</Button>
               <button @click="copyText('join-{{ i.id }}', '{{ i.join }}')" :text="copyLabel('join-{{ i.id }}', 'Copied ✓', 'Copy link')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Copy join link">Copy link</button>
@@ -1246,7 +1249,7 @@ html { scroll-behavior: smooth; }
         <div class="flex flex-col gap-2.5 mb-4">
           @foreach (channelView as c)
             <div class="flex gap-3.5 items-center px-4 py-3.5 panel" @if="!gone().includes('{{ c.id }}')">
-              <span class="badge badge-{{ c.type }}">{{ c.type === 'slack' ? 'Slack' : 'Discord' }}</span>
+              <Badge size="sm" className="badge-hq badge-{{ c.type }}">{{ c.type === 'slack' ? 'Slack' : 'Discord' }}</Badge>
               <div class="flex-1 min-w-0">
                 <div class="font-medium text-sm truncate">{{ c.label }}</div>
                 <div class="mt-0.5 text-subtle text-xs truncate mono">{{ c.mask }}</div>

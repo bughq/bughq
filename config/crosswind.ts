@@ -643,6 +643,28 @@ export default {
     // note in pageCss().
     'cmp-hl': '[&_.cmp-cell:nth-child(3n+2)]:bg-[var(--accent-soft)]',
 
+    // The six status badges in settings.stx are <Badge> now, and these three
+    // carry the difference between the library's badge and this app's.
+    //
+    // `badge-hq` is the type only. <Badge size="sm"> is 12px/500 with no
+    // tracking; these rows have always been 11px/600 at 0.02em, and they sit in
+    // dense member and channel lists where a 12px label crowds the email beside
+    // it. Padding differs by a single pixel horizontally, carried for the same
+    // reason. `!` on every property for the reason btn-accent documents above:
+    // a shortcut and a component's own utilities are both single-class
+    // selectors, so without `!` the override lands only where crosswind happens
+    // to sort this shortcut after the component.
+    'badge-hq': '!text-[11px] !font-semibold !tracking-[0.02em] !px-[9px]',
+
+    // Slack and Discord brand fills, the one pair of badges whose colour is not
+    // a role. Not variants: both are a vendor's own colour and mean nothing in
+    // this palette, so they override <Badge variant="default"> rather than
+    // asking the role vocabulary to name them. Moved out of settings.stx's
+    // <style> block, where `.badge-slack` sat beside a generic `.badge` that
+    // leaked to every page the router kept the sheet alive for.
+    'badge-slack': '!bg-[var(--slack)] !text-white',
+    'badge-discord': '!bg-[var(--discord)] !text-white',
+
     // Third-party sign-in button on /login and /register. Two copies, identical.
     'oauth-btn': 'border border-solid border-line rounded-[10px] text-ink bg-panel '
       + '[transition:border-color_0.15s_ease,transform_0.12s_ease] '
