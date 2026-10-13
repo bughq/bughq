@@ -1177,33 +1177,25 @@ html { scroll-behavior: smooth; }
                 <div class="font-medium text-sm truncate">{{ i.email }}</div>
                 <div class="text-xs mt-0.5 {{ i.failed ? 'note-failed' : 'text-subtle' }}">{{ i.note }}</div>
               </div>
-              {{-- The tooltips on this row, on the Badge and on both Buttons,
-                   sit on a wrapper because a library component forwards
-                   `className` and its own declared props and nothing else: a
-                   `title` on the component tag is recorded in data-stx-props and
-                   never reaches the DOM. Filed as stacksjs/stx#2063.
-
-                   inline-flex, so the wrapper is exactly the box its child
-                   already was: the row is `flex items-center gap-3.5`, and a
-                   shrink-wrapped flex item in place of the old one leaves every
-                   gap where it was. --}}
+              {{-- These four tooltips sat on `<span class="inline-flex">`
+                   wrappers until stx 0.2.506. A component used to forward
+                   `className` and its own declared props and nothing else, so a
+                   `title` on the component tag was recorded in data-stx-props
+                   and never reached the DOM -- invisibly, because the component
+                   still rendered. Fixed upstream in stacksjs/stx#2063, which
+                   forwards standard DOM, data-* and aria-* attributes to the
+                   component's concrete root: `title` now lands on the badge's
+                   own <span> and on the <button> itself, which is where a
+                   tooltip belongs and where the wrapper could never put it. --}}
               @if (i.failed)
-                <span class="inline-flex" title="The invite email was not delivered, but the join link still works if you share it">
-                  <Badge variant="danger" size="sm" className="badge-hq">Undelivered</Badge>
-                </span>
+                <Badge variant="danger" size="sm" className="badge-hq" title="The invite email was not delivered, but the join link still works if you share it">Undelivered</Badge>
               @endif
               @if (!i.failed)
-                <span class="inline-flex" title="Pending, and becomes a member once they accept">
-                  <Badge variant="secondary" size="sm" className="badge-hq">Invited</Badge>
-                </span>
+                <Badge variant="secondary" size="sm" className="badge-hq" title="Pending, and becomes a member once they accept">Invited</Badge>
               @endif
-              <span class="inline-flex" title="Send the invite email again">
-                <Button variant="ghost" @click="resendInvite('{{ i.id }}')" :loading="resending() === '{{ i.id }}'" className="btn-ghost btn-xs">Resend</Button>
-              </span>
+              <Button variant="ghost" @click="resendInvite('{{ i.id }}')" :loading="resending() === '{{ i.id }}'" className="btn-ghost btn-xs" title="Send the invite email again">Resend</Button>
               <button @click="copyText('join-{{ i.id }}', '{{ i.join }}')" :text="copyLabel('join-{{ i.id }}', 'Copied ✓', 'Copy link')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Copy join link">Copy link</button>
-              <span class="inline-flex" title="Revoke invite">
-                <Button variant="ghost" @click="removeMember('{{ i.id }}')" :loading="removing() === '{{ i.id }}'" className="btn-danger btn-xs">Remove</Button>
-              </span>
+              <Button variant="ghost" @click="removeMember('{{ i.id }}')" :loading="removing() === '{{ i.id }}'" className="btn-danger btn-xs" title="Revoke invite">Remove</Button>
             </div>
           @endforeach
         </div>

@@ -111,16 +111,20 @@ describe('settings status badges', () => {
     expect(badgeFor(html, 'Discord')).toContain('badge-discord')
   })
 
-  test('every tooltip on a library component survives, which the component alone would not do', async () => {
+  test('every tooltip reaches the element a cursor and a screen reader land on', async () => {
     const { html } = await renderSettings()
     /*
-     * A component forwards `className` and its own declared props. Everything
-     * else -- title, id, data-*, aria-* it does not declare -- is recorded in
-     * data-stx-props and never written to the element (stacksjs/stx#2063). The
-     * failure is invisible, because the component still renders: four Buttons
-     * on this page had been dropping their tooltips silently since they were
-     * migrated. So each one sits on a wrapper, and these assertions are for the
-     * wrapper rather than for the attribute.
+     * These four were asserted on a `<span class="inline-flex">` wrapper until
+     * stx 0.2.506. A component forwarded `className` and its own declared props
+     * and nothing else, so title, id, data-* and aria-* were recorded in
+     * data-stx-props and never written to the element (stacksjs/stx#2063) --
+     * invisibly, because the component still rendered.
+     *
+     * Fixed upstream: attributes now reach the component's concrete root, so
+     * `title` lands on the badge's own <span> and on the <button> itself. The
+     * assertions moved onto the attribute, which is a stronger test than the
+     * wrapper was -- it checks the thing a cursor and a screen reader actually
+     * reach, and it fails if a renderer ever goes back to swallowing it.
      */
     const titles = [
       'The invite email was not delivered, but the join link still works if you share it',
@@ -129,11 +133,18 @@ describe('settings status badges', () => {
       'Revoke invite',
     ]
     for (const title of titles)
-      expect(html).toContain(`<span class="inline-flex" title="${title}">`)
+      expect(`${title}: ${html.includes(`title="${title}"`)}`).toBe(`${title}: true`)
 
-    // Nothing is passing a title INTO a component any more. The two that said
-    // no more than their own label were dropped rather than wrapped.
-    expect(html).not.toMatch(/data-stx-props="[^"]*title/)
+    // On the element, not on a wrapper around it. Nothing in this view should
+    // need one any more.
+    expect(html).not.toContain('<span class="inline-flex" title=')
+
+    /*
+     * `title` is still ALSO recorded in data-stx-props. That is the component's
+     * own prop channel and always was; the bug was that it was the ONLY place
+     * the value landed. Asserting its absence would now be asserting the wrong
+     * thing, so what this guards is that the value reaches the DOM as well.
+     */
   })
 
   test('this view no longer declares the badge rules that leaked between pages', () => {
