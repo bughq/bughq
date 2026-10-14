@@ -173,9 +173,9 @@ describe('hoisted shared chrome', () => {
 
   test('the style blocks that remain are exactly the ones still blocked', () => {
     /*
-     * stx-standards rule 3. An allowlist rather than a zero, because this is
-     * mid-migration and a silent REGRESSION is the thing worth catching: a new
-     * <style> block, or an old one quietly growing back.
+     * stx-standards rule 3, and the list is empty: resources/ declares no CSS
+     * at all now. It stays a list rather than a bare `toHaveLength(0)` so that
+     * a regression names the file that grew a block back.
      *
      * This list used to be five, all blocked on the same thing: four pages
      * declared `.btn` differently and most of it was !important, so no single
@@ -190,6 +190,11 @@ describe('hoisted shared chrome', () => {
      * public/marketing.css's, which keeps the bare `.btn` name. They are the
      * `btn-solid` and `btn-outline` shortcuts now.
      *
+     * issue/[id].stx was the last off it. Its `:root` palette -- the one
+     * §11.2 names as the example of the same token meaning two colours in one
+     * app -- is the shared palette's values, and the six tokens it alone
+     * declared are in that palette too.
+     *
      * The !important stays on exactly the properties <Button variant="ghost">
      * also sets, for the reason btn-accent already documented: both are
      * single-class selectors, so specificity ties and crosswind sorts its
@@ -198,9 +203,7 @@ describe('hoisted shared chrome', () => {
      *
      * Shrink it, never grow it.
      */
-    const blocked = [
-      'resources/views/issue/[id].stx',
-    ]
+    const blocked: string[] = []
     // An opening tag at the start of a line. Matching '<style' anywhere counts
     // this repo's own comments about blocks that used to be there, and there
     // are several.

@@ -43,6 +43,24 @@ interface Palette {
   warn: string
   /** Discord brand colour, for the integrations list in settings. */
   discord: string
+
+  /*
+   * The six /issue/:id declared for itself, in its own `:root`. They are not
+   * page-specific values, they were a page-specific DECLARATION SITE -- which
+   * is the thing §11.2 forbids. pageCss() already reads --panel-2 and
+   * --border-2 for the Autofix panel's surfaces and step dividers, and that
+   * worked only because the panel renders on the one page that defined them.
+   */
+  /** Recessed surface inside a panel: Autofix's setup strip, a frame's wash. */
+  panel2: string
+  /** The quieter of the two hairlines, for dividers inside a card. */
+  border2: string
+  /** Code text and the strip it sits on, in the stack trace. */
+  code: string
+  codeBg: string
+  /** Application frames in a stack trace: the wash and its left bar. */
+  appTint: string
+  appBar: string
 }
 
 const light: Palette = {
@@ -58,6 +76,12 @@ const light: Palette = {
   ok: '#16a34a',
   warn: '#b91c1c',
   discord: '#5865f2',
+  panel2: '#fbfcfd',
+  border2: 'rgba(15,23,42,0.06)',
+  code: '#0f172a',
+  codeBg: '#f8fafc',
+  appTint: 'rgba(225,29,72,0.07)',
+  appBar: '#e11d48',
 }
 
 const dark: Palette = {
@@ -73,6 +97,12 @@ const dark: Palette = {
   ok: '#4ade80',
   warn: '#f87171',
   discord: '#818cf8',
+  panel2: '#0e111a',
+  border2: 'rgba(148,163,184,0.08)',
+  code: '#e5e9f0',
+  codeBg: '#0b0e16',
+  appTint: 'rgba(251,113,133,0.1)',
+  appBar: '#fb7185',
 }
 
 /**
@@ -83,6 +113,18 @@ const dark: Palette = {
  */
 const constants = [
   `--slack: #611f69`,
+  /*
+   * /issue/:id's system stack, as a token rather than a literal.
+   *
+   * Not a style choice: this engine REWRITES a literal sans `font-family` in a
+   * preflight to the theme's own sans stack. Measured against the installed
+   * one -- `ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif`
+   * came back as `Space Grotesk, ui-sans-serif, system-ui, sans-serif`, and so
+   * did the same list unquoted and double-quoted, so the quoting has nothing to
+   * do with it. A mono stack survives, and so does anything behind `var()` or
+   * declared as a custom property. Hence this.
+   */
+  `--sans-system: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif`,
   `--sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif`,
   `--mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace`,
 ].join('; ')
@@ -101,6 +143,12 @@ function declarations(p: Palette): string {
     `--ok: ${p.ok}`,
     `--warn: ${p.warn}`,
     `--discord: ${p.discord}`,
+    `--panel-2: ${p.panel2}`,
+    `--border-2: ${p.border2}`,
+    `--code: ${p.code}`,
+    `--code-bg: ${p.codeBg}`,
+    `--app-tint: ${p.appTint}`,
+    `--app-bar: ${p.appBar}`,
   ].join('; ')
 }
 
@@ -128,54 +176,21 @@ function paletteCss(): string {
     // specificity. That is the right way round for `body`: a page or a utility
     // that sets its own background should win, and nothing here competes.
     `body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }`,
+
     /*
-     * settings.stx's structural rules: a pseudo-element, an attribute state or
-     * a compound selector in every one, so none of them is a shortcut.
+     * /issue/:id sets a system stack instead of --sans, and has since it was
+     * written. Nothing anywhere records why, so this preserves it rather than
+     * deciding for it: unifying onto Space Grotesk like every other page is a
+     * visible change to the one surface people read long technical text on,
+     * and it is a one-line deletion here whenever someone wants to make it.
      *
-     * Smooth scrolling is scoped to the pages that have the in-page nav it is
-     * for, rather than made global. public/marketing.css already sets it on
-     * html for the marketing pages; /dashboard, /account, /projects and
-     * /issue/:id never had it and there is no reason for this move to give it
-     * to them.
+     * Keyed off a class on the page's outermost element, because the layout
+     * group meta cannot tell /issue/:id from /dashboard -- both are `default`.
+     * `:has()` is live and that div's start tag is parsed before any of its
+     * content, so the family is settled before the first glyph paints, which a
+     * hook further down the page (the `.bughq-cols` grid, say) would not do.
      */
-    `
-html:has(.tabnav) { scroll-behavior: smooth; }
-.tabnav { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
-.tabnav::-webkit-scrollbar { display: none; }
-.tabnav a { flex: none; color: var(--text-2); border: 1px solid var(--border); border-radius: 999px; transition: color .15s ease, border-color .15s ease; }
-.tabnav a:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
-
-/* The notification toggle. Pseudo-element knob, attribute state. */
-.tgl { width: 38px; height: 22px; border-radius: 999px; background: var(--border); position: relative; transition: background 0.15s ease; cursor: pointer; flex: none; }
-.tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 999px; background: #fff; transition: transform 0.15s ease; }
-.tgl[data-on="1"] { background: var(--ok); }
-.tgl[data-on="1"]::after { transform: translateX(16px); }
-
-/* Slack / Discord picker. The brand fill is keyed off the selected attribute. */
-.seg { border: 1px solid var(--border); border-radius: 10px; color: var(--text-2); background: var(--panel); transition: all 0.12s ease; }
-.seg[data-sel="1"] { color: #fff; border-color: transparent; }
-.seg-slack[data-sel="1"] { background: var(--slack); }
-.seg-discord[data-sel="1"] { background: var(--discord); }
-
-/* Notes rendered from signals, so the state is a class rather than an inline
-   style assignment. The colours are the note-ok / note-err / note-failed
-   shortcuts; this is the compound that cannot be one. */
-.note { display: none; }
-.note.show { display: block; }
-
-/* The danger-zone confirm dialog. */
-.dz-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(2,4,10,0.62); backdrop-filter: blur(3px); animation: dz-fade 0.12s ease; }
-.dz-overlay[hidden] { display: none; }
-@keyframes dz-fade { from { opacity: 0 } to { opacity: 1 } }
-@keyframes dz-pop { from { opacity: 0; transform: translateY(6px) scale(0.98) } to { opacity: 1; transform: none } }
-`,
-
-    // account.stx's loading placeholder. `skeleton-pulse`, not `pulse`: this
-    // engine emits its own `@keyframes pulse` for `animate-pulse`, and
-    // @keyframes obey the cascade, so sharing the name is a silent swap of one
-    // animation for the other. The `.skeleton` rule itself is a shortcut.
-    '@keyframes skeleton-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }',
-
+    `body:has(.issue-root) { font-family: var(--sans-system); }`,
   ].join('\n')
 }
 
@@ -659,6 +674,136 @@ summary:focus-visible {
   .drp-day { height: 2.5rem; }
 }
     `,
+    /*
+     * settings.stx's structural rules: a pseudo-element, an attribute state or
+     * a compound selector in every one, so none of them is a shortcut.
+     *
+     * Smooth scrolling is scoped to the pages that have the in-page nav it is
+     * for, rather than made global. public/marketing.css already sets it on
+     * html for the marketing pages; /dashboard, /account, /projects and
+     * /issue/:id never had it and there is no reason for this move to give it
+     * to them.
+     */
+    `
+html:has(.tabnav) { scroll-behavior: smooth; }
+.tabnav { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
+.tabnav::-webkit-scrollbar { display: none; }
+.tabnav a { flex: none; color: var(--text-2); border: 1px solid var(--border); border-radius: 999px; transition: color .15s ease, border-color .15s ease; }
+.tabnav a:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+
+/* The notification toggle. Pseudo-element knob, attribute state. */
+.tgl { width: 38px; height: 22px; border-radius: 999px; background: var(--border); position: relative; transition: background 0.15s ease; cursor: pointer; flex: none; }
+.tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 999px; background: #fff; transition: transform 0.15s ease; }
+.tgl[data-on="1"] { background: var(--ok); }
+.tgl[data-on="1"]::after { transform: translateX(16px); }
+
+/* Slack / Discord picker. The brand fill is keyed off the selected attribute. */
+.seg { border: 1px solid var(--border); border-radius: 10px; color: var(--text-2); background: var(--panel); transition: all 0.12s ease; }
+.seg[data-sel="1"] { color: #fff; border-color: transparent; }
+.seg-slack[data-sel="1"] { background: var(--slack); }
+.seg-discord[data-sel="1"] { background: var(--discord); }
+
+/* Notes rendered from signals, so the state is a class rather than an inline
+   style assignment. The colours are the note-ok / note-err / note-failed
+   shortcuts; this is the compound that cannot be one. */
+.note { display: none; }
+.note.show { display: block; }
+
+/* The danger-zone confirm dialog. */
+.dz-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(2,4,10,0.62); backdrop-filter: blur(3px); animation: dz-fade 0.12s ease; }
+.dz-overlay[hidden] { display: none; }
+@keyframes dz-fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes dz-pop { from { opacity: 0; transform: translateY(6px) scale(0.98) } to { opacity: 1; transform: none } }
+`,
+
+    // account.stx's loading placeholder. `skeleton-pulse`, not `pulse`: this
+    // engine emits its own `@keyframes pulse` for `animate-pulse`, and
+    // @keyframes obey the cascade, so sharing the name is a silent swap of one
+    // animation for the other. The `.skeleton` rule itself is a shortcut.
+    '@keyframes skeleton-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }',
+    /*
+     * /issue/:id: the severity and status chips, the stack trace, the
+     * breadcrumb list and the key/value context.
+     *
+     * Almost none of it could be a class on an element. `.pill.lvl-fatal` and
+     * `.frame.is-crash .fr-loc` are compounds, `details.sysgroup > summary
+     * ::-webkit-details-marker` has no utility form, `.exc + .exc` and
+     * `.crumb:first-child` are positional -- and the level and status names
+     * are INTERPOLATED into the class attribute (`pill lvl lvl-{{ … }}`), so
+     * an extractor only ever sees whichever one issue happened to render. A
+     * preflight always ships, which is the whole answer for this page.
+     *
+     * The page's own `:root` is gone with it. Its seven overlapping tokens
+     * were the defect §11.2 names using this app as the example -- /issue/:id's
+     * "same" background being a different colour from /dashboard's -- and they
+     * are the shared palette's values now. The six it alone defined moved into
+     * that palette; two of them, --panel-2 and --border-2, were already read
+     * by the Autofix rules above and worked only because the panel renders on
+     * the one page that happened to declare them.
+     */
+    `
+.card-head { display:flex; align-items:center; gap:.5rem; padding:.7rem 1rem; border-bottom:1px solid var(--border-2); font-size:.72rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); }
+.pill { display:inline-flex; align-items:center; gap:.35rem; padding:.15rem .55rem; border-radius:999px; font-size:.7rem; font-weight:600; letter-spacing:.02em; }
+
+/* Severity chips: the one deliberately loud element on the page. Solid
+   saturated fills (they carry on both themes) with a soft matching glow so
+   the level reads instantly instead of blending into the panel. */
+.pill.lvl { color:#fff; font-weight:700; text-transform:uppercase; letter-spacing:.06em; background:#64748b; }
+.pill.lvl-fatal { background:#dc2626; box-shadow:0 0 16px rgba(220,38,38,.4); }
+.pill.lvl-error { background:#e11d48; box-shadow:0 0 16px rgba(225,29,72,.4); }
+.pill.lvl-warning { background:#d97706; box-shadow:0 0 14px rgba(217,119,6,.35); }
+.pill.lvl-info { background:#0284c7; }
+.pill.lvl-debug { background:#7c3aed; }
+/* Status is secondary to severity: outlined + tinted, not solid. */
+.pill.st-unresolved { color:var(--accent); background:color-mix(in srgb, var(--accent) 16%, transparent); border:1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+.pill.st-resolved { color:#22c55e; background:rgba(34,197,94,.14); border:1px solid rgba(34,197,94,.4); }
+.pill.st-ignored { color:var(--text-3); background:color-mix(in srgb, var(--text-3) 14%, transparent); border:1px solid color-mix(in srgb, var(--text-3) 35%, transparent); }
+
+/* Stack trace */
+.exc + .exc { margin-top: .75rem; }
+.exc-head { padding: 1rem 1.15rem .9rem; border-bottom:1px solid var(--border-2); }
+.exc-type { font-family: var(--mono); font-weight:700; font-size:1rem; color:var(--accent); word-break:break-word; }
+.exc-msg { margin-top:.3rem; font-size:.95rem; line-height:1.5; color:var(--text); word-break:break-word; }
+.caused { display:inline-block; margin-bottom:.5rem; font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); }
+.frames { padding:.35rem; }
+.frame { display:flex; align-items:baseline; gap:.75rem; padding:.5rem .65rem; border-radius:8px; font-family: var(--mono); font-size:.8rem; line-height:1.45; }
+.frame + .frame { margin-top:1px; }
+.frame.is-app { background: var(--app-tint); box-shadow: inset 2px 0 0 var(--app-bar); }
+.frame.is-sys { opacity:.62; }
+/* The crash frame is where the error actually happened — it gets the
+   strongest treatment on the page: warmer wash, thicker bar, accent
+   filename + location chip. */
+.frame.is-crash { background: color-mix(in srgb, var(--accent) 11%, transparent); box-shadow: inset 3px 0 0 var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 12%, transparent); }
+.frame.is-crash .fr-base { color: var(--accent); }
+.frame.is-crash .fr-loc { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); font-weight:600; }
+.fr-main { min-width:0; flex:1; display:flex; align-items:baseline; gap:.4rem; flex-wrap:wrap; }
+.fr-base { color: var(--text); font-weight:600; flex-shrink:0; }
+.fr-dir { color: var(--text-3); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fr-fn { color: var(--text-2); flex-shrink:0; }
+.fr-fn b { color: var(--text); font-weight:600; }
+.fr-loc { flex-shrink:0; color: var(--text-3); font-size:.74rem; padding:.05rem .4rem; border-radius:5px; background: var(--code-bg); }
+details.sysgroup { margin:1px 0; }
+details.sysgroup > summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:.5rem; padding:.45rem .65rem; border-radius:8px; font-size:.74rem; color:var(--text-3); font-family: var(--mono); }
+details.sysgroup > summary::-webkit-details-marker { display:none; }
+details.sysgroup > summary:hover { color: var(--text-2); background: var(--code-bg); }
+details.sysgroup > summary .chev { transition: transform .15s ease; }
+details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
+
+/* Breadcrumbs */
+.crumb { display:flex; align-items:flex-start; gap:.7rem; padding:.5rem 1rem; border-top:1px solid var(--border-2); }
+.crumb:first-child { border-top:none; }
+.crumb-ic { flex-shrink:0; width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
+.crumb-ic svg { width:15px; height:15px; }
+.crumb-cat { flex-shrink:0; width:5.5rem; font-family:var(--mono); font-size:.72rem; color:var(--text-2); padding-top:.28rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.crumb-txt { flex:1; min-width:0; font-family:var(--mono); font-size:.75rem; color:var(--text); padding-top:.28rem; word-break:break-word; }
+.crumb-time { flex-shrink:0; font-family:var(--mono); font-size:.68rem; color:var(--text-3); padding-top:.32rem; }
+
+/* Key/value context */
+.kv { display:grid; grid-template-columns: minmax(6rem,auto) 1fr; gap:.1rem .9rem; padding:.6rem 1rem 1rem; font-size:.78rem; }
+.kv dt { color:var(--text-3); font-family:var(--mono); font-size:.72rem; padding:.2rem 0; overflow:hidden; text-overflow:ellipsis; }
+.kv dd { color:var(--text); font-family:var(--mono); word-break:break-word; padding:.2rem 0; }
+.jsonblock { font-family:var(--mono); font-size:.72rem; line-height:1.5; color:var(--text-2); white-space:pre-wrap; word-break:break-word; padding:.7rem 1rem 1rem; margin:0; }
+`,
   ].join('\n')
 }
 
@@ -1381,6 +1526,25 @@ export default {
     // never reaches. In a safelisted shortcut they ship.
     'btn-dz': 'flex-none !px-4 !py-2.5 !text-sm !font-semibold whitespace-nowrap',
 
+    /*
+     * /issue/:id's three button variants, each a complete button rather than a
+     * modifier set beside `btn-outline`.
+     *
+     * They compose it instead: a shortcut may reference another shortcut, and
+     * the later utilities override the earlier ones inside the one rule the
+     * engine emits. That is the difference that matters -- as a modifier,
+     * `.btn-resolve`'s green would have to beat `btn-outline`'s own
+     * `!text-muted` at equal specificity, where the winner is whichever
+     * crosswind emitted last, and pickier's class sorter is entitled to
+     * rewrite the attribute order that decides it. Composed, there is one
+     * rule and one colour in it.
+     */
+    'btn-resolve': 'btn-outline !text-[#16a34a] border-[rgba(34,197,94,.4)] '
+      + 'hover:!text-[#16a34a] hover:border-[rgba(34,197,94,.75)] hover:bg-[rgba(34,197,94,.1)]',
+    // The copy button beside a stack frame: the same button in mono, a size down.
+    'btn-copy': 'btn-outline [font-family:var(--mono)] !text-[0.68rem]',
+    'backlink': 'text-muted [transition:color_.12s_ease] hover:text-ink',
+
     // Third-party sign-in button on /login and /register. Two copies, identical.
     'oauth-btn': 'border border-solid border-line rounded-[10px] text-ink bg-panel '
       + '[transition:border-color_0.15s_ease,transform_0.12s_ease] '
@@ -1435,6 +1599,10 @@ export default {
     'btn-sm',
     'btn-xs',
     'btn-dz',
+    // issue/[id].stx
+    'btn-resolve',
+    'btn-copy',
+    'backlink',
   ],
   preflights: [
     { getCSS: paletteCss },

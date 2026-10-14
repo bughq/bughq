@@ -545,112 +545,27 @@ function copyStack() {
 </script>
 
 
-<style>
-:root {
-  --bg:#f6f7f9; --panel:#ffffff; --panel-2:#fbfcfd; --border:rgba(15,23,42,0.08); --border-2:rgba(15,23,42,0.06);
-  --text:#0b0f19; --text-2:#475569; --text-3:#8a94a6; --accent:#e11d48;
-  --code:#0f172a; --code-bg:#f8fafc; --app-tint:rgba(225,29,72,0.07); --app-bar:#e11d48;
-  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:#0a0c12; --panel:#11141d; --panel-2:#0e111a; --border:rgba(148,163,184,0.12); --border-2:rgba(148,163,184,0.08);
-    --text:#eef1f6; --text-2:#aab4c5; --text-3:#5f6b7e; --accent:#fb7185;
-    --code:#e5e9f0; --code-bg:#0b0e16; --app-tint:rgba(251,113,133,0.1); --app-bar:#fb7185;
-  }
-}
-:root[data-theme="dark"] {
-  --bg:#0a0c12; --panel:#11141d; --panel-2:#0e111a; --border:rgba(148,163,184,0.12); --border-2:rgba(148,163,184,0.08);
-  --text:#eef1f6; --text-2:#aab4c5; --text-3:#5f6b7e; --accent:#fb7185;
-  --code:#e5e9f0; --code-bg:#0b0e16; --app-tint:rgba(251,113,133,0.1); --app-bar:#fb7185;
-}
-:root[data-theme="light"] {
-  --bg:#f6f7f9; --panel:#ffffff; --panel-2:#fbfcfd; --border:rgba(15,23,42,0.08); --border-2:rgba(15,23,42,0.06);
-  --text:#0b0f19; --text-2:#475569; --text-3:#8a94a6; --accent:#e11d48;
-  --code:#0f172a; --code-bg:#f8fafc; --app-tint:rgba(225,29,72,0.07); --app-bar:#e11d48;
-}
-body { background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
-.card-head { display:flex; align-items:center; gap:.5rem; padding:.7rem 1rem; border-bottom:1px solid var(--border-2); font-size:.72rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); }
-.pill { display:inline-flex; align-items:center; gap:.35rem; padding:.15rem .55rem; border-radius:999px; font-size:.7rem; font-weight:600; letter-spacing:.02em; }
+{{-- No <style> block: rule 3 / §11.1, and this was the last one in the app.
 
-/* Severity chips: the one deliberately loud element on the page. Solid
-   saturated fills (they carry on both themes) with a soft matching glow so
-   the level reads instantly instead of blending into the panel. */
-.pill.lvl { color:#fff; font-weight:700; text-transform:uppercase; letter-spacing:.06em; background:#64748b; }
-.pill.lvl-fatal { background:#dc2626; box-shadow:0 0 16px rgba(220,38,38,.4); }
-.pill.lvl-error { background:#e11d48; box-shadow:0 0 16px rgba(225,29,72,.4); }
-.pill.lvl-warning { background:#d97706; box-shadow:0 0 14px rgba(217,119,6,.35); }
-.pill.lvl-info { background:#0284c7; }
-.pill.lvl-debug { background:#7c3aed; }
-/* Status is secondary to severity: outlined + tinted, not solid. */
-.pill.st-unresolved { color:var(--accent); background:color-mix(in srgb, var(--accent) 16%, transparent); border:1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
-.pill.st-resolved { color:#22c55e; background:rgba(34,197,94,.14); border:1px solid rgba(34,197,94,.4); }
-.pill.st-ignored { color:var(--text-3); background:color-mix(in srgb, var(--text-3) 14%, transparent); border:1px solid color-mix(in srgb, var(--text-3) 35%, transparent); }
+    The page's own `:root` is gone with it. Seven of its tokens overlapped the
+    shared palette with values one or two hex points apart -- the defect §11.2
+    names using this page as its example -- and they are the shared values now;
+    the six it alone defined moved into that palette, where --panel-2 and
+    --border-2 were already being read by the Autofix rules.
 
-/* Stack trace */
-.exc + .exc { margin-top: .75rem; }
-.exc-head { padding: 1rem 1.15rem .9rem; border-bottom:1px solid var(--border-2); }
-.exc-type { font-family: var(--mono); font-weight:700; font-size:1rem; color:var(--accent); word-break:break-word; }
-.exc-msg { margin-top:.3rem; font-size:.95rem; line-height:1.5; color:var(--text); word-break:break-word; }
-.caused { display:inline-block; margin-bottom:.5rem; font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); }
-.frames { padding:.35rem; }
-.frame { display:flex; align-items:baseline; gap:.75rem; padding:.5rem .65rem; border-radius:8px; font-family: var(--mono); font-size:.8rem; line-height:1.45; }
-.frame + .frame { margin-top:1px; }
-.frame.is-app { background: var(--app-tint); box-shadow: inset 2px 0 0 var(--app-bar); }
-.frame.is-sys { opacity:.62; }
-/* The crash frame is where the error actually happened — it gets the
-   strongest treatment on the page: warmer wash, thicker bar, accent
-   filename + location chip. */
-.frame.is-crash { background: color-mix(in srgb, var(--accent) 11%, transparent); box-shadow: inset 3px 0 0 var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 12%, transparent); }
-.frame.is-crash .fr-base { color: var(--accent); }
-.frame.is-crash .fr-loc { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); font-weight:600; }
-.fr-main { min-width:0; flex:1; display:flex; align-items:baseline; gap:.4rem; flex-wrap:wrap; }
-.fr-base { color: var(--text); font-weight:600; flex-shrink:0; }
-.fr-dir { color: var(--text-3); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.fr-fn { color: var(--text-2); flex-shrink:0; }
-.fr-fn b { color: var(--text); font-weight:600; }
-.fr-loc { flex-shrink:0; color: var(--text-3); font-size:.74rem; padding:.05rem .4rem; border-radius:5px; background: var(--code-bg); }
-details.sysgroup { margin:1px 0; }
-details.sysgroup > summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:.5rem; padding:.45rem .65rem; border-radius:8px; font-size:.74rem; color:var(--text-3); font-family: var(--mono); }
-details.sysgroup > summary::-webkit-details-marker { display:none; }
-details.sysgroup > summary:hover { color: var(--text-2); background: var(--code-bg); }
-details.sysgroup > summary .chev { transition: transform .15s ease; }
-details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
+    The chips, the stack trace, the breadcrumbs and the key/value list are
+    pageCss() rules: compounds, positional selectors and a details marker, plus
+    class names this page INTERPOLATES, which no extractor can see in advance.
+    `.btn` is the shared `btn-outline`, and `.btn-resolve`, `.copybtn` and
+    `.backlink` are shortcuts that compose it.
 
-/* Breadcrumbs */
-.crumb { display:flex; align-items:flex-start; gap:.7rem; padding:.5rem 1rem; border-top:1px solid var(--border-2); }
-.crumb:first-child { border-top:none; }
-.crumb-ic { flex-shrink:0; width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
-.crumb-ic svg { width:15px; height:15px; }
-.crumb-cat { flex-shrink:0; width:5.5rem; font-family:var(--mono); font-size:.72rem; color:var(--text-2); padding-top:.28rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.crumb-txt { flex:1; min-width:0; font-family:var(--mono); font-size:.75rem; color:var(--text); padding-top:.28rem; word-break:break-word; }
-.crumb-time { flex-shrink:0; font-family:var(--mono); font-size:.68rem; color:var(--text-3); padding-top:.32rem; }
+    The one thing deliberately preserved rather than unified is this page's
+    system font stack, which it has always had and which nothing records a
+    reason for. It is a `body:has(.issue-root)` rule in config/crosswind.ts now
+    -- which is what the `issue-root` class below is for -- and deleting that
+    one line is all it takes to put the page on --sans like every other. --}}
 
-/* Key/value context */
-.kv { display:grid; grid-template-columns: minmax(6rem,auto) 1fr; gap:.1rem .9rem; padding:.6rem 1rem 1rem; font-size:.78rem; }
-.kv dt { color:var(--text-3); font-family:var(--mono); font-size:.72rem; padding:.2rem 0; overflow:hidden; text-overflow:ellipsis; }
-.kv dd { color:var(--text); font-family:var(--mono); word-break:break-word; padding:.2rem 0; }
-.jsonblock { font-family:var(--mono); font-size:.72rem; line-height:1.5; color:var(--text-2); white-space:pre-wrap; word-break:break-word; padding:.7rem 1rem 1rem; margin:0; }
-
-/* `!important` on the five properties <Button variant="ghost"> also sets:
-   padding, radius, font-size, gap and colour. Marked across the whole family,
-   not just here -- an !important base outranks its own un-marked :hover and
-   `.btn-resolve`, which would have turned the resolve button neutral and
-   undone the override the comment below describes. `.copybtn` carries it for
-   the same reason: its .68rem would otherwise lose to this .8rem. */
-.btn { display:inline-flex; align-items:center; gap:.4rem !important; padding:.4rem .8rem !important; border-radius:9px !important; font-size:.8rem !important; font-weight:600; border:1px solid var(--border); background:var(--panel); color:var(--text-2) !important; cursor:pointer; transition: color .12s ease, border-color .12s ease, background-color .12s ease, transform .12s ease; }
-.btn:hover { color:var(--text) !important; border-color:color-mix(in srgb, var(--accent) 40%, var(--border)); background:color-mix(in srgb, var(--accent) 6%, transparent); }
-.btn:active { transform: translateY(1px); }
-.btn-resolve { color:#16a34a !important; border-color:rgba(34,197,94,.4); }
-/* Keep the resolve green on hover — the generic .btn:hover would otherwise
-   swap it for the neutral text color. */
-.btn-resolve:hover { color:#16a34a !important; border-color:rgba(34,197,94,.75); background:rgba(34,197,94,.1); }
-.backlink { color: var(--text-2); transition: color .12s ease; }
-.backlink:hover { color: var(--text); }
-.copybtn { font-family:var(--mono); font-size:.68rem !important; }
-</style>
-
-<div class="px-4 py-6 md:px-8 md:py-8 min-h-screen">
+<div class="px-4 py-6 md:px-8 md:py-8 min-h-screen issue-root">
   <div class="mx-auto" style="max-width: 78rem">
 
     <div class="flex gap-3 items-center justify-between mb-5">
@@ -710,20 +625,20 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
           <div class="flex flex-wrap gap-2 items-center mt-4">
             @if (isResolved)
               <form method="POST" action="/issue/{{ issue.id }}/status?to=unresolved">
-                <Button type="submit" variant="ghost" className="btn">Reopen</Button>
+                <Button type="submit" variant="ghost" className="btn-outline">Reopen</Button>
               </form>
             @else
               <form method="POST" action="/issue/{{ issue.id }}/status?to=resolved">
-                <Button type="submit" variant="ghost" className="btn btn-resolve">&#10003; Resolve</Button>
+                <Button type="submit" variant="ghost" className="btn-resolve">&#10003; Resolve</Button>
               </form>
             @endif
             @if (isIgnored)
               <form method="POST" action="/issue/{{ issue.id }}/status?to=unresolved">
-                <Button type="submit" variant="ghost" className="btn">Unignore</Button>
+                <Button type="submit" variant="ghost" className="btn-outline">Unignore</Button>
               </form>
             @else
               <form method="POST" action="/issue/{{ issue.id }}/status?to=ignored">
-                <Button type="submit" variant="ghost" className="btn">Ignore</Button>
+                <Button type="submit" variant="ghost" className="btn-outline">Ignore</Button>
               </form>
             @endif
           </div>
@@ -734,7 +649,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 
       <!-- Two-column: stack + breadcrumbs (main), context (sidebar) -->
       <div class="grid gap-5 items-start" style="grid-template-columns: minmax(0,1fr)">
-        <div class="grid gap-5 items-start bughq-cols">
+        <div class="grid gap-5 items-start lg:grid-cols-[minmax(0,1fr)_20rem]">
 
           <!-- MAIN COLUMN — a div, not a main element: this is one grid column
                beside the sidebar, and layouts/default.stx already provides the
@@ -752,7 +667,7 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
               <section class="overflow-hidden card">
                 <div class="card-head" style="justify-content:space-between">
                   <span>Stack trace</span>
-                  <button type="button" class="btn copybtn" @click="copyStack" style="padding:.25rem .55rem">{{ copyLabel() }}</button>
+                  <button type="button" class="btn-copy" @click="copyStack" style="padding:.25rem .55rem">{{ copyLabel() }}</button>
                 </div>
                 <div style="padding:.5rem">
                   @foreach (exceptions as ex)
@@ -948,11 +863,6 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 </div>
 
 
-<style>
-@media (min-width: 1024px) {
-  .bughq-cols { grid-template-columns: minmax(0,1fr) 20rem; }
-}
-</style>
 
 <!-- Client hook: record which project is being viewed. Deliberately not a
      client directive: it has to run before paint and only sets a cookie. The
