@@ -84,15 +84,17 @@ describe('hoisted shared chrome', () => {
       + 'border-style: solid; border-color: var(--border); border-radius: 14px; }')
 
     /*
-     * card-lift's hover, asserted because the obvious spelling of it emits
-     * nothing. `hover:[border-color:…]` -- the arbitrary-property form the
-     * rest of this config reaches for -- parses and produces no rule at all,
-     * so the tiles would have kept their transition and quietly lost the
-     * border they transition TO. `hover:border-[color-mix(…)]` is what works.
+     * card-lift's hover, asserted because it once failed silently. The obvious
+     * spelling, `hover:[border-color:…]`, parsed and produced no rule at all,
+     * so the tiles kept their transition and lost the border they transition
+     * TO. Filed as stacksjs/ts-css#36, fixed in 0.3.14; this app resolves
+     * 0.3.12 today, and `hover:border-[color-mix(…)]` is what the shortcut
+     * uses either way.
      *
-     * Only /projects uses this, only when the account has an app, so nothing
-     * public renders it and a silent miss would surface as a reviewer saying
-     * the hover feels broken rather than as a failure anywhere.
+     * The assertion stays regardless of which spelling is in fashion. Only
+     * /projects renders this, only when the account has an app, so nothing
+     * public exercises it and a silent miss would surface as a reviewer
+     * saying the hover feels broken rather than as a failure anywhere.
      */
     expect(css).toContain('.card-lift { transition: border-color 0.15s ease,transform 0.12s ease; }')
     expect(css).toContain('.card-lift:hover { border-color: color-mix(in srgb,var(--accent) 45%,var(--border)); '

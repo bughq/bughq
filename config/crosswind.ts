@@ -643,10 +643,19 @@ export default {
      * one above: the tile would have picked up a second border-radius.
      *
      * The hover border-color is `hover:border-[color-mix(…)]` rather than the
-     * arbitrary-property form. `hover:[border-color:…]` parses and emits
-     * NOTHING -- the variant does not reach that form -- which is the silent
-     * kind of miss this config keeps running into, so it is measured against
-     * the generated sheet rather than read.
+     * arbitrary-property form, and that was once the only spelling that
+     * worked: `hover:[border-color:…]` parsed and emitted NOTHING, because a
+     * variant did not reach that form at all. Filed as stacksjs/ts-css#36 and
+     * fixed in **0.3.14**, which also fixed `focus:[…]` and `md:[…]`.
+     *
+     * This stays as it is. The app resolves ts-css through stx's caret range
+     * and currently lands on 0.3.12, where the arbitrary-property form is
+     * still dead, and `hover:border-[…]` is the more idiomatic spelling in any
+     * case. Changing it would buy nothing and could only break.
+     *
+     * The habit the episode is worth keeping: both spellings parse, and the
+     * broken one failed with no error and no rule. Measure a variant against
+     * the generated sheet rather than reading it and assuming.
      */
     'card-lift': '[transition:border-color_0.15s_ease,transform_0.12s_ease] '
       + 'hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] '
