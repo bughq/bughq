@@ -980,8 +980,15 @@ html { scroll-behavior: smooth; }
    shortcut's own comment, and the token assertions in
    tests/unit/hoisted-chrome.test.ts that would catch either one moving. The
    ghost buttons here carry `bg-panel` because the removed rule is what used to
-   supply their panel. */
-.btn-danger { border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); color: var(--warn) !important; border-radius: 9px !important; background: var(--panel); transition: all 0.15s ease; }
+   supply their panel.
+
+   `.btn-danger` followed it to 10px. It was 9px to match the ghost rule that
+   used to sit above it, so moving one and not the other would have left the
+   two outline buttons in this block a pixel apart. Its radius mark is now
+   redundant for the same reason ghost's was -- 10px is what
+   `rounded-control` already resolves to -- and it stays only because every
+   rule in this family is marked, which is the convention above. */
+.btn-danger { border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); color: var(--warn) !important; border-radius: 10px !important; background: var(--panel); transition: all 0.15s ease; }
 .btn-danger:hover { color: #fff !important; background: var(--warn); border-color: var(--warn); }
 .btn-sm { padding: 0.5rem 0.75rem !important; font-size: 0.875rem !important; line-height: 1.25rem !important; font-weight: 500 !important; }
 .btn-xs { padding: 0.375rem 0.625rem !important; font-size: 0.75rem !important; line-height: 1rem !important; font-weight: 500 !important; }
