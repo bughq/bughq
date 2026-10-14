@@ -971,9 +971,16 @@ html { scroll-behavior: smooth; }
 
    Every rule in the family is marked, not just the base: an !important base
    outranks its own un-marked :hover, which would stop the danger fill turning
-   its label white. */
-.btn-ghost { border: 1px solid var(--border); color: var(--text-2) !important; border-radius: 9px !important; background: var(--panel); transition: color 0.15s ease, border-color 0.15s ease; }
-.btn-ghost:hover { color: var(--text) !important; border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+   its label white.
+
+   `.btn-ghost` is no longer one of them. It is a shortcut in
+   config/crosswind.ts now, unified with account.stx and projects/index.stx on
+   --text at 10px, and it needs no mark because those are the values
+   `text-fg-strong` and `rounded-control` already resolve to -- see the
+   shortcut's own comment, and the token assertions in
+   tests/unit/hoisted-chrome.test.ts that would catch either one moving. The
+   ghost buttons here carry `bg-panel` because the removed rule is what used to
+   supply their panel. */
 .btn-danger { border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); color: var(--warn) !important; border-radius: 9px !important; background: var(--panel); transition: all 0.15s ease; }
 .btn-danger:hover { color: #fff !important; background: var(--warn); border-color: var(--warn); }
 .btn-sm { padding: 0.5rem 0.75rem !important; font-size: 0.875rem !important; line-height: 1.25rem !important; font-weight: 500 !important; }
@@ -1031,7 +1038,7 @@ html { scroll-behavior: smooth; }
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <StxLink to="/dashboard" class="px-3.5 py-2 font-medium text-sm btn-ghost">← Dashboard</StxLink>
+        <StxLink to="/dashboard" class="px-3.5 py-2 font-medium text-sm bg-panel btn-ghost">← Dashboard</StxLink>
       </div>
     </header>
 
@@ -1124,8 +1131,8 @@ html { scroll-behavior: smooth; }
           </p>
           <div class="flex flex-wrap gap-2 items-center">
             <code :text="keyDisplay()" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm truncate field mono" style="letter-spacing:0.01em">{{ keyMask }}</code>
-            <button @click="toggleReveal" :text="revealed() ? 'Hide' : 'Reveal'" class="px-3 py-2 font-medium text-sm btn-ghost">Reveal</button>
-            <button @click="copyText('key', currentKey())" :text="copyLabel('key')" class="px-3 py-2 font-medium text-sm btn-ghost">Copy</button>
+            <button @click="toggleReveal" :text="revealed() ? 'Hide' : 'Reveal'" class="px-3 py-2 font-medium text-sm bg-panel btn-ghost">Reveal</button>
+            <button @click="copyText('key', currentKey())" :text="copyLabel('key')" class="px-3 py-2 font-medium text-sm bg-panel btn-ghost">Copy</button>
             <Button variant="ghost" @click="rotateKey" :loading="rotating()" className="btn-danger btn-sm">Rotate</Button>
           </div>
           {{-- The same 404 the rotate confirm quotes, for the reason spelled out
@@ -1193,8 +1200,8 @@ html { scroll-behavior: smooth; }
               @if (!i.failed)
                 <Badge variant="secondary" size="sm" className="badge-hq" title="Pending, and becomes a member once they accept">Invited</Badge>
               @endif
-              <Button variant="ghost" @click="resendInvite('{{ i.id }}')" :loading="resending() === '{{ i.id }}'" className="btn-ghost btn-xs" title="Send the invite email again">Resend</Button>
-              <button @click="copyText('join-{{ i.id }}', '{{ i.join }}')" :text="copyLabel('join-{{ i.id }}', 'Copied ✓', 'Copy link')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Copy join link">Copy link</button>
+              <Button variant="ghost" @click="resendInvite('{{ i.id }}')" :loading="resending() === '{{ i.id }}'" className="bg-panel btn-ghost btn-xs" title="Send the invite email again">Resend</Button>
+              <button @click="copyText('join-{{ i.id }}', '{{ i.join }}')" :text="copyLabel('join-{{ i.id }}', 'Copied ✓', 'Copy link')" class="px-2.5 py-1.5 font-medium text-xs bg-panel btn-ghost" title="Copy join link">Copy link</button>
               <Button variant="ghost" @click="removeMember('{{ i.id }}')" :loading="removing() === '{{ i.id }}'" className="btn-danger btn-xs" title="Revoke invite">Remove</Button>
             </div>
           @endforeach
@@ -1249,7 +1256,7 @@ html { scroll-behavior: smooth; }
                 <div class="font-medium text-sm truncate">{{ c.label }}</div>
                 <div class="mt-0.5 text-subtle text-xs truncate mono">{{ c.mask }}</div>
               </div>
-              <button @click="testChannel('{{ c.id }}')" :disabled="testing() === '{{ c.id }}'" :text="testLabel('{{ c.id }}')" class="px-2.5 py-1.5 font-medium text-xs btn-ghost" title="Send a test message">Test</button>
+              <button @click="testChannel('{{ c.id }}')" :disabled="testing() === '{{ c.id }}'" :text="testLabel('{{ c.id }}')" class="px-2.5 py-1.5 font-medium text-xs bg-panel btn-ghost" title="Send a test message">Test</button>
               <div class="tgl" @click="toggleChannel('{{ c.id }}')" :data-on="isOn('{{ c.id }}') ? '1' : '0'" :aria-checked="isOn('{{ c.id }}') ? 'true' : 'false'" data-on="{{ c.enabled ? '1' : '0' }}" role="switch" aria-checked="{{ c.enabled ? 'true' : 'false' }}" title="Enable / disable"></div>
               <Button variant="ghost" @click="removeChannel('{{ c.id }}')" :loading="removing() === '{{ c.id }}'" className="btn-danger btn-xs">Remove</Button>
             </div>
@@ -1350,7 +1357,7 @@ html { scroll-behavior: smooth; }
             @if (dzMismatch())
               <span class="w-full text-subtle text-xs">Doesn't match yet — type the name exactly.</span>
             @endif
-            <Button variant="ghost" type="button" @click="dzClose" className="btn-ghost btn-dz">Cancel</Button>
+            <Button variant="ghost" type="button" @click="dzClose" className="bg-panel btn-ghost btn-dz">Cancel</Button>
             {{-- Static text as well as :text. The dialog markup is always in the
                  document, and :text only fills this in once the runtime binds —
                  so the HTML actually served carried a button with no content and

@@ -91,8 +91,6 @@ fetch('/api/me', { credentials: 'same-origin' })
 .btn:active { transform: translateY(1px); }
 .btn-primary { background: var(--accent); color: var(--accent-ink); }
 .btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
-.btn-ghost { border: 1px solid var(--border); color: var(--text); }
-.btn-ghost:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .badge { border: 1px solid var(--border); border-radius: 999px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
 .badge-pro { border-color: var(--accent); color: var(--accent); }
 .avatar { border-radius: 999px; object-fit: cover; background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }

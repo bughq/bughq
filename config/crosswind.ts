@@ -662,6 +662,64 @@ export default {
       + 'hover:-translate-y-px',
 
     /*
+     * The outline button. Three definitions, and unlike `card` they were never
+     * byte-identical -- they disagreed on the two things you can see:
+     *
+     *   settings.stx          --text-2 at rest, 9px, both !important, plus a
+     *                         panel background and a colour/border transition.
+     *   projects/index.stx    --text, 10px. Background comes from `bg-panel`
+     *                         on the element.
+     *   account.stx           --text, no radius of its own (it rides the 10px
+     *                         from that page's `.btn`), no background.
+     *
+     * Unified on --text at 10px, which is what two of the three already were
+     * and is a deliberate product call rather than a measurement: settings'
+     * ghost buttons go from muted to full-strength text and gain 1px of
+     * radius. Nothing else here changes what renders.
+     *
+     * The !important came off, and settings.stx's comment explains what it was
+     * for: two of those call sites are <Button variant="ghost">, which brings
+     * @stacksjs/components' own `text-fg-strong` and `rounded-control`, and a
+     * page rule of equal specificity needed the mark to beat them.
+     *
+     * It is safe to drop because of what those two tokens resolve to HERE,
+     * measured rather than assumed: `text-fg-strong` is `color: var(--text)`
+     * and `rounded-control` is `border-radius: 10px` -- the very values this
+     * shortcut sets. Unifying on --text at 10px happens to land exactly where
+     * the component was already aiming, so there is nothing left to override.
+     * The shortcut is also emitted after both, so it wins on order regardless.
+     *
+     * Neither Button adds `.btn`, so settings' own accent-filled
+     * `.btn { … !important }` never touches these. The modifiers they do carry
+     * -- `.btn-xs`, `.btn-dz` -- set padding and type only.
+     *
+     * What this does mean: the mark is load-bearing again the moment those
+     * tokens move. If `rounded-control` stops being 10px, these buttons follow
+     * it instead of this shortcut, and the test below is what would say so.
+     *
+     * Background stays OFF this shortcut and on the element, because the three
+     * pages genuinely differ: settings and projects/index both want a panel,
+     * account wants none. settings' markup now carries `bg-panel` the way
+     * projects/index.stx already did, so all three keep the surface they have.
+     *
+     * The transition is the one addition, and it lands on two of the three.
+     * All three change border-color on hover and only settings animated it, so
+     * animating it in the shared rule is the consistent reading of a hover
+     * that already exists. account.stx is the exception and stays as it is:
+     * its buttons are `btn btn-ghost`, its own `.btn` declares a competing
+     * transition, and both selectors are unlayered single-class ones, so
+     * source order decides -- the page block is inside <main> and therefore
+     * later than the generated sheet, so `.btn` keeps winning there.
+     *
+     * `hover:border-[…]` rather than `hover:[border-color:…]` for the reason
+     * card-lift gives above -- this app resolves 0.3.12, where the variant
+     * form emits nothing.
+     */
+    'btn-ghost': 'border border-solid border-line text-ink rounded-[10px] '
+      + '[transition:color_0.15s_ease,border-color_0.15s_ease] '
+      + 'hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))]',
+
+    /*
      * The two plan cards on /pricing, and the reason this pair exists at all.
      *
      * pricing.stx declared them in `@push('styles')`, which the marketing

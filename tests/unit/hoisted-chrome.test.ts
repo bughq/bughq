@@ -8,9 +8,15 @@
  * ONLY the byte-identical ones moved, and that boundary is what this file
  * guards. A shortcut is global the moment it exists, so hoisting a selector
  * that means different things on different pages is a behaviour change rather
- * than a refactor. `.btn`, `.btn-ghost`, `.pill`, `.seg` and
- * `.btn:disabled` all still differ between the files that declare them, and
- * they stay page-scoped.
+ * than a refactor. `.btn`, `.pill`, `.seg` and `.btn:disabled` all still
+ * differ between the files that declare them, and they stay page-scoped.
+ *
+ * `.btn-ghost` left that list by being decided rather than measured. Its three
+ * definitions disagreed on colour and radius, so no hoist could preserve all
+ * three; unifying on --text at 10px was a product call, and settings.stx's
+ * ghost buttons changed from --text-2 at 9px because of it. The background
+ * stayed per-element for the same reason `card` could not take pricing's:
+ * settings and projects/index want a panel and account wants none.
  *
  * That is safe because the router swaps them out: these page <style> blocks
  * sit INSIDE <main>, which is the router's container, so a page's rules live
@@ -66,6 +72,7 @@ describe('hoisted shared chrome', () => {
     generator.generate('wordmark-link')
     generator.generate('card')
     generator.generate('card-lift')
+    generator.generate('btn-ghost')
     const css = generator.toCSS(false, false).replace(/\s+/g, ' ')
 
     // The icon swap, which is the functional half: get these selectors wrong
@@ -96,6 +103,34 @@ describe('hoisted shared chrome', () => {
      * public exercises it and a silent miss would surface as a reviewer
      * saying the hover feels broken rather than as a failure anywhere.
      */
+    /*
+     * btn-ghost. The assertion is the unified rule, not any one of the three
+     * it replaced -- projects/index.stx's definition plus the transition.
+     */
+    expect(css).toContain('.btn-ghost { border-width: 1px; border-style: solid; '
+      + 'border-color: var(--border); color: var(--text); border-radius: 10px; '
+      + 'transition: color 0.15s ease,border-color 0.15s ease; }')
+    expect(css).toContain('.btn-ghost:hover { border-color: '
+      + 'color-mix(in srgb,var(--accent) 45%,var(--border)); }')
+
+    /*
+     * Why btn-ghost may ship without `!important`, asserted because it is a
+     * coincidence and not a property of the design.
+     *
+     * settings.stx marked colour and radius to beat @stacksjs/components'
+     * `text-fg-strong` and `rounded-control`, which <Button variant="ghost">
+     * brings and which tie with a page rule on specificity. Those two tokens
+     * resolve HERE to exactly what btn-ghost sets, so the override has nothing
+     * left to override -- which stops being true the moment either moves, and
+     * the two `<Button variant="ghost">` call sites in settings would follow
+     * the token instead of the shortcut. This is the assertion that notices.
+     */
+    generator.generate('text-fg-strong')
+    generator.generate('rounded-control')
+    const tokens = generator.toCSS(false, false).replace(/\s+/g, ' ')
+    expect(tokens).toContain('.text-fg-strong { color: var(--text); }')
+    expect(tokens).toContain('.rounded-control { border-radius: 10px; }')
+
     expect(css).toContain('.card-lift { transition: border-color 0.15s ease,transform 0.12s ease; }')
     expect(css).toContain('.card-lift:hover { border-color: color-mix(in srgb,var(--accent) 45%,var(--border)); '
       + 'transform: translateY(-1px); }')
@@ -110,7 +145,7 @@ describe('hoisted shared chrome', () => {
      * test attached, not a side effect of tidying.
      */
     const shortcuts = theme.shortcuts as Record<string, string>
-    for (const name of ['btn', 'btn-ghost', 'pill', 'seg'])
+    for (const name of ['btn', 'pill', 'seg'])
       expect(`${name}: ${name in shortcuts}`).toBe(`${name}: false`)
 
     // `card` left this list once the three files that disagreed about it came
@@ -121,6 +156,19 @@ describe('hoisted shared chrome', () => {
     expect(`card: ${'card' in shortcuts}`).toBe('card: true')
     for (const [file, source] of views)
       expect(`${file}: ${/^\.card[\s:{]/m.test(source)}`).toBe(`${file}: false`)
+
+    // btn-ghost took the same route: three disagreeing definitions down to one
+    // meaning, then hoisted. No view may declare it again.
+    expect(`btn-ghost: ${'btn-ghost' in shortcuts}`).toBe('btn-ghost: true')
+    for (const [file, source] of views)
+      expect(`${file}: ${/^\.btn-ghost[\s:{]/m.test(source)}`).toBe(`${file}: false`)
+
+    // settings.stx supplied the panel from inside the removed rule, so every
+    // one of its ghost buttons has to carry `bg-panel` now or it loses its
+    // surface. projects/index.stx always did; account.stx never had one.
+    const settings = views.find(([f]) => f.endsWith('settings.stx'))![1]
+    for (const m of settings.matchAll(/class(?:Name)?="([^"]*\bbtn-ghost\b[^"]*)"/g))
+      expect(`${m[1]}: ${m[1].includes('bg-panel')}`).toBe(`${m[1]}: true`)
   })
 
   test('the hoisted names are declared nowhere else', () => {
@@ -129,5 +177,8 @@ describe('hoisted shared chrome', () => {
     const marketing = readFileSync(join(ROOT, 'public/marketing.css'), 'utf8')
     expect(marketing).not.toMatch(/\.theme-btn\b/)
     expect(marketing).not.toMatch(/\.wordmark-link\b/)
+    // `.btn.ghost` in there is a compound selector on a different element and
+    // does not collide; `.btn-ghost` would.
+    expect(marketing).not.toMatch(/\.btn-ghost\b/)
   })
 })
