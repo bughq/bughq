@@ -1179,11 +1179,11 @@ function unarchive(): void {
           </p>
           <div class="flex flex-wrap gap-2 items-center">
             <label for="upload-token-name" class="sr-only">Token name</label>
-            <input id="upload-token-name" :value="tokenName()" @input="tokenName.set($event.target.value)" class="flex-1 px-3.5 py-2.5 min-w-[180px] text-sm field" />
+            <input id="upload-token-name" :value="tokenName()" @input="tokenName.set($event.target.value)" class="flex-1 px-3.5 py-2.5 min-w-[180px] text-sm field field-quiet" />
             <Button variant="ghost" @click="createUploadToken" :loading="creatingToken()" className="btn-sm">Create upload token</Button>
           </div>
           @if (newUploadToken())
-            <code :text="newUploadToken()" class="block mt-3 px-3.5 py-2.5 break-all text-sm field mono"></code>
+            <div :text="newUploadToken()" class="mt-3 break-all code-block"></div>
           @endif
           @if (tokenNote() && tokenNote()?.ok)
             <span class="mt-2 text-xs note note-ok show" :text="noteText(tokenNote())"></span>

@@ -80,9 +80,9 @@ describe('the rules that had to stay unlayered', () => {
     // are what decides -- not the order crosswind happens to emit them in.
     expect(has(css, '.field:focus { outline-style: none; border-color: var(--accent);')).toBe(true)
 
-    // And every one of the five inputs carries it.
+    // And every one of the six inputs carries it (the sixth names an upload token).
     const fields = [...SRC.matchAll(/class="([^"]*\bfield\b[^"]*)"/g)].map(m => m[1])
-    expect(fields).toHaveLength(5)
+    expect(fields).toHaveLength(6)
     for (const site of fields)
       expect({ site, quiet: site.includes('field-quiet') }).toEqual({ site, quiet: true })
   })
