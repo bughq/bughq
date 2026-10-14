@@ -76,12 +76,11 @@ describe('the second palette is gone', () => {
     /*
      * This page has always used a system stack instead of --sans and nothing
      * records why, so the move keeps it. It is a token and not a literal
-     * because this engine REWRITES a literal sans `font-family` inside a
-     * preflight to the theme's own stack -- measured: `ui-sans-serif,
-     * system-ui, -apple-system, 'Segoe UI', sans-serif` comes back as
-     * `Space Grotesk, ui-sans-serif, system-ui, sans-serif`, and so does the
-     * same list unquoted and double-quoted. A mono stack survives, and so does
-     * anything behind var().
+     * because this engine rewrites a `font-family` in a preflight when the
+     * rule is written SPACED -- `sel { prop: value; }` -- and the stack starts
+     * with `ui-sans-serif`, substituting the theme's own sans. Quoting is not
+     * the trigger; the tight form `sel{prop:value}` is untouched, and so is
+     * anything behind var(). Every rule in this config is written spaced.
      */
     const css = await generate()
     expect(has(css, 'body:has(.issue-root) { font-family: var(--sans-system); }')).toBe(true)
@@ -103,7 +102,14 @@ describe('the second palette is gone', () => {
       const merged = mergeCssConfig(engine.defaultConfig || engine.config, { ...theme, preflights: [{ getCSS: () => `.probe { ${decl} }` }] })
       return /\.probe \{[^}]*\}/.exec(new engine.CSSGenerator(merged.config).toCSS(true, false))?.[0] ?? ''
     }
+    // Spaced + leading ui-sans-serif: substituted.
     expect(probe("font-family: ui-sans-serif, system-ui, 'Segoe UI', sans-serif;")).toContain('Space Grotesk')
+    // The three things that are NOT the trigger, so a future reader does not
+    // go looking for the wrong one: quoting, the tight form, a different stack.
+    expect(probe('font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;')).toContain('Space Grotesk')
+    expect(probe('font-family: Georgia, sans-serif;')).toContain('Georgia, sans-serif')
+    expect(probe("font-family: 'JetBrains Mono', ui-monospace, monospace;")).toContain('JetBrains Mono')
+    // And the fix.
     expect(probe('font-family: var(--sans-system);')).toContain('var(--sans-system)')
   })
 })

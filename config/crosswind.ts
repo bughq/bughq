@@ -116,13 +116,26 @@ const constants = [
   /*
    * /issue/:id's system stack, as a token rather than a literal.
    *
-   * Not a style choice: this engine REWRITES a literal sans `font-family` in a
-   * preflight to the theme's own sans stack. Measured against the installed
-   * one -- `ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif`
-   * came back as `Space Grotesk, ui-sans-serif, system-ui, sans-serif`, and so
-   * did the same list unquoted and double-quoted, so the quoting has nothing to
-   * do with it. A mono stack survives, and so does anything behind `var()` or
-   * declared as a custom property. Hence this.
+   * Not a style choice. This engine REWRITES a `font-family` in a preflight
+   * when the rule is written in the SPACED form -- `sel { prop: value; }` --
+   * and the stack begins with `ui-sans-serif`. It substitutes the theme's own
+   * `fontFamily.sans`, or its default `ui-sans-serif, system-ui, sans-serif`
+   * when none is configured. Measured on the installed engine:
+   *
+   *   body { font-family: ui-sans-serif, -apple-system, 'Segoe UI', sans-serif; }
+   *     -> font-family: Space Grotesk, ui-sans-serif, system-ui, sans-serif
+   *   body{font-family:ui-sans-serif, -apple-system, 'Segoe UI', sans-serif}
+   *     -> unchanged
+   *
+   * Quoting has nothing to do with it: unquoted, single- and double-quoted all
+   * behave the same. A stack that does not start with `ui-sans-serif` is left
+   * alone (`Georgia, sans-serif`, `'Iowan Old Style', Georgia, serif`,
+   * `'JetBrains Mono', ui-monospace, monospace` all survive), and so is
+   * anything behind `var()` or declared as a custom property. No neighbouring
+   * rule is lost either way.
+   *
+   * Every rule in this file is written spaced, so `var()` is the fix here. It
+   * is also the only one that does not depend on remembering the above.
    */
   `--sans-system: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif`,
   `--sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif`,
