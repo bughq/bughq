@@ -171,6 +171,42 @@ describe('hoisted shared chrome', () => {
       expect(`${m[1]}: ${m[1].includes('bg-panel')}`).toBe(`${m[1]}: true`)
   })
 
+  test('the style blocks that remain are exactly the ones still blocked', () => {
+    /*
+     * stx-standards rule 3. An allowlist rather than a zero, because this is
+     * mid-migration and a silent REGRESSION is the thing worth catching: a new
+     * <style> block, or an old one quietly growing back.
+     *
+     * Every file left here is blocked on the same thing -- the `.btn` family.
+     * Four pages declare `.btn` differently and most of it is !important, so a
+     * preflight copy cannot be made safe one page at a time: the rules are
+     * unlayered today and win, and in @layer cw-base they would lose to the
+     * component utilities the !important exists to beat. Reconciling those four
+     * is a product decision about whether these surfaces should look different,
+     * not a refactor, and it is tracked in config/crosswind.ts.
+     *
+     * dashboard.stx came off this list by not being part of that: its 259 lines
+     * held one `.btn-join`, which is its own class.
+     *
+     * Shrink it, never grow it.
+     */
+    const blocked = [
+      'resources/components/AutofixPanel.stx',
+      'resources/views/account.stx',
+      'resources/views/issue/[id].stx',
+      'resources/views/projects/index.stx',
+      'resources/views/settings.stx',
+    ]
+    // An opening tag at the start of a line. Matching '<style' anywhere counts
+    // this repo's own comments about blocks that used to be there, and there
+    // are several.
+    const withBlocks = views
+      .filter(([, source]) => /^[ \t]*<style[ >]/m.test(source))
+      .map(([file]) => file.slice(ROOT.length + 1))
+      .sort()
+    expect(withBlocks).toEqual(blocked)
+  })
+
   test('the hoisted names are declared nowhere else', () => {
     // A shortcut collides with any same-named rule still living in a page
     // block or in marketing.css, which only the marketing pages link.

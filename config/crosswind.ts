@@ -325,6 +325,287 @@ function pageCss(): string {
     .footer-cols { grid-template-columns: 1fr; }
   }
     `,
+
+    /*
+     * views/dashboard.stx. The whole block, minus two rules that had to stay
+     * unlayered -- see `tag-snoozed` and the switcher's hover border in
+     * shortcuts and markup respectively.
+     *
+     * Everything here was checked for layer damage rather than assumed safe.
+     * A preflight lands in @layer cw-base and an unlayered rule beats a layered
+     * one at any specificity, so for each rule the question is whether another
+     * class on the same element sets the same property. Two did, and both are
+     * handled elsewhere; the other 62 class-bearing rules have no competitor.
+     * The element-only rules -- summary, input:focus-visible,
+     * textarea:focus-visible -- are uncontested too: nothing in this page
+     * carries outline-none, and the summary that could clash sets neither
+     * list-style nor cursor through a utility.
+     *
+     * The second half is the shared HQ date-range picker, the same stylesheet
+     * loghq carries. It stays CSS for the reason it does there: every state is
+     * a compound selector the client script toggles (.drp-day.is-range,
+     * .range-tool.is-active), no utility says "this class AND that class", and
+     * the spelling that would, [&.is-range]:bg-accent, is dropped by this
+     * engine's extractor before it reaches the generator -- ts-css#37, fixed in
+     * 0.3.16, and this app resolves 0.3.15.
+     */
+    `
+/* bughq - Space Grotesk display + JetBrains Mono for numerics/code.
+   One accent (rose), off-black/off-white, auto light+dark, radius lock 12px. */
+.mono { font-feature-settings: 'tnum' 1; }
+.row-wrap { transition: background-color 0.15s ease; }
+.row-wrap:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.row-link { text-decoration: none; color: inherit; }
+/* The controls only materialise on hover or keyboard focus, so a list at rest
+   reads as a list rather than a wall of buttons. focus-within keeps them
+   reachable by tab, which display:none or opacity alone would not. */
+.row-actions { opacity: 0; transition: opacity 0.12s ease; }
+.row-wrap:hover .row-actions, .row-wrap:focus-within .row-actions { opacity: 1; }
+@media (hover: none) { .row-actions { opacity: 1; } }
+.act { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); color: var(--text-3); font-size: 13px; line-height: 1; cursor: pointer; transition: color .12s ease, border-color .12s ease; }
+.act:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.act:disabled { opacity: .5; cursor: default; }
+.act-resolve:hover { color: #22c55e; border-color: rgba(34,197,94,.5); }
+.act-ignore:hover { color: var(--text-2); }
+.undo-strip { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--text-2); }
+.undo-err { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
+.undo-btn { border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 8px; background: transparent; color: var(--accent); cursor: pointer; }
+.undo-btn:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.undo-x { border: 0; background: transparent; color: var(--text-3); cursor: pointer; }
+.unread-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--accent); }
+/* Column headers, matching the "Issues" label's weight so the row reads as one
+   header rather than a title with decorations after it. */
+.col-head { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+/* Icons sit at the text's own size and colour, so a number and its icon read as
+   one value rather than an illustration next to a figure. */
+.col-ic { width: 13px; height: 13px; color: var(--text-3); flex: none; }
+.new-since { font-size: 11px; padding: 1px 6px; border-radius: 999px; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+/* Native <details> disclosure: no per-row open state to track, closes itself. */
+.snooze-wrap { position: relative; }
+.snooze-wrap > summary { list-style: none; display: inline-flex; align-items: center; justify-content: center; }
+.snooze-wrap > summary::-webkit-details-marker { display: none; }
+.snooze-menu { position: absolute; right: 0; top: 34px; z-index: 20; min-width: 116px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); box-shadow: 0 8px 24px rgb(0 0 0 / 0.18); }
+.snooze-opt { display: block; width: 100%; padding: 6px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--text-2); font-size: 12px; text-align: left; cursor: pointer; }
+.snooze-opt:hover { color: var(--text); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.btn-join { padding: 0.375rem 1rem !important; font-size: 0.875rem !important; line-height: 1.25rem !important; font-weight: 600 !important; border-radius: 999px !important; background: var(--accent) !important; border: 1px solid var(--accent) !important; color: var(--accent-ink) !important; }
+.pill { border-radius: 999px; transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease; }
+/* Idle pills respond to hover; the ACTIVE tab carries inline accent styles
+   which outrank these rules, so it stays put. Disabled pager pills are spans
+   and never match. */
+a.pill:hover, button.pill:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+a.pill:active, button.pill:active { transform: translateY(1px); }
+/* Project dropdown: replace the native select chevron (which hugged the rounded
+   border) with a custom one that has a comfortable inset + room for the value. */
+select.panel {
+  transition: border-color 0.15s ease; cursor: pointer;
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  padding-right: 2rem; background-repeat: no-repeat;
+  background-position: right 0.7rem center; background-size: 13px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2397a1b2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) { select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); } }
+:root[data-theme="dark"] select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
+:root[data-theme="light"] select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2397a1b2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
+/* Fixed chrome (Account / Log out). These used to be built with createElement
+   and positioned with an inline cssText string, which is why the position and
+   typography were split from the colors. They are ordinary markup now, so the
+   whole rule lives here. */
+.chrome-btn { position: fixed; top: 16px; z-index: 60; padding: 8px 13px; border-radius: 9px;
+  font-family: var(--sans, ui-sans-serif); font-size: 13px; line-height: 1; }
+.chrome-logout { right: 18px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); background: var(--panel); color: var(--text-2); transition: color 0.15s ease, border-color 0.15s ease; }
+.chrome-logout:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+/* Ghost, matching Log out rather than the accent fill the Upgrade pill used to
+   carry. It is navigation to a settings page, not a call to action, and 112px is
+   the offset that was already measured to clear Log out at this font size. */
+.chrome-account { right: 112px; font-weight: 500; text-decoration: none;
+  border: 1px solid var(--border); background: var(--panel); color: var(--text-2); transition: color 0.15s ease, border-color 0.15s ease; }
+.chrome-account:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.reveal { opacity: 0; transform: translateY(10px); animation: reveal 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+@keyframes reveal { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .reveal { animation: none; opacity: 1; transform: none; } }
+summary { list-style: none; cursor: pointer; }
+summary::-webkit-details-marker { display: none; }
+@media (max-width: 639px) {
+  /* Keep every project control reachable without making the document wider
+     than the phone. Identity and utilities stay above app navigation. */
+  .dashboard-appbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+  .dashboard-project-switcher { min-width: 0; }
+  .dashboard-project-switcher select { width: 100%; min-width: 0; }
+  .dashboard-utilities { grid-column: 3; grid-row: 1; }
+  .dashboard-app-action {
+    display: flex;
+    justify-content: center;
+    min-height: 40px;
+  }
+  .dashboard-all-apps { grid-column: 1 / 3; grid-row: 2; }
+  .dashboard-new-app { grid-column: 3; grid-row: 2; }
+
+  /* Two compact summary tiles followed by one full-width total keeps large
+     event counts legible instead of squeezing them into a narrow column. */
+  .dashboard-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-stats > :nth-child(3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    border-left-width: 0;
+  }
+
+  /* Issue metadata and triage move below the title on phones. The title owns
+     the full content width and every action remains easy to tap. */
+  .row-wrap {
+    display: grid;
+    grid-template-columns: 4px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .issue-rail { grid-column: 1; grid-row: 1 / 3; height: 100%; min-height: 44px; }
+  .row-link { grid-column: 2 / -1; grid-row: 1; }
+  .event-count {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    justify-content: flex-start;
+    width: auto;
+  }
+  .row-actions { grid-column: 3; grid-row: 2; width: auto; }
+  .act { width: 44px; height: 44px; }
+  .issue-columns .events-heading { display: none; }
+  .issue-columns .page-count { width: auto; }
+}
+
+
+  /* ---- Reporting-period picker (Fathom-style presets + calendar) ---- */
+.range-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0 0.72rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-2);
+  font: 600 0.8125rem/1 var(--sans, ui-sans-serif);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+.range-tool:hover { color: var(--text); border-color: var(--accent); }
+.range-tool:active { transform: scale(0.98); }
+.range-tool:focus-visible,
+.range-link:focus-visible,
+.chrome-btn:focus-visible,
+.icon-btn:focus-visible,
+select.panel:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.range-tool.is-active { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.range-tool i { width: 1rem; height: 1rem; }
+.date-menu { position: relative; }
+.date-menu > summary { list-style: none; }
+.date-menu > summary::-webkit-details-marker { display: none; }
+.date-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 40;
+  width: min(44rem, calc(100vw - 2.5rem));
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--text) 10%, transparent);
+}
+/* Period picker: presets down the left, two months on the right. The range is
+   drawn flat with rounded ends, the way Fathom's is, on the --bar wash the KPI
+   bars already use so it reads as the same accent at the same strength. */
+.drp-backdrop { position: fixed; inset: 0; z-index: 39; background: transparent; cursor: default; }
+.drp { display: grid; grid-template-columns: 10.5rem minmax(0, 1fr); gap: 0.75rem; }
+.drp-presets { display: flex; flex-direction: column; gap: 0.15rem; padding-right: 0.75rem; border-right: 1px solid var(--border); }
+.drp-preset {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  font: 500 0.8125rem/1.2 var(--sans, ui-sans-serif);
+  text-align: left;
+  cursor: pointer;
+}
+.drp-preset:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
+.drp-preset.is-active { color: var(--accent-ink); background: var(--accent); }
+.drp-cals { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.drp-head { display: grid; grid-template-columns: 2rem minmax(0, 1fr) minmax(0, 1fr) 2rem; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem; }
+.drp-nav {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.drp-nav:hover { color: var(--text); border-color: var(--border); }
+.drp-nav svg { width: 1rem; height: 1rem; }
+.drp-nav.is-hidden { visibility: hidden; }
+.drp-sel {
+  min-width: 0;
+  height: 2rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: 600 0.8125rem/1 var(--sans, ui-sans-serif);
+}
+.drp-dow, .drp-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.drp-dow span { padding: 0.25rem 0; color: var(--text-3); font: 600 0.7rem/1.2 var(--sans, ui-sans-serif); text-align: center; }
+.drp-day {
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font: 500 0.8125rem/1 var(--mono, ui-monospace);
+  cursor: pointer;
+}
+.drp-day:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.drp-day.is-out { color: var(--text-3); }
+.drp-day.is-today { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.drp-day.is-range { background: var(--accent-soft); }
+.drp-day.is-edge { background: var(--accent); color: var(--accent-ink); border-radius: 8px; }
+.drp-day.is-disabled { color: var(--text-3); opacity: 0.45; cursor: default; }
+.drp-day.is-disabled:hover { background: transparent; }
+.drp-day:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+@media (max-width: 640px) {
+  .date-menu { position: static; }
+  .date-popover { left: 0; right: auto; width: calc(100vw - 2rem); max-height: calc(100dvh - 6rem); overflow-y: auto; overscroll-behavior: contain; }
+  .drp { grid-template-columns: minmax(0, 1fr); }
+  .drp-presets { flex-direction: row; flex-wrap: wrap; gap: 0.35rem; padding: 0 0 0.6rem; border-right: 0; border-bottom: 1px solid var(--border); }
+  .drp-preset { width: auto; padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 999px; }
+  .drp-cals { grid-template-columns: minmax(0, 1fr); }
+  .drp-cal.is-right { display: none; }
+  .drp-cal.is-left .drp-nav.is-hidden { visibility: visible; }
+  .drp-day { height: 2.5rem; }
+}
+    `,
   ].join('\n')
 }
 
@@ -864,6 +1145,19 @@ export default {
     // leaked to every page the router kept the sheet alive for.
     'badge-slack': '!bg-[var(--slack)] !text-white',
     'badge-discord': '!bg-[var(--discord)] !text-white',
+
+    /*
+     * The snoozed tag's muted treatment. A shortcut and not a pageCss rule,
+     * because it exists to override `tag`, which is also a shortcut and sets
+     * `color: var(--text-3)`. In a preflight it would land in @layer cw-base
+     * and lose to that unlayered `.tag` whatever the source order, and snoozed
+     * rows would come back at full strength.
+     *
+     * The bang is for the same reason the badge pair above carries one: two
+     * shortcuts are both unlayered single-class rules, so nothing but output
+     * order decides them, and class attribute order is not output order.
+     */
+    'tag-snoozed': '!text-muted bg-[color-mix(in_srgb,var(--text-3)_14%,var(--panel))]',
 
     // Third-party sign-in button on /login and /register. Two copies, identical.
     'oauth-btn': 'border border-solid border-line rounded-[10px] text-ink bg-panel '
