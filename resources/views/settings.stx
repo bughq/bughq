@@ -949,91 +949,23 @@ function unarchive(): void {
 </script>
 
 
-<style>
-html { scroll-behavior: smooth; }
-.sec { scroll-margin-top: 84px; }
-.sec-title { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); }
-.btn { background: var(--accent) !important; color: var(--accent-ink) !important; border-radius: 10px !important; transition: background 0.15s ease, opacity 0.15s ease; }
-.btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000) !important; }
-.btn:disabled { opacity: 0.55 !important; cursor: default; }
-/* These three are <Button variant="ghost"> now, so this file has to beat the
-   component's own utilities on the properties it also sets: `text-fg-strong`,
-   `rounded-control`, `px-4 py-2 text-base` and `font-semibold`. Those are
-   single-class selectors of equal specificity to these, so source order would
-   otherwise decide the winner, and `!important` does not care about order.
+{{-- No <style> block: rule 3 / §11.1, and this was the largest one left in the
+    app at 85 lines.
 
-   The size lives here, in `.btn-dz`, rather than in utilities on the call site.
-   Crosswind scans RENDERED pages, and this one is behind an auth check, so a
-   utility that appears nowhere public is never generated: `flex-none` and
-   `whitespace-nowrap` sat on these two buttons and emitted no CSS at all.
-   `px-4` and `py-2.5` only worked here by luck, because public pages use them.
-   Hand-written CSS in this block always ships, so the override goes here.
+    `.btn` here was the accent button projects/index.stx and account.stx each
+    declared separately -- it is `btn-solid` now, and the !important it carried
+    went with it. `.btn-danger`, `.btn-sm`, `.btn-xs`, `.btn-dz` and the rest of
+    the bags-of-properties are shortcuts in config/crosswind.ts; the toggle, the
+    Slack/Discord picker, the tab nav and the danger-zone dialog are pageCss()
+    rules, because each has a pseudo-element, an attribute state or a compound
+    selector that no class on an element can express.
 
-   Every rule in the family is marked, not just the base: an !important base
-   outranks its own un-marked :hover, which would stop the danger fill turning
-   its label white.
-
-   `.btn-ghost` is no longer one of them. It is a shortcut in
-   config/crosswind.ts now, unified with account.stx and projects/index.stx on
-   --text at 10px, and it needs no mark because those are the values
-   `text-fg-strong` and `rounded-control` already resolve to -- see the
-   shortcut's own comment, and the token assertions in
-   tests/unit/hoisted-chrome.test.ts that would catch either one moving. The
-   ghost buttons here carry `bg-panel` because the removed rule is what used to
-   supply their panel.
-
-   `.btn-danger` followed it to 10px. It was 9px to match the ghost rule that
-   used to sit above it, so moving one and not the other would have left the
-   two outline buttons in this block a pixel apart. Its radius mark is now
-   redundant for the same reason ghost's was -- 10px is what
-   `rounded-control` already resolves to -- and it stays only because every
-   rule in this family is marked, which is the convention above. */
-.btn-danger { border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); color: var(--warn) !important; border-radius: 10px !important; background: var(--panel); transition: all 0.15s ease; }
-.btn-danger:hover { color: #fff !important; background: var(--warn); border-color: var(--warn); }
-.btn-sm { padding: 0.5rem 0.75rem !important; font-size: 0.875rem !important; line-height: 1.25rem !important; font-weight: 500 !important; }
-.btn-xs { padding: 0.375rem 0.625rem !important; font-size: 0.75rem !important; line-height: 1rem !important; font-weight: 500 !important; }
-.btn-dz { flex: none; padding: 0.625rem 1rem !important; font-size: 0.875rem !important; line-height: 1.25rem !important; font-weight: 600 !important; white-space: nowrap; }
-/* .btn has had a disabled state since the start; .btn-danger never got one, and
-   every :disabled binding in this file lands on a danger button — Rotate while a
-   rotation is in flight, each Remove while its request is, and the confirm button
-   that stays inert until the typed phrase matches. All of them rendered
-   identically to a live button, and the hover rule above still filled them solid
-   red under the cursor, which reads as armed rather than unavailable. The hover
-   override has to restore all three properties: `all 0.15s ease` above means a
-   partial reset animates back to the danger fill. */
-.btn-danger:disabled { opacity: 0.55 !important; cursor: default; }
-.btn-danger:disabled:hover { color: var(--warn) !important; background: var(--panel); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
-.field:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); box-shadow: none; }
-.note-failed { color: var(--warn); }
-.tgl { width: 38px; height: 22px; border-radius: 999px; background: var(--border); position: relative; transition: background 0.15s ease; cursor: pointer; flex: none; }
-.tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 999px; background: #fff; transition: transform 0.15s ease; }
-.tgl[data-on="1"] { background: var(--ok); }
-.tgl[data-on="1"]::after { transform: translateX(16px); }
-.seg { border: 1px solid var(--border); border-radius: 10px; color: var(--text-2); background: var(--panel); transition: all 0.12s ease; }
-.seg[data-sel="1"] { color: #fff; border-color: transparent; }
-.seg-slack[data-sel="1"] { background: var(--slack); }
-.seg-discord[data-sel="1"] { background: var(--discord); }
-.note { display: none; }
-.note.show { display: block; }
-/* Colour variants for notes rendered from signals, so the state is a class
-   rather than an inline style assignment. */
-.note-ok { color: var(--ok); }
-.note-err { color: var(--accent); }
-.tabnav { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
-.tabnav::-webkit-scrollbar { display: none; }
-.tabnav a { flex: none; color: var(--text-2); border: 1px solid var(--border); border-radius: 999px; transition: color .15s ease, border-color .15s ease; }
-.tabnav a:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
-.danger-panel { border-color: color-mix(in srgb, var(--warn) 40%, var(--border)); }
-.code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text-2); font-family: var(--mono); font-size: 12px; line-height: 1.5; padding: 12px 16px; padding-right: 64px; overflow-x: auto; }
-.copy-btn { position: absolute; top: 8px; right: 8px; font: 500 11px/1 var(--sans); padding: 5px 9px; border-radius: 7px; border: 1px solid var(--border); background: var(--panel); color: var(--text-3); cursor: pointer; transition: color .15s ease, border-color .15s ease; }
-.copy-btn:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
-.dz-div { height: 1px; background: color-mix(in srgb, var(--warn) 20%, var(--border)); }
-.dz-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(2,4,10,0.62); backdrop-filter: blur(3px); animation: dz-fade 0.12s ease; }
-.dz-overlay[hidden] { display: none; }
-.dz-card { width: 100%; max-width: 440px; padding: 22px; box-shadow: 0 24px 70px rgba(0,0,0,0.5); animation: dz-pop 0.14s cubic-bezier(0.2,0.8,0.3,1); }
-@keyframes dz-fade { from { opacity: 0 } to { opacity: 1 } }
-@keyframes dz-pop { from { opacity: 0; transform: translateY(6px) scale(0.98) } to { opacity: 1; transform: none } }
-</style>
+    The size that used to live in `.btn-dz` is still a shortcut rather than
+    utilities at the call site, for the reason this block recorded: the
+    extractor reads RENDERED pages and this one is behind an auth check, so
+    `flex-none` and `whitespace-nowrap` as utilities emitted no CSS at all. The
+    answer is the safelist, not hand-written CSS -- see the note above it in
+    config/crosswind.ts. --}}
 
 <div class="px-5 py-10 md:px-10 min-h-[100dvh]">
   <div class="mx-auto max-w-2xl">
@@ -1137,7 +1069,7 @@ html { scroll-behavior: smooth; }
             It's a public identifier (safe to ship in client code), not a secret — it says <em>which</em> project a report belongs to.
           </p>
           <div class="flex flex-wrap gap-2 items-center">
-            <code :text="keyDisplay()" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm truncate field mono" style="letter-spacing:0.01em">{{ keyMask }}</code>
+            <code :text="keyDisplay()" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm truncate field field-quiet mono" style="letter-spacing:0.01em">{{ keyMask }}</code>
             <button @click="toggleReveal" :text="revealed() ? 'Hide' : 'Reveal'" class="px-3 py-2 font-medium text-sm bg-panel btn-ghost">Reveal</button>
             <button @click="copyText('key', currentKey())" :text="copyLabel('key')" class="px-3 py-2 font-medium text-sm bg-panel btn-ghost">Copy</button>
             <Button variant="ghost" @click="rotateKey" :loading="rotating()" className="btn-danger btn-sm">Rotate</Button>
@@ -1228,8 +1160,8 @@ html { scroll-behavior: smooth; }
           @if (canInvite)
           <form @submit="inviteMember">
             <div class="flex flex-wrap gap-2 items-center">
-              <input name="email" type="email" aria-label="Teammate email address" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm field" placeholder="teammate@company.com" autocomplete="off">
-              <Button type="submit" variant="ghost" :loading="inviting()" className="btn btn-dz">Invite</Button>
+              <input name="email" type="email" aria-label="Teammate email address" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm field field-quiet" placeholder="teammate@company.com" autocomplete="off">
+              <Button type="submit" variant="ghost" :loading="inviting()" className="btn-dz btn-solid">Invite</Button>
             </div>
           </form>
           @if (inviteNote() && inviteNote()?.ok)
@@ -1282,10 +1214,10 @@ html { scroll-behavior: smooth; }
               <button type="button" @click="chType.set('slack')" :data-sel="chType() === 'slack' ? '1' : '0'" class="px-3 py-2.5 font-medium text-sm seg seg-slack" data-sel="1">Slack</button>
               <button type="button" @click="chType.set('discord')" :data-sel="chType() === 'discord' ? '1' : '0'" class="px-3 py-2.5 font-medium text-sm seg seg-discord" data-sel="0">Discord</button>
             </div>
-            <input name="webhook_url" type="url" aria-label="Webhook URL" class="mb-2 px-3.5 py-2.5 w-full text-sm field mono" :placeholder="urlPlaceholder()" placeholder="https://hooks.slack.com/services/…" autocomplete="off" spellcheck="false">
-            <input name="label" type="text" aria-label="Channel label (optional)" class="mb-3 px-3.5 py-2.5 w-full text-sm field" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
+            <input name="webhook_url" type="url" aria-label="Webhook URL" class="mb-2 px-3.5 py-2.5 w-full text-sm field field-quiet mono" :placeholder="urlPlaceholder()" placeholder="https://hooks.slack.com/services/…" autocomplete="off" spellcheck="false">
+            <input name="label" type="text" aria-label="Channel label (optional)" class="mb-3 px-3.5 py-2.5 w-full text-sm field field-quiet" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
             <div class="flex gap-3 items-center">
-              <Button type="submit" variant="ghost" :loading="adding()" className="btn btn-dz">Add channel</Button>
+              <Button type="submit" variant="ghost" :loading="adding()" className="btn-dz btn-solid">Add channel</Button>
               @if (whNote() && whNote()?.ok)
                 <span class="text-xs note note-ok show" :text="noteText(whNote())"></span>
               @endif
@@ -1353,7 +1285,7 @@ html { scroll-behavior: smooth; }
           <div id="dz-title" class="mb-1 font-semibold text-base" :text="dzCopy().title"></div>
           <p class="mb-4 text-muted text-sm" :text="dzCopy().desc"></p>
           <label for="dz-confirm" class="block mb-1.5 text-subtle text-xs">Type <span class="text-muted mono">{{ activeProject?.name }}</span> to confirm</label>
-          <input ref="dzInput" id="dz-confirm" type="text" class="mb-4 px-3.5 py-2.5 w-full text-sm field mono" :value="dzTyped()" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <input ref="dzInput" id="dz-confirm" type="text" class="mb-4 px-3.5 py-2.5 w-full text-sm field field-quiet mono" :value="dzTyped()" @input="dzType" autocomplete="off" autocapitalize="off" spellcheck="false">
           <div class="flex flex-wrap gap-2 items-center justify-end">
             {{-- Inside the button row and `w-full`, so it takes a line of its own
                  above the buttons rather than sharing one with them. Sharing was
@@ -1364,7 +1296,7 @@ html { scroll-behavior: smooth; }
             @if (dzMismatch())
               <span class="w-full text-subtle text-xs">Doesn't match yet — type the name exactly.</span>
             @endif
-            <Button variant="ghost" type="button" @click="dzClose" className="bg-panel btn-ghost btn-dz">Cancel</Button>
+            <Button variant="ghost" type="button" @click="dzClose" className="bg-panel btn-dz btn-ghost">Cancel</Button>
             {{-- Static text as well as :text. The dialog markup is always in the
                  document, and :text only fills this in once the runtime binds —
                  so the HTML actually served carried a button with no content and

@@ -200,7 +200,6 @@ describe('hoisted shared chrome', () => {
      */
     const blocked = [
       'resources/views/issue/[id].stx',
-      'resources/views/settings.stx',
     ]
     // An opening tag at the start of a line. Matching '<style' anywhere counts
     // this repo's own comments about blocks that used to be there, and there

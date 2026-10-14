@@ -66,9 +66,16 @@ describe('mobile layout contracts', () => {
     expect(css).toContain('border-color: color-mix(in srgb,var(--accent) 40%,var(--border))')
   })
 
-  test('settings tabs scroll inside their own strip', () => {
-    expect(settings).toContain('.tabnav { max-width: 100%; overflow-x: auto;')
-    expect(settings).toContain('.tabnav a { flex: none;')
+  test('settings tabs scroll inside their own strip', async () => {
+    // settings.stx's <style> block is pageCss() now as well, so this reads the
+    // generated sheet for the same reason the dashboard assertions above do.
+    const css = await dashboardCss()
+    expect(css).toContain('.tabnav { max-width: 100%; overflow-x: auto;')
+    expect(css).toContain('.tabnav a { flex: none;')
+    // The smooth scrolling that goes with it is scoped to the pages carrying
+    // the nav, rather than applied to every page in the app.
+    expect(css).toContain('html:has(.tabnav) { scroll-behavior: smooth; }')
+    expect(settings).toContain('tabnav')
   })
 
   test('marketing menu is bounded by the visible mobile viewport', () => {

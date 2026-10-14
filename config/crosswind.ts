@@ -128,6 +128,48 @@ function paletteCss(): string {
     // specificity. That is the right way round for `body`: a page or a utility
     // that sets its own background should win, and nothing here competes.
     `body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }`,
+    /*
+     * settings.stx's structural rules: a pseudo-element, an attribute state or
+     * a compound selector in every one, so none of them is a shortcut.
+     *
+     * Smooth scrolling is scoped to the pages that have the in-page nav it is
+     * for, rather than made global. public/marketing.css already sets it on
+     * html for the marketing pages; /dashboard, /account, /projects and
+     * /issue/:id never had it and there is no reason for this move to give it
+     * to them.
+     */
+    `
+html:has(.tabnav) { scroll-behavior: smooth; }
+.tabnav { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
+.tabnav::-webkit-scrollbar { display: none; }
+.tabnav a { flex: none; color: var(--text-2); border: 1px solid var(--border); border-radius: 999px; transition: color .15s ease, border-color .15s ease; }
+.tabnav a:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+
+/* The notification toggle. Pseudo-element knob, attribute state. */
+.tgl { width: 38px; height: 22px; border-radius: 999px; background: var(--border); position: relative; transition: background 0.15s ease; cursor: pointer; flex: none; }
+.tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 999px; background: #fff; transition: transform 0.15s ease; }
+.tgl[data-on="1"] { background: var(--ok); }
+.tgl[data-on="1"]::after { transform: translateX(16px); }
+
+/* Slack / Discord picker. The brand fill is keyed off the selected attribute. */
+.seg { border: 1px solid var(--border); border-radius: 10px; color: var(--text-2); background: var(--panel); transition: all 0.12s ease; }
+.seg[data-sel="1"] { color: #fff; border-color: transparent; }
+.seg-slack[data-sel="1"] { background: var(--slack); }
+.seg-discord[data-sel="1"] { background: var(--discord); }
+
+/* Notes rendered from signals, so the state is a class rather than an inline
+   style assignment. The colours are the note-ok / note-err / note-failed
+   shortcuts; this is the compound that cannot be one. */
+.note { display: none; }
+.note.show { display: block; }
+
+/* The danger-zone confirm dialog. */
+.dz-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(2,4,10,0.62); backdrop-filter: blur(3px); animation: dz-fade 0.12s ease; }
+.dz-overlay[hidden] { display: none; }
+@keyframes dz-fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes dz-pop { from { opacity: 0; transform: translateY(6px) scale(0.98) } to { opacity: 1; transform: none } }
+`,
+
     // account.stx's loading placeholder. `skeleton-pulse`, not `pulse`: this
     // engine emits its own `@keyframes pulse` for `animate-pulse`, and
     // @keyframes obey the cascade, so sharing the name is a silent swap of one
@@ -1263,6 +1305,82 @@ export default {
      */
     'tag-snoozed': '!text-muted bg-[color-mix(in_srgb,var(--text-3)_14%,var(--panel))]',
 
+    /*
+     * ## settings.stx
+     *
+     * Its `<style>` block was 85 lines and the largest left in the app. What is
+     * here is the part that is a bag of properties on one class; what is in
+     * pageCss() is the part with a pseudo-element, an attribute state or a
+     * compound selector.
+     *
+     * Each of these had to be a shortcut rather than a preflight rule, and in
+     * two cases that is not a style preference:
+     *
+     *   `field-quiet` overrides `field`'s focus ring, and `field` is a shortcut
+     *     -- unlayered. The same override as a `.field:focus` preflight rule is
+     *     a bug this file has already had and fixed once: a preflight lands in
+     *     @layer tc-base, so `.field`'s own `border-line` beat the layered
+     *     `.field:focus` and only the box-shadow survived, because nothing else
+     *     set one. See the note on `field` above.
+     *
+     *   `danger-panel` sits on `class="danger-panel panel"`, and `panel` is a
+     *     shortcut that sets `border-color`. Layered, this rule loses and the
+     *     destructive section loses its warn-tinted border.
+     *
+     * The `!` marks follow the rule the rest of this file uses: on exactly the
+     * properties something unlayered also sets, because specificity ties and
+     * crosswind sorts its output by category rather than by generation order.
+     */
+    sec: 'scroll-mt-[84px]',
+    'sec-title': 'text-[13px] font-semibold tracking-[0.04em] uppercase text-subtle',
+    'field-quiet': 'focus:!border-[color-mix(in_srgb,var(--accent)_55%,var(--border))] focus:![box-shadow:none]',
+    'danger-panel': '!border-[color-mix(in_srgb,var(--warn)_40%,var(--border))]',
+    'code-block': 'bg-canvas border border-solid border-line rounded-[10px] text-muted '
+      + '[font-family:var(--mono)] text-[12px] leading-[1.5] px-4 py-3 pr-16 overflow-x-auto',
+    'copy-btn': 'absolute top-2 right-2 [font:500_11px/1_var(--sans)] px-[9px] py-[5px] rounded-[7px] '
+      + 'border border-solid border-line bg-panel text-subtle cursor-pointer '
+      + '[transition:color_.15s_ease,border-color_.15s_ease] '
+      + 'hover:text-ink hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))]',
+    'dz-div': 'h-px bg-[color-mix(in_srgb,var(--warn)_20%,var(--border))]',
+    'dz-card': 'w-full max-w-[440px] p-[22px] [box-shadow:0_24px_70px_rgba(0,0,0,0.5)] '
+      + 'animate-[dz-pop_0.14s_cubic-bezier(0.2,0.8,0.3,1)]',
+    // The three note colours. `.note` itself and its `.show` toggle are a
+    // compound selector, so they stay in pageCss().
+    'note-ok': 'text-[var(--ok)]',
+    'note-err': 'text-accent',
+    'note-failed': 'text-[var(--warn)]',
+
+    /*
+     * The destructive button, and the three sizes the block carried beside it.
+     *
+     * Every rule in the family is marked, not just the base: an !important base
+     * outranks its own un-marked :hover, which would have stopped the danger
+     * fill turning its label white.
+     *
+     * `:disabled` matters more here than it reads. `.btn` has had a disabled
+     * state since the start and `.btn-danger` never got one, while every
+     * `:disabled` binding in settings.stx lands on a danger button -- Rotate
+     * while a rotation is in flight, each Remove while its request is, and the
+     * confirm that stays inert until the typed phrase matches. The hover
+     * override restores all three properties because `transition: all` means a
+     * partial reset animates back to the danger fill.
+     */
+    'btn-danger': 'border border-solid border-[color-mix(in_srgb,var(--warn)_45%,var(--border))] '
+      + '!text-[var(--warn)] !rounded-[10px] bg-panel [transition:all_0.15s_ease] '
+      + 'hover:!text-[#fff] hover:bg-[var(--warn)] hover:border-[var(--warn)] '
+      + 'disabled:!opacity-55 disabled:cursor-default '
+      + 'disabled:hover:!text-[var(--warn)] disabled:hover:bg-panel '
+      + 'disabled:hover:border-[color-mix(in_srgb,var(--warn)_45%,var(--border))]',
+    // The sizes stay separate from the paint, the way btn-solid and btn-accent
+    // do. They are marked because <Button variant="ghost"> sets padding, size
+    // and weight itself.
+    'btn-sm': '!px-3 !py-2 !text-sm !font-medium',
+    'btn-xs': '!px-2.5 !py-1.5 !text-xs !font-medium',
+    // `flex-none` and `whitespace-nowrap` are the two that used to emit nothing
+    // at all: they sat as utilities on these buttons, on a page the extractor
+    // never reaches. In a safelisted shortcut they ship.
+    'btn-dz': 'flex-none !px-4 !py-2.5 !text-sm !font-semibold whitespace-nowrap',
+
     // Third-party sign-in button on /login and /register. Two copies, identical.
     'oauth-btn': 'border border-solid border-line rounded-[10px] text-ink bg-panel '
       + '[transition:border-color_0.15s_ease,transform_0.12s_ease] '
@@ -1301,6 +1419,22 @@ export default {
     'row-rule',
     'skeleton',
     'active:translate-y-px',
+    // settings.stx
+    'sec',
+    'sec-title',
+    'field-quiet',
+    'danger-panel',
+    'code-block',
+    'copy-btn',
+    'dz-div',
+    'dz-card',
+    'note-ok',
+    'note-err',
+    'note-failed',
+    'btn-danger',
+    'btn-sm',
+    'btn-xs',
+    'btn-dz',
   ],
   preflights: [
     { getCSS: paletteCss },
