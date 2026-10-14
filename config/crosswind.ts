@@ -128,6 +128,12 @@ function paletteCss(): string {
     // specificity. That is the right way round for `body`: a page or a utility
     // that sets its own background should win, and nothing here competes.
     `body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }`,
+    // account.stx's loading placeholder. `skeleton-pulse`, not `pulse`: this
+    // engine emits its own `@keyframes pulse` for `animate-pulse`, and
+    // @keyframes obey the cascade, so sharing the name is a silent swap of one
+    // animation for the other. The `.skeleton` rule itself is a shortcut.
+    '@keyframes skeleton-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }',
+
   ].join('\n')
 }
 
@@ -179,8 +185,6 @@ function pageCss(): string {
 .autofix-field label { display:block; margin-bottom:.35rem; color:var(--text-3); font-size:.7rem; font-weight:600; }
 .autofix-input { width:100%; border:1px solid var(--border); border-radius:9px; background:var(--panel); color:var(--text); padding:.55rem .7rem; font-family:var(--mono); font-size:.76rem; outline:none; }
 .autofix-input:focus { border-color:color-mix(in srgb,var(--accent) 65%,var(--border)); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent); }
-.btn-autofix { color:#fff; background:color-mix(in srgb,var(--accent) 78%,#0b0f19); border-color:transparent; white-space:nowrap; }
-.btn-autofix:hover { color:#fff; background:color-mix(in srgb,var(--accent) 88%,#0b0f19); border-color:transparent; }
 .autofix-run { padding:1.1rem; }
 .autofix-progress { height:3px; overflow:hidden; background:var(--border); }
 .autofix-progress span { display:block; height:100%; background:var(--accent); transition:transform .35s ease; transform-origin:left; }
@@ -499,10 +503,17 @@ summary::-webkit-details-marker { display: none; }
 }
 .range-tool:hover { color: var(--text); border-color: var(--accent); }
 .range-tool:active { transform: scale(0.98); }
+/* components/AutofixPanel.stx declared its own copy of this, naming .btn,
+   .icon-btn and .autofix-input. Two of those three were already covered here
+   and by input:focus-visible below, so all it really added was the button --
+   which is btn-outline now, and icon-btn-lg joins it. Both reach every page
+   instead of only /issue/:id, which is where that copy shipped. */
 .range-tool:focus-visible,
 .range-link:focus-visible,
 .chrome-btn:focus-visible,
 .icon-btn:focus-visible,
+.icon-btn-lg:focus-visible,
+.btn-outline:focus-visible,
 select.panel:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
@@ -889,12 +900,105 @@ export default {
     // py/text moved in from the call sites, which all declared
     // `py-2.5 w-full font-semibold text-sm` identically. shadow-none because
     // Button's primary variant adds shadow-md and these buttons never had one.
-    'btn-accent': 'bg-accent text-accent-ink !rounded-[10px] !py-2.5 !text-sm '
+    //
+    // ## The accent button, and the end of `.btn`
+    //
+    // The paint is `btn-solid` and this is that plus the auth form's size,
+    // because a shortcut may reference another shortcut -- the engine expands
+    // it before generating, checked against the installed one rather than
+    // assumed. That matters because settings.stx, projects/index.stx and
+    // account.stx each declared this same button in their own `<style>` block
+    // under the name `.btn`, and they were not three buttons. Measured
+    // declaration by declaration: all three are `background: var(--accent)`,
+    // `color: var(--accent-ink)`, `border-radius: 10px` and the same
+    // `color-mix(… 88%, #000)` on hover. What differed was the transition list,
+    // and only because each copy named the properties its own page happened to
+    // animate. `btn-solid` takes the union, which is why the six auth buttons'
+    // hover fill now eases instead of snapping -- account.stx's copy always did.
+    //
+    // account.stx's `:disabled` was 55% where this was 60%. One of them had to
+    // go; 60% is the one six working call sites already use.
+    'btn-solid': 'bg-accent text-accent-ink !rounded-[10px] '
       + '!shadow-none hover:!shadow-none font-semibold '
-      + '[transition:transform_0.12s_ease,opacity_0.15s_ease] '
+      + '[transition:transform_0.12s_ease,opacity_0.15s_ease,background-color_0.15s_ease] '
       + 'hover:bg-[color-mix(in_srgb,var(--accent)_88%,#000)] '
       + 'active:translate-y-px '
       + 'disabled:!opacity-60 disabled:cursor-default',
+
+    'btn-accent': 'btn-solid !py-2.5 !text-sm',
+
+    /*
+     * The small panel-outline button. issue/[id].stx declared it as `.btn` and
+     * components/AutofixPanel.stx as `.autofix-card .btn`, and those two were
+     * byte-identical apart from AutofixPanel adding `justify-content: center`
+     * (no effect on an inline-flex that sizes to its content) and issue/[id]
+     * marking five properties `!important`.
+     *
+     * The marks are kept, on exactly the five <Button variant="ghost"> also
+     * sets -- gap, padding, radius, font-size and colour. Both the component's
+     * utilities and this shortcut are single-class selectors, so specificity
+     * ties and crosswind sorts its output by category rather than by generation
+     * order; without the marks the override is PARTIAL, which is worse than
+     * none. Marked across the whole family, because an `!important` base
+     * outranks its own un-marked `:hover`.
+     */
+    'btn-outline': 'inline-flex items-center justify-center !gap-[0.4rem] !px-[0.8rem] !py-[0.4rem] '
+      + '!rounded-[9px] !text-[0.8rem] font-semibold border border-solid border-line bg-panel '
+      + '!text-muted cursor-pointer '
+      + '[transition:color_0.12s_ease,border-color_0.12s_ease,background-color_0.12s_ease,transform_0.12s_ease] '
+      + 'hover:!text-ink hover:border-[color-mix(in_srgb,var(--accent)_40%,var(--border))] '
+      + 'hover:bg-[color-mix(in_srgb,var(--accent)_6%,transparent)] '
+      + 'active:translate-y-px',
+
+    /*
+     * The accent-filled variant of it, for AutofixPanel's one CTA.
+     *
+     * It was a pageCss rule and it had stopped working. A preflight lands in
+     * `@layer tc-base`, the `.autofix-card .btn` that used to sit beside it was
+     * unlayered, and an unlayered rule beats a layered one at any specificity --
+     * so `color: #fff` lost to `color: var(--text-2)`, and the one CTA on the
+     * panel rendered as a plain outline button. issue/[id].stx's `.btn` carried
+     * `color: var(--text-2) !important` as well, which made it certain.
+     *
+     * As a shortcut it is unlayered like `btn-outline`, so it needs the marks
+     * for the same reason `btn-accent` does.
+     */
+    'btn-autofix': '!text-[#fff] !bg-[color-mix(in_srgb,var(--accent)_78%,#0b0f19)] !border-transparent whitespace-nowrap '
+      + 'hover:!text-[#fff] hover:!bg-[color-mix(in_srgb,var(--accent)_88%,#0b0f19)] hover:!border-transparent',
+
+    /*
+     * projects/index.stx's icon button, which is deliberately not `icon-btn`:
+     * 36px instead of 34, radius 10 instead of 9, --text-3 instead of --text-2
+     * and an 18px glyph, because at 36px it matches the height of the "+ New
+     * app" button beside it exactly. Its `<style>` block used to override all
+     * eleven of `icon-btn`'s properties to get there; the call site names this
+     * instead, so nothing is overridden at all.
+     */
+    'icon-btn-lg': 'inline-flex items-center justify-center w-[36px] h-[36px] '
+      + 'border border-solid border-line rounded-[10px] text-subtle bg-panel cursor-pointer '
+      + '[transition:color_0.15s_ease,border-color_0.15s_ease] '
+      + 'hover:text-ink hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] '
+      + '[&_svg]:w-[18px] [&_svg]:h-[18px]',
+
+    /*
+     * account.stx's surfaces. None of these names appears in
+     * public/marketing.css, so there is nothing for an unlayered shortcut to
+     * clobber on the 24 marketing pages -- which is the question that decides
+     * shortcut-or-preflight every time in this file.
+     *
+     * `row-rule`, not `row`: a shortcut is global, and `row` is a name a future
+     * template reaches for without meaning a top border.
+     */
+    badge: 'border border-solid border-line rounded-[999px] [font-family:var(--mono)] '
+      + 'text-[11px] tracking-[0.04em] uppercase text-muted',
+    'badge-pro': 'border-accent text-accent',
+    avatar: 'rounded-[999px] object-cover bg-[color-mix(in_srgb,var(--accent)_14%,var(--panel))]',
+    'row-rule': 'border-t border-solid border-line',
+    // `skeleton-pulse`, not `pulse`: this engine emits its own `@keyframes
+    // pulse` for `animate-pulse`, and @keyframes obey the cascade, so sharing
+    // the name is a silent swap of one animation for the other.
+    skeleton: 'bg-[color-mix(in_srgb,var(--text-3)_20%,transparent)] rounded-[6px] '
+      + 'animate-[skeleton-pulse_1.4s_ease-in-out_infinite] motion-reduce:animate-none',
 
     // Raised surface. Three copies, byte-identical.
     panel: 'bg-panel border border-solid border-line rounded-[12px]',
@@ -1165,6 +1269,39 @@ export default {
       + 'hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] '
       + 'active:translate-y-px',
   },
+  /*
+   * Names the extractor cannot reach.
+   *
+   * Crosswind generates from the RENDERED page: a safelist entry first, then
+   * every class it finds in a `class=` attribute. Four of this app's pages --
+   * /account, /projects, /settings and /issue/:id -- put their whole body
+   * behind `@if (user …)`, so a build with no session renders a loading shell
+   * and the real markup is never scanned. settings.stx recorded the symptom
+   * before the cause was understood: `flex-none` and `whitespace-nowrap` sat on
+   * two of its buttons and emitted no CSS at all, while `px-4` and `py-2.5`
+   * worked only because a public page happens to use them.
+   *
+   * A preflight always ships, which is why the rules in pageCss() never had
+   * this problem and why hand-written CSS kept winning the argument. A
+   * safelisted shortcut always ships too, which is what lets the same CSS be a
+   * shortcut instead.
+   *
+   * `btn-autofix` is here for a second reason: AutofixPanel.stx computes that
+   * class name in a client function, so it is not in any rendered attribute at
+   * all, on any page, signed in or not.
+   */
+  safelist: [
+    'btn-solid',
+    'btn-outline',
+    'btn-autofix',
+    'icon-btn-lg',
+    'badge',
+    'badge-pro',
+    'avatar',
+    'row-rule',
+    'skeleton',
+    'active:translate-y-px',
+  ],
   preflights: [
     { getCSS: paletteCss },
     { getCSS: pageCss },

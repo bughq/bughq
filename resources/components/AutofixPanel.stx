@@ -121,7 +121,7 @@ function progressClass() {
 }
 
 function runButtonClass() {
-  return canRunAutofix() ? 'btn btn-autofix' : 'autofix-hidden'
+  return canRunAutofix() ? 'btn-outline btn-autofix' : 'autofix-hidden'
 }
 
 function currentPlanText() {
@@ -272,16 +272,10 @@ async function saveRepository(disconnect: boolean = false): Promise<void> {
 
 loadAutofix(true)
 </script>
-<style>
-  /* Only the rules that reach a `.btn`. issue/[id].stx declares an unlayered
-     `.btn` on this same page, several properties with !important, so a layered
-     copy in a preflight would lose to it. These move once that `.btn` family
-     is reconciled; the rest of this component is in crosswind.ts pageCss(). */
-.autofix-card .btn { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; padding:.4rem .8rem; border:1px solid var(--border); border-radius:9px; background:var(--panel); color:var(--text-2); font-size:.8rem; font-weight:600; cursor:pointer; transition:color .12s ease,border-color .12s ease,background-color .12s ease,transform .12s ease; }
-.autofix-card .btn:hover { color:var(--text); border-color:color-mix(in srgb,var(--accent) 40%,var(--border)); background:color-mix(in srgb,var(--accent) 6%,transparent); }
-.autofix-card .btn:active { transform:translateY(1px); }
-.btn:focus-visible, .icon-btn:focus-visible, .autofix-input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-</style>
+{{-- No <style> block: rule 3 / §11.1. The four rules that were still here all
+    reached a `.btn`, and that `.btn` is the `btn-outline` shortcut now --
+    issue/[id].stx declared the same button byte for byte, so the two were never
+    two. The focus ring joined the list pageCss() already had. --}}
 <section class="mb-5 autofix-card" aria-labelledby="autofix-heading">
   <div class="autofix-top">
     <div>
@@ -289,7 +283,7 @@ loadAutofix(true)
       <div class="mt-1 autofix-status">Analyze the issue and prepare a reviewable fix</div>
     </div>
     <div class="flex gap-2 items-center">
-      <button type="button" class="btn" @click="loadAutofix(false)" :disabled="autofixLoading()" aria-label="Refresh Autofix">
+      <button type="button" class="btn-outline" @click="loadAutofix(false)" :disabled="autofixLoading()" aria-label="Refresh Autofix">
         <i class="h-4 w-4 i-hugeicons-refresh"></i>
       </button>
     </div>
@@ -315,7 +309,7 @@ loadAutofix(true)
           <label for="autofix-branch">Base branch</label>
           <input id="autofix-branch" class="autofix-input" type="text" placeholder="auto-detect" :value="branchInput()" @input="updateBranch" autocomplete="off">
         </div>
-        <Button type="button" variant="ghost" @click="saveRepository(false)" :loading="repositorySaving()" :disabled="!repositoryInput()" className="btn">
+        <Button type="button" variant="ghost" @click="saveRepository(false)" :loading="repositorySaving()" :disabled="!repositoryInput()" className="btn-outline">
           Connect
         </Button>
       </div>
@@ -378,7 +372,7 @@ loadAutofix(true)
 
     <div :class="retryClass()">
       <span class="text-subtle text-xs">The previous run stopped safely. No partial pull request was opened.</span>
-      <Button type="button" variant="ghost" @click="startAutofix" :loading="autofixStarting()" className="btn">Retry Autofix</Button>
+      <Button type="button" variant="ghost" @click="startAutofix" :loading="autofixStarting()" className="btn-outline">Retry Autofix</Button>
     </div>
   </div>
 

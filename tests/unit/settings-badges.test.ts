@@ -150,9 +150,11 @@ describe('settings status badges', () => {
   test('this view no longer declares the badge rules that leaked between pages', () => {
     expect(settingsSource).not.toMatch(/^\.badge[ .:{]/m)
     expect(settingsSource).not.toMatch(/^\.badge-(slack|discord|soft|owner|pending|failed)\b/m)
-    // account.stx is the other declaration, and it is now the only one.
+    // account.stx used to be the other declaration. It is the `badge` shortcut
+    // now, so neither view declares the rule and the name has one definition.
     const account = readFileSync(resolve(root, 'resources/views/account.stx'), 'utf8')
-    expect(account).toMatch(/^\.badge \{/m)
+    expect(account).not.toMatch(/^\.badge\b/m)
+    expect(account).toContain('class="ml-auto px-2.5 py-1 badge"')
   })
 
   test('badge-hq reproduces the type the old .badge rule set', async () => {

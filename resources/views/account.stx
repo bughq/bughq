@@ -86,26 +86,19 @@ fetch('/api/me', { credentials: 'same-origin' })
 </script>
 
 
-<style>
-.btn { border-radius: 10px; transition: transform 0.12s ease, opacity 0.15s ease, background-color 0.15s ease; font-weight: 600; }
-.btn:active { transform: translateY(1px); }
-.btn-primary { background: var(--accent); color: var(--accent-ink); }
-.btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
-.badge { border: 1px solid var(--border); border-radius: 999px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
-.badge-pro { border-color: var(--accent); color: var(--accent); }
-.avatar { border-radius: 999px; object-fit: cover; background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
-.row { border-top: 1px solid var(--border); }
-.skeleton { background: color-mix(in srgb, var(--text-3) 20%, transparent); border-radius: 6px; animation: pulse 1.4s ease-in-out infinite; }
-@keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 0.9; } }
-@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
-</style>
+{{-- No <style> block: rule 3 / §11.1. `.btn` + `.btn-primary` here was the same
+    accent button settings.stx and projects/index.stx each declared on their own,
+    and it is `btn-solid`; `.btn` + `.btn-ghost` is the shared `btn-ghost`
+    shortcut plus the weight and press nudge this page's base rule supplied.
+    badge / badge-pro / avatar / row-rule / skeleton are shortcuts, and the
+    keyframes are in pageCss() under a name the engine does not already use. --}}
 
 <div class="min-h-[100dvh]">
   <header class="flex items-center justify-between mx-auto px-5 md:px-6 h-16 max-w-3xl">
     <StxLink to="/" class="text-lg wordmark">bughq</StxLink>
     <div class="flex gap-2.5 items-center">
-      <StxLink to="/dashboard" class="px-3.5 py-2 text-sm btn btn-ghost">Dashboard</StxLink>
-      <button @click="logout" class="px-3.5 py-2 text-sm btn btn-ghost">Log out</button>
+      <StxLink to="/dashboard" class="px-3.5 py-2 font-semibold text-sm active:translate-y-px btn-ghost">Dashboard</StxLink>
+      <button @click="logout" class="px-3.5 py-2 font-semibold text-sm active:translate-y-px btn-ghost">Log out</button>
     </div>
   </header>
 
@@ -164,18 +157,18 @@ fetch('/api/me', { credentials: 'same-origin' })
           </div>
         </div>
         @if (pro())
-          <StxLink to="/pricing" class="px-4 py-2 text-sm btn btn-ghost">Manage plan</StxLink>
+          <StxLink to="/pricing" class="px-4 py-2 font-semibold text-sm active:translate-y-px btn-ghost">Manage plan</StxLink>
         @endif
         @if (!pro())
-          <StxLink to="/pricing" class="px-4 py-2 text-sm btn btn-primary">Upgrade to Pro</StxLink>
+          <StxLink to="/pricing" class="px-4 py-2 text-sm btn-solid">Upgrade to Pro</StxLink>
         @endif
       </div>
-      <div class="flex items-center justify-between px-6 py-4 row">
+      <div class="flex items-center justify-between row-rule px-6 py-4">
         <div>
           <div class="text-subtle text-xs tracking-wide uppercase" style="font-family: var(--mono)">Member since</div>
           <div class="mt-1 text-base text-muted">{{ fmtDate(user()?.created_at) }}</div>
         </div>
-        <StxLink to="/dashboard" class="px-4 py-2 text-sm btn btn-ghost">Open dashboard</StxLink>
+        <StxLink to="/dashboard" class="px-4 py-2 font-semibold text-sm active:translate-y-px btn-ghost">Open dashboard</StxLink>
       </div>
     </section>
 

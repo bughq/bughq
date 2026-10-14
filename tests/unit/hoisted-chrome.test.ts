@@ -177,24 +177,29 @@ describe('hoisted shared chrome', () => {
      * mid-migration and a silent REGRESSION is the thing worth catching: a new
      * <style> block, or an old one quietly growing back.
      *
-     * Every file left here is blocked on the same thing -- the `.btn` family.
-     * Four pages declare `.btn` differently and most of it is !important, so a
-     * preflight copy cannot be made safe one page at a time: the rules are
-     * unlayered today and win, and in @layer cw-base they would lose to the
-     * component utilities the !important exists to beat. Reconciling those four
-     * is a product decision about whether these surfaces should look different,
-     * not a refactor, and it is tracked in config/crosswind.ts.
+     * This list used to be five, all blocked on the same thing: four pages
+     * declared `.btn` differently and most of it was !important, so no single
+     * page could be moved on its own.
      *
-     * dashboard.stx came off this list by not being part of that: its 259 lines
-     * held one `.btn-join`, which is its own class.
+     * It was not four buttons. Measured declaration by declaration,
+     * settings.stx's, projects/index.stx's and account.stx's `.btn`+`.btn-primary`
+     * are one accent button -- same fill, same ink, same 10px, same
+     * `color-mix(… 88%, #000)` on hover -- and issue/[id].stx's and
+     * AutofixPanel.stx's are one panel-outline button, byte-identical apart
+     * from a `justify-content` with nothing to centre. Two buttons, plus
+     * public/marketing.css's, which keeps the bare `.btn` name. They are the
+     * `btn-solid` and `btn-outline` shortcuts now.
+     *
+     * The !important stays on exactly the properties <Button variant="ghost">
+     * also sets, for the reason btn-accent already documented: both are
+     * single-class selectors, so specificity ties and crosswind sorts its
+     * output by category rather than generation order, which makes an unmarked
+     * override partial.
      *
      * Shrink it, never grow it.
      */
     const blocked = [
-      'resources/components/AutofixPanel.stx',
-      'resources/views/account.stx',
       'resources/views/issue/[id].stx',
-      'resources/views/projects/index.stx',
       'resources/views/settings.stx',
     ]
     // An opening tag at the start of a line. Matching '<style' anywhere counts

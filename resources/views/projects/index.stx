@@ -92,12 +92,11 @@ async function logout() {
 </script>
 
 
-<style>
-.btn { background: var(--accent); color: var(--accent-ink); border-radius: 10px; }
-.btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
-.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 10px; color: var(--text-3); background: var(--panel); cursor: pointer; transition: color .15s ease, border-color .15s ease; }
-.icon-btn svg { width: 18px; height: 18px; }
-</style>
+{{-- No <style> block: rule 3 / §11.1. `.btn` here was the same accent button
+    settings.stx and account.stx each declared separately -- it is `btn-solid`
+    now. The icon button keeps its deliberate 36px: the block used to get there
+    by overriding all eleven of `icon-btn`'s properties, and the call site names
+    `icon-btn-lg` instead, so nothing is overridden at all. --}}
 
 <div class="px-5 py-10 md:px-10 min-h-[100dvh]">
   <div class="mx-auto max-w-4xl">
@@ -108,11 +107,11 @@ async function logout() {
         <p class="mt-2 text-sm text-subtle">Pick an app to track, or create a new one.</p>
       </div>
       <div class="flex gap-2.5 items-center">
-        <button class="icon-btn theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
+        <button class="icon-btn-lg theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <StxLink to="/projects/new" class="px-4 py-2 font-semibold text-sm btn">+ New app</StxLink>
+        <StxLink to="/projects/new" class="px-4 py-2 font-semibold text-sm btn-solid">+ New app</StxLink>
         {{-- The other half of the /account link on the dashboard. This is the
              page a user with no project at all lands on, and the dashboard
              chrome never renders for them, so without this the account and its
@@ -153,7 +152,7 @@ async function logout() {
         </StxLink>
       @empty
         <EmptyState title="No apps yet" description="Create your first app to start capturing errors.">
-          <StxLink to="/projects/new" class="inline-block px-4 py-2.5 font-semibold text-sm btn">Create an app</StxLink>
+          <StxLink to="/projects/new" class="inline-block px-4 py-2.5 font-semibold text-sm btn-solid">Create an app</StxLink>
         </EmptyState>
       @endforelse
     @endif
