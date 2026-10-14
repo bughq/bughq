@@ -17,7 +17,10 @@ import { dispatchAlerts } from '../app/Errors/alerts'
 import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, randomId } from '../app/Errors/fingerprint'
 import { authorizeIngest } from '../app/Errors/ingest'
 import { allowAlert, rateLimit } from '../app/Errors/limits'
-import { buildMetadata, col255, parseIngestEnvelope } from '../app/Errors/payload'
+import { isNativePlatform, nativeCulprit, nativeFingerprintParts, parseNativeException, renderNativeStack } from '../app/Errors/native'
+import { buildMetadata, clip, col255, MAX_MESSAGE, MAX_STACK, parseIngestEnvelope } from '../app/Errors/payload'
+import { parseSessions, recordSessions } from '../app/Releases/sessions'
+import { symbolicate } from '../app/Symbols/store'
 import { isIssueStatus, snoozedUntil } from '../app/Errors/triage'
 import { ingestUrl } from '../app/Support/urls'
 
@@ -230,10 +233,45 @@ route.post('/errors', async (request: any) => {
   // Costs one Map mutation. No round-trip: see app/Billing/usage.ts.
   recordUsage(project.owner_id, 'accepted')
 
-  const { errorType, message, stack, fingerprintParts: fpOverride } = parsed.value
+  const { fingerprintParts: fpOverride } = parsed.value
+  let { errorType, message, stack } = parsed.value
+
+  // Native crashes (iOS, Android) carry structured frames. Symbolicate them
+  // against the build's uploaded dSYM symbols or R8 mapping, then group on the
+  // crash type plus the top in-app frames instead of the message, which for a
+  // native crash is an address or an obfuscated class name. See
+  // app/Errors/native.ts.
+  const platform = isNativePlatform(body.platform) ? body.platform : null
+  const rawException = platform ? parseNativeException(body.exception) : null
+  let nativeParts: string[] | null = null
+  let nativeWhere: string | null = null
+  let stored: Record<string, any> = body
+  if (platform && rawException) {
+    const sym = await symbolicate(projectId, platform, typeof body.release === 'string' ? body.release : null, rawException, {
+      appPackage: typeof body.contexts?.app?.id === 'string' ? body.contexts.app.id : undefined,
+      type: errorType,
+      message,
+    })
+    errorType = clip(sym.type ?? errorType, 255)
+    message = clip(sym.message ?? message, MAX_MESSAGE)
+    stack = clip(renderNativeStack(platform, errorType, message, sym.exception), MAX_STACK)
+    nativeParts = nativeFingerprintParts(platform, errorType, sym.exception)
+    nativeWhere = nativeCulprit(platform, sym.exception)
+    stored = {
+      ...body,
+      exception: sym.exception,
+      symbolication: { symbolicated: sym.symbolicated, missing: sym.missing },
+    }
+  }
+
   // A client may force grouping with an explicit `fingerprint` array; otherwise
-  // we derive one from type + normalized message + top stack frame.
-  const fp = fpOverride ? fingerprintFromParts(fpOverride) : fingerprint(errorType, message, stack)
+  // native events group on their frames and everything else on type +
+  // normalized message + top stack frame.
+  const fp = fpOverride
+    ? fingerprintFromParts(fpOverride)
+    : nativeParts
+      ? fingerprintFromParts(nativeParts)
+      : fingerprint(errorType, message, stack)
 
   // Roll the occurrence into its Issue in ONE atomic statement.
   //
@@ -265,7 +303,7 @@ route.post('/errors', async (request: any) => {
   // ordinary repeat. `xmax = 0` is the standard way to ask an upsert whether it
   // inserted or updated.
   const title = issueTitle(errorType, message)
-  const where = culprit(stack)
+  const where = nativeWhere ?? culprit(stack)
   const rolled = (await db.unsafe(
     `WITH prev AS (
        SELECT status AS prev_status FROM issues
@@ -340,12 +378,82 @@ route.post('/errors', async (request: any) => {
     release: col255(body.release),
     environment: col255(body.environment ?? 'production'),
     user_context: body.user ? JSON.stringify(body.user) : null,
-    metadata: buildMetadata(body),
+    metadata: buildMetadata(stored),
     timestamp: now,
   }).execute()
 
+  // Release health: a native event names the app session it happened in. A
+  // crash ends that session as crashed; any other error marks it errored.
+  // Browser SDKs send a per-tab session too, but those have no session pings
+  // to divide by, so only native platforms count here.
+  if (platform && body.session && typeof body.session === 'object' && body.session.id) {
+    const crashed = body.level === 'fatal' || (rawException !== null && !rawException.handled)
+    await recordSessions(projectId, [{
+      id: String(body.session.id).slice(0, 64),
+      release: col255(body.release)?.slice(0, 128) ?? '',
+      environment: String(body.environment ?? 'production').slice(0, 64),
+      platform,
+      status: crashed ? 'crashed' : 'errored',
+      errors: 1,
+      startedAt: typeof body.session.startedAt === 'string' ? body.session.startedAt : now,
+      userId: body.user?.id != null ? String(body.user.id) : null,
+    }]).catch(err => console.error('[sessions] could not mark session:', err instanceof Error ? err.message : err))
+  }
+
   return json({ ok: true, issue: issueId }, 201)
 }).skipCsrf() // public ingest: SDKs POST cross-origin with no CSRF cookie
+
+// ---------------------------------------------------------------------------
+// Session ingest (release health)
+// ---------------------------------------------------------------------------
+
+/**
+ * `POST /sessions`: one row per app launch from the mobile SDKs, the
+ * denominator for crash-free sessions. Authenticated by the ingest key exactly
+ * like `/errors`, and accepts a batch so a device coming back online replays its
+ * whole queue in one request.
+ *
+ * Not metered against the plan: a session is not an event, and charging for
+ * the denominator would make measuring crashes cost more than having them.
+ */
+async function sessionIngest(request: any): Promise<Response> {
+  const declaredLen = Number(request.headers?.get('content-length') || 0)
+  if (declaredLen > 64 * 1024)
+    return json({ error: 'payload too large' }, 413)
+  const body = request.jsonBody ?? {}
+  if (Buffer.byteLength(JSON.stringify(body)) > 64 * 1024)
+    return json({ error: 'payload too large' }, 413)
+  const key = request.headers?.get('x-bughq-key') || body.key
+  if (!key)
+    return json({ error: 'invalid ingest key' }, 401)
+
+  const ip = clientIp(request)
+  const ipLimit = await rateLimit(`sess-ip:${ip}`, IP_LIMIT, RATE_WINDOW_MS)
+  if (!ipLimit.ok)
+    return json({ error: 'rate limited' }, 429, { 'Retry-After': String(ipLimit.retryAfter) })
+
+  const project = ((await db.unsafe(
+    'SELECT id, ingest_key, is_active FROM projects WHERE ingest_key = $1 LIMIT 1',
+    [String(key)],
+  ))?.[0] ?? null) as { id: string, ingest_key: string | null, is_active: boolean | null } | null
+  const auth = authorizeIngest(project, String(key))
+  if (!auth.ok || !project)
+    return json({ error: auth.ok ? 'unknown project' : auth.error }, auth.ok ? 404 : auth.status)
+  const projectId = String(project.id)
+
+  const projLimit = await rateLimit(`sess-proj:${projectId}`, PROJECT_LIMIT * 4, RATE_WINDOW_MS)
+  if (!projLimit.ok)
+    return json({ error: 'rate limited' }, 429, { 'Retry-After': String(projLimit.retryAfter) })
+
+  const sessions = parseSessions(body)
+  if (sessions.length)
+    await recordSessions(projectId, sessions)
+  return json({ ok: true, accepted: sessions.length }, 202)
+}
+
+route.options('/sessions', () => new Response(null, { status: 204, headers: CORS }))
+route.post('/sessions', sessionIngest).skipCsrf()
+route.post('/api/sessions', sessionIngest).skipCsrf()
 
 // ---------------------------------------------------------------------------
 // Issues API (dashboard)

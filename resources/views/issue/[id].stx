@@ -382,7 +382,7 @@ function parseStack(stackStr: string, fbType: string | null | undefined, fbMsg: 
   if (groups[0] && groups[0].frames[0]) groups[0].frames[0].isCrash = true
   return groups
 }
-const exceptions = stack ? parseStack(stack, issue?.error_type, latest?.message || issue?.title) : []
+const parsedExceptions = stack ? parseStack(stack, issue?.error_type, latest?.message || issue?.title) : []
 
 // --- rich metadata bundle --------------------------------------------------
 const userCtx = latest ? parseJson(latest.user_context) : null
@@ -404,8 +404,23 @@ interface MetaBundle {
   sdk?: { name?: string, version?: string }
   session?: unknown
   client_timestamp?: unknown
+  /** Native (iOS, Android) events: the platform and their symbolicated frames. */
+  platform?: string
+  exception?: { frames?: NativeWireFrame[], causes?: Array<{ type?: string, value?: string, frames?: NativeWireFrame[] }> }
+  symbolication?: { symbolicated?: number, missing?: string[] }
 }
-const BUNDLE_KEYS = ['extra', 'tags', 'contexts', 'breadcrumbs', 'sdk', 'session', 'client_timestamp']
+/** One frame of a native event as the ingest stored it (app/Errors/native.ts). */
+interface NativeWireFrame {
+  image?: string
+  image_offset?: number
+  symbol?: string
+  function?: string
+  module?: string
+  file?: string
+  line?: number
+  in_app?: boolean
+}
+const BUNDLE_KEYS = ['extra', 'tags', 'contexts', 'breadcrumbs', 'sdk', 'session', 'client_timestamp', 'exception', 'platform']
 function isMetaBundle(value: unknown): value is MetaBundle {
   return !!value && typeof value === 'object' && !Array.isArray(value) && BUNDLE_KEYS.some(k => k in value)
 }
@@ -415,6 +430,62 @@ const tags = isBundle && rawMeta.tags && typeof rawMeta.tags === 'object' ? rawM
 const contexts = isBundle && rawMeta.contexts && typeof rawMeta.contexts === 'object' ? rawMeta.contexts : null
 const breadcrumbs = isBundle && Array.isArray(rawMeta.breadcrumbs) ? rawMeta.breadcrumbs : []
 const sdkInfo = isBundle && rawMeta.sdk && typeof rawMeta.sdk === 'object' ? rawMeta.sdk : null
+
+// --- native frames -----------------------------------------------------------
+// A native crash's frames arrive structured and already symbolicated, so they
+// render from the data rather than by re-parsing the stack text, and in-app
+// is what the device and the symbol lookup decided, not a path heuristic.
+function nativeFrame(f: NativeWireFrame): ParsedFrame {
+  const offset = typeof f.image_offset === 'number' ? `0x${f.image_offset.toString(16)}` : ''
+  if (f.module) {
+    // JVM: the class is the location, the file and line come from the frame.
+    return { func: f.function || '<unknown>', base: f.file || 'Unknown Source', dir: `${f.module}.`, line: f.line ? String(f.line) : null, col: null, isApp: !!f.in_app }
+  }
+  const named = f.function || f.symbol || ''
+  return {
+    func: named || (offset ? `+ ${offset}` : '<unknown>'),
+    base: f.file ? shortPath(f.file).base : (f.image || '???'),
+    dir: f.file ? '' : (offset && named ? `+ ${offset} ` : ''),
+    line: f.line ? String(f.line) : null,
+    col: null,
+    isApp: !!f.in_app,
+  }
+}
+function nativeGroup(type: string, message: string, isCause: boolean, frames: NativeWireFrame[]): ParsedException {
+  const parsed = frames.map(nativeFrame)
+  const segments: FrameSegment[] = []
+  for (const fr of parsed) {
+    if (fr.isApp) segments.push({ kind: 'app', frame: fr, frames: [] })
+    else {
+      const last = segments[segments.length - 1]
+      if (last && last.kind === 'system') last.frames.push(fr)
+      else segments.push({ kind: 'system', frame: null, frames: [fr] })
+    }
+  }
+  const appCount = parsed.filter(f => f.isApp).length
+  return { type, message, isCause, frames: parsed, segments, appCount, systemCount: parsed.length - appCount }
+}
+const nativeException = isBundle && rawMeta.exception && Array.isArray(rawMeta.exception.frames) ? rawMeta.exception : null
+const nativeExceptions: ParsedException[] | null = nativeException
+  ? [
+      nativeGroup(issue?.error_type || 'Error', latest?.message || '', false, nativeException.frames ?? []),
+      ...(nativeException.causes ?? []).map(c => nativeGroup(c.type || 'Error', c.value || '', true, c.frames ?? [])),
+    ]
+  : null
+if (nativeExceptions) {
+  // The crash frame is the first in-app frame: the system frames above it are
+  // the runtime reporting the fault, not where it happened.
+  const crash = nativeExceptions[0].frames.find(f => f.isApp) ?? nativeExceptions[0].frames[0]
+  if (crash) crash.isCrash = true
+}
+const exceptions = nativeExceptions ?? parsedExceptions
+// Binaries or releases whose symbols were not uploaded when this event came in.
+const missingSymbols: string[] = isBundle && Array.isArray(rawMeta.symbolication?.missing) ? rawMeta.symbolication.missing.map(String) : []
+const platform = isBundle && typeof rawMeta.platform === 'string' ? rawMeta.platform : null
+const ctxApp = contexts && typeof contexts.app === 'object' && contexts.app ? contexts.app as Record<string, unknown> : null
+const ctxDevice = contexts && typeof contexts.device === 'object' && contexts.device ? contexts.device as Record<string, unknown> : null
+const appBuildLabel = ctxApp && ctxApp.version ? `${String(ctxApp.version)}${ctxApp.build ? ` build ${String(ctxApp.build)}` : ''}` : ''
+const deviceLabel = ctxDevice && ctxDevice.model ? `${String(ctxDevice.model)}${ctxDevice.simulator === true || ctxDevice.emulator === true ? ' (simulator)' : ''}` : ''
 
 const tagList = tags ? Object.keys(tags).map(k => ({ key: k, value: String(tags[k]) })) : []
 const contextList = contexts ? Object.keys(contexts).map(k => ({ name: k, rows: kvRows(contexts[k]) })) : []
@@ -490,7 +561,10 @@ const crumbs = (breadcrumbs || []).map(b => ({
 const eventMeta = issue ? [
   { label: 'Level', value: (issue.level || 'error'), pill: true },
   { label: 'Environment', value: latest?.environment || 'production' },
+  ...(platform ? [{ label: 'Platform', value: platform === 'ios' ? 'iOS' : platform === 'android' ? 'Android' : platform }] : []),
   ...(latest?.release ? [{ label: 'Release', value: latest.release, mono: true }] : []),
+  ...(appBuildLabel ? [{ label: 'App', value: appBuildLabel, mono: true }] : []),
+  ...(deviceLabel ? [{ label: 'Device', value: deviceLabel }] : []),
   ...(latest?.framework ? [{ label: 'Framework', value: latest.framework }] : []),
   ...(sdkInfo?.name ? [{ label: 'SDK', value: `${sdkInfo.name}${sdkInfo.version ? ` ${sdkInfo.version}` : ''}`, mono: true }] : []),
   ...(latest?.browser ? [{ label: 'Browser', value: latest.browser }] : []),
@@ -669,6 +743,11 @@ function copyStack() {
                   <span>Stack trace</span>
                   <button type="button" class="btn-copy" @click="copyStack" style="padding:.25rem .55rem">{{ copyLabel() }}</button>
                 </div>
+                @if (missingSymbols.length)
+                  <div class="px-3 py-2 text-subtle text-xs" style="border-bottom:1px solid var(--border)">
+                    Some frames are addresses because these symbols were not uploaded yet: <span class="mono">{{ missingSymbols.join(', ') }}</span>. See <a href="/docs/capture/stacks-mobile#symbols">uploading symbols</a>.
+                  </div>
+                @endif
                 <div style="padding:.5rem">
                   @foreach (exceptions as ex)
                     <div class="card exc" style="border-color:var(--border-2); box-shadow:none">

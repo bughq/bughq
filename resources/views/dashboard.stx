@@ -163,6 +163,32 @@ function pageUrl(overrides: DashboardQuery): string {
 // because page 7 of the app you just left means nothing in the app you picked.
 const switchTarget = pageUrl({ page: 1 })
 
+// Release health for app projects: crash-free sessions per release over the
+// last 30 days, from the sessions the mobile SDKs report (app_sessions). Empty,
+// and the panel hidden, for a project that sends none.
+interface ReleaseHealthView { release: string, sessions: string, crashFree: string, width: number, tone: string }
+let releaseHealth: ReleaseHealthView[] = []
+if (projectId) {
+  const { crashFreeRate } = await import('../../app/Releases/health')
+  const rows = ((await db.unsafe(
+    `SELECT release, COUNT(*)::int AS sessions, COUNT(*) FILTER (WHERE status = 'crashed')::int AS crashed
+       FROM app_sessions WHERE project_id = $1 AND started_at > NOW() - INTERVAL '30 days'
+      GROUP BY release ORDER BY MAX(started_at) DESC LIMIT 6`,
+    [projectId],
+  )) as unknown as Array<{ release: string, sessions: number, crashed: number }>) ?? []
+  releaseHealth = rows.map((r) => {
+    const rate = crashFreeRate(Number(r.sessions), Number(r.crashed)) ?? 0
+    return {
+      release: r.release || 'unknown',
+      sessions: Number(r.sessions).toLocaleString(),
+      crashFree: `${rate.toFixed(2)}%`,
+      // The bar shows the crash-free share, so a perfect release fills it.
+      width: Math.max(2, Math.round(rate)),
+      tone: rate >= 99.5 ? 'var(--ok, #22c55e)' : rate >= 98 ? 'var(--warn, #f59e0b)' : 'var(--accent, #ef4444)',
+    }
+  })
+}
+
 // Unread count for the Unresolved badge — Gmail's "Inbox (12)". Excludes
 // snoozed rows, so snoozing genuinely quietens the number rather than just
 // hiding the row.
@@ -823,7 +849,7 @@ fetch('/api/me', { credentials: 'same-origin' })
                  404'd. Every other href on this page is precomputed the same way
                  (pager.prevHref, f.href); this attribute was the exception. --}}
             <select @change="switchProject" aria-label="Switch project" data-target="{{ switchTarget }}"
-                    class="px-3 py-1.5 text-muted text-sm mono panel hover:border-[color-mix(in_srgb,var(--accent)_40%,var(--border))]">
+                    class="px-3 py-1.5 text-muted text-sm hover:border-[color-mix(in_srgb,var(--accent)_40%,var(--border))] mono panel">
               @foreach (projects as p)
                 <option value="{{ p.id }}" {{ p.id === projectId ? 'selected' : '' }}>{{ p.name }}{{ p.is_active === false ? ' (archived)' : '' }}</option>
               @endforeach
@@ -837,8 +863,8 @@ fetch('/api/me', { credentials: 'same-origin' })
             <span class="text-muted text-sm mono">{{ activeProject?.name }}{{ activeProject?.is_active === false ? ' (archived)' : '' }}</span>
           @endif
         </div>
-        <StxLink to="/projects" class="px-3 py-1.5 font-medium text-muted text-sm border border-line pill dashboard-app-action dashboard-all-apps">All apps</StxLink>
-        <StxLink to="/projects/new" class="px-3 py-1.5 font-medium text-muted text-sm border border-line pill dashboard-app-action dashboard-new-app">+ New app</StxLink>
+        <StxLink to="/projects" class="px-3 py-1.5 font-medium text-muted text-sm border border-line dashboard-all-apps dashboard-app-action pill">All apps</StxLink>
+        <StxLink to="/projects/new" class="px-3 py-1.5 font-medium text-muted text-sm border border-line dashboard-app-action dashboard-new-app pill">+ New app</StxLink>
         <div class="flex gap-3 items-center dashboard-utilities">
           <button class="icon-btn theme-btn" :data-t="theme()" @click="toggleTheme" title="Toggle theme" aria-label="Toggle theme">
             <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -891,7 +917,7 @@ fetch('/api/me', { credentials: 'same-origin' })
     @endif
 
     <!-- Stats: hairline-separated, mono numerics, no heavy card chrome -->
-    <div class="grid grid-cols-3 mb-8 border-line divide-x panel reveal dashboard-stats">
+    <div class="grid grid-cols-3 mb-8 border-line divide-x dashboard-stats panel reveal">
       @foreach (stats as s)
         <div class="px-5 py-5 border-line">
           <div class="mb-2 font-medium text-subtle text-xs tracking-wider uppercase">{{ s.label }}</div>
@@ -1094,6 +1120,25 @@ fetch('/api/me', { credentials: 'same-origin' })
         </div>
       @endif
     </section>
+
+    @if (releaseHealth.length)
+      <section class="overflow-hidden mt-6 panel reveal" aria-label="Release health">
+        <div class="flex gap-4 items-center px-5 py-3.5 border-b border-line">
+          <span class="flex-1 font-semibold text-subtle text-xs tracking-wider uppercase">Crash-free sessions, last 30 days</span>
+          <span class="col-head text-right">Sessions</span>
+        </div>
+        @foreach (releaseHealth as r)
+          <div class="flex gap-4 items-center px-5 py-3 text-sm border-b border-line">
+            <span class="w-28 truncate mono" title="{{ r.release }}">{{ r.release }}</span>
+            <span class="flex-1 h-1.5 rounded-full" style="background: var(--border)">
+              <span class="block h-1.5 rounded-full" style="width: {{ r.width }}%; background: {{ r.tone }}"></span>
+            </span>
+            <span class="w-16 text-right mono">{{ r.crashFree }}</span>
+            <span class="w-16 text-right text-subtle mono">{{ r.sessions }}</span>
+          </div>
+        @endforeach
+      </section>
+    @endif
     @else
       <div class="py-20 text-center">
         <StxLink to="/projects" class="wordmark-link"><h1 class="mb-3 text-2xl wordmark">bughq</h1></StxLink>

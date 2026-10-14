@@ -73,6 +73,14 @@ export function buildMetadata(body: Record<string, unknown>): string | null {
     metadata.sdk = body.sdk
   if (body.session && typeof body.session === 'object')
     metadata.session = body.session
+  // Native events: the platform and the (symbolicated) structured frames the
+  // issue page renders instead of re-parsing the stack text.
+  if (body.platform === 'ios' || body.platform === 'android')
+    metadata.platform = body.platform
+  if (body.exception && typeof body.exception === 'object')
+    metadata.exception = body.exception
+  if (body.symbolication && typeof body.symbolication === 'object')
+    metadata.symbolication = body.symbolication
   if (body.timestamp)
     metadata.client_timestamp = body.timestamp
   if (!Object.keys(metadata).length)
@@ -82,9 +90,24 @@ export function buildMetadata(body: Record<string, unknown>): string | null {
   if (serialized.length <= MAX_METADATA_BYTES)
     return serialized
 
+  // Over the cap. Breadcrumbs and extras go first; the frames are what make a
+  // native crash readable at all, so they are the last thing dropped.
+  const trimmed = JSON.stringify({
+    sdk: metadata.sdk,
+    session: metadata.session,
+    platform: metadata.platform,
+    contexts: metadata.contexts,
+    exception: metadata.exception,
+    symbolication: metadata.symbolication,
+    client_timestamp: metadata.client_timestamp,
+    _truncated: 'oversized metadata dropped',
+  })
+  if (trimmed.length <= MAX_METADATA_BYTES)
+    return trimmed
   return JSON.stringify({
     sdk: metadata.sdk,
     session: metadata.session,
+    platform: metadata.platform,
     client_timestamp: metadata.client_timestamp,
     _truncated: 'oversized metadata dropped',
   })

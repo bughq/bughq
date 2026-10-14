@@ -84,6 +84,45 @@
         "contexts": { "job": { "name": "SendInvoice", "attempts": 3 } },
         "sdk": { "name": "bughq.laravel", "version": "0.2.0" }
       }
+    },
+    {
+      "name": "craft iOS (bughq.craft.ios)",
+      "headerKey": "pk_ios",
+      "body": {
+        "type": "SIGTRAP",
+        "message": "Fatal error: Unexpectedly found nil while unwrapping an Optional value",
+        "level": "fatal",
+        "platform": "ios",
+        "release": "1.0.0+41",
+        "os": "iOS 26.0",
+        "framework": "craft",
+        "session": { "id": "5c2f0d6e-41aa-4c3b-9d7e-0a1b2c3d4e5f", "startedAt": "2026-10-14T18:00:00.000Z" },
+        "contexts": { "app": { "id": "training.hq.app", "version": "1.0.0", "build": "41" }, "device": { "model": "iPhone17,1" } },
+        "exception": {
+          "mechanism": "signal",
+          "handled": false,
+          "frames": [{ "image": "HQTraining", "image_uuid": "F47C8145-F263-379D-9AD1-F3485CB38B7F", "image_offset": 2752, "in_app": true }]
+        },
+        "sdk": { "name": "bughq.craft.ios", "version": "0.0.176" }
+      }
+    },
+    {
+      "name": "craft Android (bughq.craft.android)",
+      "headerKey": "pk_android",
+      "body": {
+        "type": "java.lang.IllegalStateException",
+        "message": "no workout",
+        "level": "fatal",
+        "platform": "android",
+        "release": "1.0.0+41",
+        "framework": "craft",
+        "exception": {
+          "mechanism": "uncaught",
+          "handled": false,
+          "frames": [{ "module": "a.b", "function": "c", "file": "SourceFile", "line": 2, "in_app": true }]
+        },
+        "sdk": { "name": "bughq.craft.android", "version": "0.0.176" }
+      }
     }
   ]
 }

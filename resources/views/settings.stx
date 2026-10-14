@@ -71,6 +71,11 @@ let needsOnboarding = false
 let channels: ChannelRow[] = []
 let members: MemberRow[] = []
 let invites: InviteRow[] = []
+// Native projects' upload tokens (only their prefixes) and uploaded symbols.
+interface UploadTokenRow { id: string, name: string, token_prefix: string, last_used_at: string | null, revoked_at: string | null }
+interface DebugFileRow { id: string, kind: string, debug_id: string, code_name: string | null, symbol_count: number, created_at: string }
+let uploadTokens: UploadTokenRow[] = []
+let debugFiles: DebugFileRow[] = []
 if (user) {
   // Owned projects only — settings is the owner's admin surface.
   projects = ((await db.unsafe(
@@ -99,9 +104,22 @@ if (user) {
        WHERE i.project_id = $1 ORDER BY i.created_at ASC NULLS LAST, i.email`,
       [activeProject.id],
     )) as unknown as InviteRow[]) ?? []
+    uploadTokens = ((await db.unsafe(
+      `SELECT id, name, token_prefix, last_used_at, revoked_at FROM upload_tokens
+       WHERE project_id = $1 ORDER BY created_at DESC`,
+      [activeProject.id],
+    )) as unknown as UploadTokenRow[]) ?? []
+    debugFiles = ((await db.unsafe(
+      `SELECT id, kind, debug_id, code_name, symbol_count, created_at FROM debug_files
+       WHERE project_id = $1 ORDER BY created_at DESC LIMIT 20`,
+      [activeProject.id],
+    )) as unknown as DebugFileRow[]) ?? []
   }
 }
 const projectId = activeProject?.id || null
+const isNativeProject = activeProject?.platform === 'ios' || activeProject?.platform === 'android'
+const tokenView = uploadTokens.map(t => ({ id: t.id, name: t.name, prefix: t.token_prefix, revoked: !!t.revoked_at, used: t.last_used_at ? String(t.last_used_at).slice(0, 10) : 'never' }))
+const debugFileView = debugFiles.map(f => ({ id: f.id, label: f.kind === 'apple' ? `${f.code_name || 'binary'} ${f.debug_id}` : `mapping.txt ${f.debug_id}`, symbols: Number(f.symbol_count || 0).toLocaleString(), at: String(f.created_at).slice(0, 10) }))
 
 // Whether this owner can invite. Asked here so the form can say so before
 // anyone types an address; the API refuses it regardless
@@ -214,6 +232,23 @@ function installGuide(platform: string | null, key: string): InstallGuide {
         + `// install none, so turn it on there with\n`
         + `// capture: { unhandled: true }, or set BUGHQ_CAPTURE_UNHANDLED=true.\n\n`
         + `// The signed-in user and failed-job context are attached already.`,
+    }
+  }
+  if (p === 'ios' || p === 'android') {
+    const env = p === 'ios' ? 'BUGHQ_IOS_KEY' : 'BUGHQ_ANDROID_KEY'
+    return {
+      label: p === 'ios' ? 'iOS' : 'Android',
+      install: '',
+      code: `# .env\n${env}=${key}\n\n`
+        + `// config/mobile.ts (a Stacks app built with Craft)\n`
+        + `${p}: {\n`
+        + `  // ...\n`
+        + `  crashReporting: { key: env.${env}, host: '${INGEST_BASE}' },\n`
+        + `},\n\n`
+        + `// Crashes, hangs${p === 'android' ? ', ANRs' : ''} and uncaught JavaScript errors are\n`
+        + `// captured natively and sent from an offline outbox.\n`
+        + `// For readable stacks, create an upload token below and set\n`
+        + `// BUGHQ_UPLOAD_TOKEN in ${p === 'ios' ? 'your Xcode Cloud workflow' : 'the environment of buddy build:android --bundle'}.`,
     }
   }
   if (p === 'laravel')
@@ -447,6 +482,47 @@ function rotateKey() {
         keyNote.set({ text: 'Network error.', ok: false })
       })
   })
+}
+
+// ---- Upload tokens ---------------------------------------------------------
+// A token's plaintext exists once, in the create response, so it is shown in
+// a signal until the page is left and never rendered from the server.
+const newUploadToken = state('')
+const tokenName = state('Xcode Cloud')
+const tokenNote = state<FormNote | null>(null)
+const creatingToken = state(false)
+
+function createUploadToken() {
+  creatingToken.set(true)
+  fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/upload-tokens`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: tokenName() }),
+  })
+    .then(r => r.json().then(b => ({ ok: r.ok, b })))
+    .then((res) => {
+      creatingToken.set(false)
+      if (!res.ok) {
+        tokenNote.set({ text: res.b.error || 'Could not create a token.', ok: false })
+        return
+      }
+      newUploadToken.set(String(res.b.token || ''))
+      tokenNote.set({ text: 'Copy it now: it is not shown again. Store it as BUGHQ_UPLOAD_TOKEN in your CI.', ok: true })
+    })
+    .catch(() => {
+      creatingToken.set(false)
+      tokenNote.set({ text: 'Network error.', ok: false })
+    })
+}
+
+function revokeUploadToken(id: string) {
+  fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/upload-tokens/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'same-origin' })
+    .then(() => {
+      const route = useRoute()
+      navigate(`${route.path}${route.query ? `?${new URLSearchParams(route.query).toString()}` : ''}#symbols`, { replace: true, reload: true })
+    })
+    .catch(() => tokenNote.set({ text: 'Network error.', ok: false }))
 }
 
 // ---- Members and alert channels ------------------------------------------
@@ -1023,6 +1099,9 @@ function unarchive(): void {
       <nav class="flex gap-2 items-center mb-8 text-sm tabnav">
         <a href="#install" class="px-3 py-1.5 font-medium">Install</a>
         <a href="#keys" class="px-3 py-1.5 font-medium">Keys</a>
+        @if (isNativeProject)
+          <a href="#symbols" class="px-3 py-1.5 font-medium">Symbols</a>
+        @endif
         <a href="#members" class="px-3 py-1.5 font-medium">Members</a>
         <a href="#alerts" class="px-3 py-1.5 font-medium">Alerts</a>
         <a href="#danger" class="px-3 py-1.5 font-medium">Danger</a>
@@ -1088,6 +1167,55 @@ function unarchive(): void {
           @endif
         </div>
       </section>
+
+      @if (isNativeProject)
+      <!-- ============================ SYMBOLS ============================ -->
+      <section id="symbols" class="mb-10 sec">
+        <div class="mb-3 sec-title">Symbols</div>
+        <div class="px-5 py-5 panel">
+          <p class="mb-4 text-sm text-subtle">
+            Native frames arrive as addresses. Upload each build's {{ activeProject?.platform === 'ios' ? 'dSYM symbols' : 'R8 mapping.txt' }} and bughq turns them into functions, files and lines.
+            Uploads use an upload token, a secret for your CI only. Never put it in an app.
+          </p>
+          <div class="flex flex-wrap gap-2 items-center">
+            <label for="upload-token-name" class="sr-only">Token name</label>
+            <input id="upload-token-name" :value="tokenName()" @input="tokenName.set($event.target.value)" class="flex-1 px-3.5 py-2.5 min-w-[180px] text-sm field" />
+            <Button variant="ghost" @click="createUploadToken" :loading="creatingToken()" className="btn-sm">Create upload token</Button>
+          </div>
+          @if (newUploadToken())
+            <code :text="newUploadToken()" class="block mt-3 px-3.5 py-2.5 break-all text-sm field mono"></code>
+          @endif
+          @if (tokenNote() && tokenNote()?.ok)
+            <span class="mt-2 text-xs note note-ok show" :text="noteText(tokenNote())"></span>
+          @endif
+          @if (tokenNote() && !tokenNote()?.ok)
+            <span class="mt-2 text-xs note note-err show" :text="noteText(tokenNote())"></span>
+          @endif
+          @if (tokenView.length)
+            <div class="mt-4">
+              @foreach (tokenView as t)
+                <div class="flex gap-3 items-center justify-between py-2 text-sm" style="border-top:1px solid var(--border)">
+                  <span><span class="text-muted">{{ t.name }}</span> <span class="text-subtle mono">{{ t.prefix }}</span></span>
+                  <span class="text-subtle text-xs">{{ t.revoked ? 'revoked' : `last used ${t.used}` }}</span>
+                  @if (!t.revoked)
+                    <Button variant="ghost" @click="revokeUploadToken('{{ t.id }}')" className="btn-danger btn-xs">Revoke</Button>
+                  @endif
+                </div>
+              @endforeach
+            </div>
+          @endif
+          @if (debugFileView.length)
+            <div class="mb-1 mt-5 text-muted text-xs">Recent uploads</div>
+            @foreach (debugFileView as f)
+              <div class="flex gap-3 justify-between py-1.5 text-xs" style="border-top:1px solid var(--border)">
+                <span class="truncate mono">{{ f.label }}</span>
+                <span class="shrink-0 text-subtle">{{ f.symbols }} symbols, {{ f.at }}</span>
+              </div>
+            @endforeach
+          @endif
+        </div>
+      </section>
+      @endif
 
       <!-- ============================ MEMBERS ============================ -->
       <section id="members" class="mb-10 sec">

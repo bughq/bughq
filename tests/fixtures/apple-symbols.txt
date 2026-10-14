@@ -1,0 +1,122 @@
+symtest/t.dSYM [arm64, 0.008469 seconds]:
+    F47C8145-F263-379D-9AD1-F3485CB38B7F /build/symtest/t.dSYM/Contents/Resources/DWARF/t [dSYM_v3, FaultedFromDisk, Found-dSYM]  
+        0x0000000000000000 (0x100000000) __PAGEZERO SEGMENT
+        0x0000000100000000 (  0x4000) __TEXT SEGMENT
+            0x0000000100000000 (   0x930) MACH_HEADER
+            0x0000000100000930 (   0x3ac) __TEXT __text
+                0x0000000100000930 (    0x18) main [FUNC, EXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000930 (     0x8) t.swift:0
+                    0x0000000100000938 (     0x8) t.swift:9
+                    0x0000000100000940 (     0x8) /<compiler-generated>:0
+                0x0000000100000948 (    0xe0) runIt() [FUNC, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000948 (    0x10) t.swift:8
+                    0x0000000100000958 (    0x44) t.swift:8
+                    0x000000010000099c (    0x30) t.swift:8
+                    0x00000001000009cc (     0x8) t.swift:8
+                    0x00000001000009d4 (    0x28) t.swift:0
+                    0x00000001000009fc (     0x8) t.swift:8
+                    0x0000000100000a04 (    0x14) t.swift:8
+                    0x0000000100000a18 (    0x10) t.swift:8
+                0x0000000100000a28 (    0x24) type metadata accessor for Player [FUNC, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000a28 (     0x8) /<compiler-generated>:0
+                    0x0000000100000a30 (    0x1c) /<compiler-generated>:0
+                0x0000000100000a4c (     0x4) Workout.id.getter [FUNC, OMIT-FP, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000a4c (     0x4) /<compiler-generated>:0
+                0x0000000100000a50 (     0x8) Workout.id.setter [FUNC, OMIT-FP, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000a50 (     0x8) /<compiler-generated>:0
+                0x0000000100000a58 (    0x10) Workout.id.modify [FUNC, OMIT-FP, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000a58 (     0x4) /<compiler-generated>:0
+                    0x0000000100000a5c (     0xc) /<compiler-generated>:0
+                0x0000000100000a68 (     0x4) Workout.id.modify [FUNC, OMIT-FP, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000a68 (     0x4) /<compiler-generated>:0
+                0x0000000100000a6c (     0x4) Workout.init(id:) [FUNC, OMIT-FP, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000a6c (     0x4) t.swift:0
+                0x0000000100000a70 (    0xf8) Player.start(_:) [FUNC, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000a70 (    0x44) t.swift:3
+                    0x0000000100000ab4 (     0xc) t.swift:0
+                    0x0000000100000ac0 (    0x10) t.swift:4
+                    0x0000000100000ad0 (     0x8) t.swift:0
+                    0x0000000100000ad8 (     0x4) t.swift:4
+                    0x0000000100000adc (     0xc) t.swift:0
+                    0x0000000100000ae8 (    0x40) t.swift:4
+                    0x0000000100000b28 (     0xc) /<compiler-generated>:0
+                    0x0000000100000b34 (    0x20) t.swift:5
+                    0x0000000100000b54 (     0x4) t.swift:0
+                    0x0000000100000b58 (     0xc) t.swift:5
+                    0x0000000100000b64 (     0x4) /<compiler-generated>:0
+                0x0000000100000b68 (    0x24) Player.deinit [FUNC, OMIT-FP, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000b68 (     0xc) t.swift:2
+                    0x0000000100000b74 (     0x4) t.swift:2
+                    0x0000000100000b78 (    0x14) t.swift:0
+                0x0000000100000b8c (    0x3c) Player.__deallocating_deinit [FUNC, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000b8c (     0xc) t.swift:2
+                    0x0000000100000b98 (     0x4) t.swift:2
+                    0x0000000100000b9c (    0x2c) t.swift:0
+                0x0000000100000bc8 (    0x38) Player.__allocating_init() [FUNC, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000bc8 (    0x10) t.swift:2
+                    0x0000000100000bd8 (    0x10) t.swift:2
+                    0x0000000100000be8 (    0x18) t.swift:0
+                0x0000000100000c00 (    0x24) Player.init() [FUNC, OMIT-FP, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000c00 (     0xc) t.swift:2
+                    0x0000000100000c0c (     0x4) t.swift:2
+                    0x0000000100000c10 (    0x14) t.swift:0
+                0x0000000100000c24 (    0x40) _finalizeUninitializedArray<A>(_:) [FUNC, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000c24 (    0x14) /<compiler-generated>:0
+                    0x0000000100000c38 (    0x2c) /<compiler-generated>:0
+                0x0000000100000c64 (    0x2c) default argument 1 of print(_:separator:terminator:) [FUNC, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000c64 (     0x8) /<compiler-generated>:0
+                    0x0000000100000c6c (    0x24) /<compiler-generated>:0
+                0x0000000100000c90 (    0x2c) default argument 2 of print(_:separator:terminator:) [FUNC, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000c90 (     0x8) /<compiler-generated>:0
+                    0x0000000100000c98 (    0x24) /<compiler-generated>:0
+                0x0000000100000cbc (    0x14) type metadata accessor for Workout [FUNC, OMIT-FP, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000cbc (    0x14) /<compiler-generated>:0
+                0x0000000100000cd0 (     0xc) Array._endMutation() [FUNC, OMIT-FP, PEXT, LENGTH, NameNList, MangledNameNList, Merged, NList, Dwarf] 
+                    0x0000000100000cd0 (     0xc) /<compiler-generated>:0
+            0x0000000100000cdc (    0x78) __TEXT __stubs
+            0x0000000100000d60 (    0x5a) __TEXT __cstring
+            0x0000000100000dbc (     0x8) __TEXT __swift5_entry
+            0x0000000100000dc4 (    0x14) __TEXT __const
+                0x0000000100000dd6 (     0x2) __swift_reflection_version [PEXT, NameNList, MangledNameNList, NList] 
+            0x0000000100000dd8 (    0x64) __TEXT __constg_swiftt
+                0x0000000100000dd8 (     0xc) module descriptor  [PEXT, NameNList, MangledNameNList, NList] 
+                0x0000000100000de4 (    0x1c) nominal type descriptor for Workout [PEXT, NameNList, MangledNameNList, NList] 
+                0x0000000100000e00 (    0x34) nominal type descriptor for Player [PEXT, NameNList, MangledNameNList, NList] 
+                0x0000000100000e34 (     0x8) method descriptor for Player.__allocating_init() [PEXT, NameNList, MangledNameNList, NList] 
+            0x0000000100000e3c (    0x10) __TEXT __swift5_typeref
+                0x0000000100000e3c (     0x6) symbolic _____ 1t7WorkoutV [PEXT, NameNList, MangledNameNList, NList] 
+                0x0000000100000e42 (     0x4) symbolic Si [PEXT, NameNList, MangledNameNList, NList] 
+                0x0000000100000e46 (     0x6) symbolic _____ 1t6PlayerC [PEXT, NameNList, MangledNameNList, NList] 
+            0x0000000100000e4c (     0x3) __TEXT __swift5_reflstr
+            0x0000000100000e50 (    0x2c) __TEXT __swift5_fieldmd
+                0x0000000100000e50 (    0x1c) reflection metadata field descriptor Workout [NameNList, MangledNameNList, NList] 
+                0x0000000100000e6c (    0x10) reflection metadata field descriptor Player [NameNList, MangledNameNList, NList] 
+            0x0000000100000e7c (     0xe) __TEXT __objc_classname
+            0x0000000100000e8c (     0x8) __TEXT __swift5_types
+            0x0000000100000e94 (    0x90) __TEXT __unwind_info
+        0x0000000100004000 (  0x4000) __DATA_CONST SEGMENT
+            0x0000000100004000 (    0x28) __DATA_CONST __const
+                0x0000000100004000 (    0x10) full type metadata for Workout [NameNList, MangledNameNList, NList] 
+                0x0000000100004010 (    0x18) type metadata for Workout [PEXT, NameNList, MangledNameNList, NList] 
+            0x0000000100004028 (     0x8) __DATA_CONST __objc_classlist
+            0x0000000100004030 (     0x8) __DATA_CONST __objc_imageinfo
+            0x0000000100004038 (    0x60) __DATA_CONST __got
+        0x0000000100008000 (  0x4000) __DATA SEGMENT
+            0x0000000100008000 (    0x90) __DATA __objc_const
+                0x0000000100008000 (    0x48) _METACLASS_DATA__TtC1t6Player [NameNList, MangledNameNList, NList] 
+                0x0000000100008048 (    0x48) _DATA__TtC1t6Player [NameNList, MangledNameNList, NList] 
+            0x0000000100008090 (    0x98) __DATA __data
+                0x0000000100008090 (    0x28) metaclass for Player [PEXT, NameNList, MangledNameNList, NList] 
+                0x00000001000080b8 (    0x18) full type metadata for Player [NameNList, MangledNameNList, NList] 
+                0x00000001000080d0 (    0x58) type metadata for Player [PEXT, NameNList, MangledNameNList, NList] 
+        0x000000010000c000 (  0x1000) __LINKEDIT SEGMENT
+        0x000000010000d000 (  0x2000) __DWARF SEGMENT
+            0x000000010000d000 (   0x131) __DWARF __debug_line
+            0x000000010000d131 (   0x2dc) __DWARF __debug_info
+            0x000000010000d40d (    0x30) __DWARF __debug_aranges
+            0x000000010000d43d (    0xa8) __DWARF __debug_addr
+            0x000000010000d4e5 (   0x27a) __DWARF __debug_abbrev
+            0x000000010000d75f (   0xa7f) __DWARF __debug_str
+            0x000000010000e1de (   0x12c) __DWARF __debug_str_offs
+            0x000000010000e30a (   0x146) __DWARF __debug_line_str
+            0x000000010000e450 (   0x364) __DWARF __debug_names
