@@ -1,3 +1,28 @@
+<script server>
+// Server-decided auth, the same boolean the marketing layout computes and the
+// same copy SiteNav keeps. Mirrors that partial deliberately.
+//
+// Unlike SiteNav's case, this one was NOT broken at runtime: measured on the
+// served page, the footer renders Dashboard for a request carrying an
+// auth-token and Log in / Get started without one, so the layout's binding does
+// reach this @include. What it does not reach is `buddy typecheck:stx`, which
+// checks a partial on its own and has failed every CI run since 2026-10-12 with
+// `Cannot find name 'signedIn'` from line 49 below.
+//
+// So this is for the gate and for self-containment, not a behaviour fix. The
+// partial now says where its own data comes from instead of depending on a name
+// the including layout happens to define, which is the arrangement SiteNav and
+// index.stx already settled on.
+const signedIn = (() => {
+  try {
+    return !!(typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('auth-token'))
+  }
+  catch {
+    return false
+  }
+})()
+</script>
+
 <!-- Shared marketing footer used on every marketing page.
      One source of truth for the site-wide footer, mirroring how SiteNav is shared.
      Adds an ohdear.com-style multi-column layout with a dedicated "Compare" column
