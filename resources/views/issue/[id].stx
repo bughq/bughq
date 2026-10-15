@@ -962,6 +962,12 @@ function copyStack() {
   // skipping. Bare, that path yields "" and the guard below correctly declines.
   var proj = {{ issue ? issue.project_id : '' }}
   if (proj)
+    // The same write dashboard.stx makes on the deep-link path, and marked for
+    // the same reason it gives there: useCookie() is the named replacement and
+    // is not in scope in a plain <script> block. This one cannot be a <script
+    // client> either -- it must land before "Back to issues" can be clicked.
+    // Per-site; allowPatterns stays empty (§12.1).
+    // stx-strict-ignore-next-line document.cookie
     document.cookie = 'bughq_project=' + encodeURIComponent(proj) + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '')
 })()
 </script>

@@ -215,6 +215,13 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
   // all, or a dead one (expired, revoked, or replaced by a newer login).
   // Leaving now is the whole point: this page's form is the one you lose work
   // in if the bounce waits for submit.
+  // Marked for the reason dashboard.stx gives in full at the identical guard:
+  // this is a plain <script>, not <script client>, because the whole point is
+  // to bounce BEFORE the user is shown a "Loading…" that will never resolve --
+  // <script client> runs after hydration. useRef() is also the wrong tool for
+  // a marker the server either rendered or did not. The marker is per-site;
+  // allowPatterns stays empty (§12.1).
+  // stx-strict-ignore-next-line document.getElementById
   if (document.getElementById('auth-pending')) {
     // stx-strict-ignore-next-line window.location location.replace()
     window.location.replace('/login')
