@@ -18,7 +18,7 @@
  *     -> one panel-outline button, byte-identical apart from a
  *        `justify-content: center` on an inline-flex that sizes to its content.
  *
- * Two buttons, `btn-solid` and `btn-outline`, plus public/marketing.css's,
+ * Two buttons, `btn-solid` and `btn-outline`, plus the marketing sheet's,
  * which keeps the bare `.btn` name because 24 marketing views use it.
  *
  * Everything here reads the GENERATED sheet through stx's own merge, not the
@@ -34,6 +34,18 @@ import theme from '../../config/crosswind'
 // The installed STX package does not export these subpaths by bare specifier.
 import { loadCssEngine } from '../../node_modules/@stacksjs/stx/dist/dev-server/ts-css.js'
 import { mergeCssConfig } from '../../node_modules/@stacksjs/stx/dist/ts-css-config.js'
+
+/**
+ * The marketing sheet, read out of the MARKETING preflight. It was
+ * public/marketing.css until it moved into config/crosswind.ts, scoped to the
+ * marketing layout group (stx-standards rule 3, §11.2). Nesting did not
+ * rewrite the rules, so every assertion below reads the same as it did.
+ */
+function marketingCss(): string {
+  return ((theme as { preflights?: { getCSS: () => string }[] }).preflights ?? [])
+    .map(entry => entry.getCSS())
+    .find(css => css.includes('content="marketing"')) ?? ''
+}
 
 const ROOT = join(import.meta.dir, '../..')
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8')
@@ -211,7 +223,7 @@ describe('the three views that came off the blocked list', () => {
       for (const gone of ['btn', 'btn-primary'])
         expect(`${path}/${gone}: ${classes.includes(gone)}`).toBe(`${path}/${gone}: false`)
     }
-    expect(read('public/marketing.css')).toMatch(/\.btn\b/)
+    expect(marketingCss()).toMatch(/\.btn\b/)
   })
 
   test('projects/index keeps its deliberate 36px icon button', async () => {

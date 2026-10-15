@@ -26,7 +26,9 @@ async function dashboardCss(): Promise<string> {
 }
 const dashboard = readFileSync(join(ROOT, 'resources/views/dashboard.stx'), 'utf8')
 const settings = readFileSync(join(ROOT, 'resources/views/settings.stx'), 'utf8')
-const marketing = readFileSync(join(ROOT, 'public/marketing.css'), 'utf8')
+const marketing = ((theme as { preflights?: { getCSS: () => string }[] }).preflights ?? [])
+  .map(entry => entry.getCSS())
+  .find(css => css.includes('content="marketing"')) ?? ''
 
 describe('mobile layout contracts', () => {
   test('dashboard gives its toolbar and issue rows mobile layout hooks', () => {

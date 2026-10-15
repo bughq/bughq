@@ -39,6 +39,18 @@ import theme from '../../config/crosswind'
 import { loadCssEngine } from '../../node_modules/@stacksjs/stx/dist/dev-server/ts-css.js'
 import { mergeCssConfig } from '../../node_modules/@stacksjs/stx/dist/ts-css-config.js'
 
+/**
+ * The marketing sheet, read out of the MARKETING preflight. It was
+ * public/marketing.css until it moved into config/crosswind.ts, scoped to the
+ * marketing layout group (stx-standards rule 3, §11.2). Nesting did not
+ * rewrite the rules, so every assertion below reads the same as it did.
+ */
+function marketingCss(): string {
+  return ((theme as { preflights?: { getCSS: () => string }[] }).preflights ?? [])
+    .map(entry => entry.getCSS())
+    .find(css => css.includes('content="marketing"')) ?? ''
+}
+
 const ROOT = join(import.meta.dir, '../..')
 
 function stxFiles(dir: string): string[] {
@@ -188,7 +200,7 @@ describe('hoisted shared chrome', () => {
      * `color-mix(… 88%, #000)` on hover -- and issue/[id].stx's and
      * AutofixPanel.stx's are one panel-outline button, byte-identical apart
      * from a `justify-content` with nothing to centre. Two buttons, plus
-     * public/marketing.css's, which keeps the bare `.btn` name. They are the
+     * the marketing sheet's, which keeps the bare `.btn` name. They are the
      * `btn-solid` and `btn-outline` shortcuts now.
      *
      * issue/[id].stx was the last off it. Its `:root` palette -- the one
@@ -218,7 +230,7 @@ describe('hoisted shared chrome', () => {
   test('the hoisted names are declared nowhere else', () => {
     // A shortcut collides with any same-named rule still living in a page
     // block or in marketing.css, which only the marketing pages link.
-    const marketing = readFileSync(join(ROOT, 'public/marketing.css'), 'utf8')
+    const marketing = marketingCss()
     expect(marketing).not.toMatch(/\.theme-btn\b/)
     expect(marketing).not.toMatch(/\.wordmark-link\b/)
     // `.btn.ghost` in there is a compound selector on a different element and

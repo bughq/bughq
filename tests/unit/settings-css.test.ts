@@ -34,6 +34,18 @@ import { mergeCssConfig } from '../../node_modules/@stacksjs/stx/dist/ts-css-con
 const ROOT = join(import.meta.dir, '../..')
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8')
 const SRC = read('resources/views/settings.stx')
+/**
+ * The marketing sheet, read out of the MARKETING preflight. It was
+ * public/marketing.css until it moved into config/crosswind.ts, scoped to the
+ * marketing layout group (stx-standards rule 3, §11.2). Nesting did not
+ * rewrite the rules, so every assertion below reads the same as it did.
+ */
+function marketingCss(): string {
+  return ((theme as { preflights?: { getCSS: () => string }[] }).preflights ?? [])
+    .map(entry => entry.getCSS())
+    .find(css => css.includes('content="marketing"')) ?? ''
+}
+
 const flat = (s: string) => s.replace(/\s+/g, ' ').trim()
 const has = (css: string, needle: string) => flat(css).includes(flat(needle))
 
@@ -58,11 +70,11 @@ describe('the view declares no CSS', () => {
     expect(/^\s*--[a-z0-9-]+\s*:/m.test(src)).toBe(false)
   })
 
-  test('it no longer asks for `btn`, which is public/marketing.css\'s', () => {
+  test('it no longer asks for `btn`, which the marketing sheet owns', () => {
     const classes = [...SRC.matchAll(/class(?:Name)?="([^"]*)"/g)].flatMap(m => m[1].split(/\s+/))
     expect(classes).not.toContain('btn')
     expect(classes).toContain('btn-solid')
-    expect(read('public/marketing.css')).toMatch(/\.btn\b/)
+    expect(marketingCss()).toMatch(/\.btn\b/)
   })
 })
 
@@ -126,7 +138,7 @@ describe('the structural rules, in pageCss', () => {
     /*
      * The block declared a bare `html { scroll-behavior: smooth }`. A preflight
      * reaches all 33 pages, and /dashboard, /account, /projects and /issue/:id
-     * never had it. public/marketing.css already sets it for the marketing
+     * never had it. The marketing sheet already sets it for the marketing
      * pages, so this only has to cover the one page with an in-page nav.
      */
     const css = await generate()

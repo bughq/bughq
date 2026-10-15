@@ -43,7 +43,7 @@ describe('component palette contract', () => {
 
   test('no role reads a variable only marketing.css declares', () => {
     /*
-     * --accent-soft is declared in public/marketing.css, which only the
+     * --accent-soft is declared in the MARKETING preflight, which only the
      * marketing pages link. Pointing a role at it rendered <Badge
      * variant="primary"> with NO fill on a dashboard page, because
      * `background-color: var(--accent-soft)` is invalid at computed-value time

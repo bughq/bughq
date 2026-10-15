@@ -225,17 +225,343 @@ function paletteCss(): string {
  * A structural selector qualifies; a bag of properties on one class does not,
  * that is a `shortcuts` entry.
  */
+/*
+ * The marketing surface, scoped to its layout group.
+ *
+ * From public/marketing.css, linked by resources/views/layouts/marketing.stx
+ * alone -- never site-wide, because this sheet gives `.btn`, `.panel` and
+ * `.shell` meanings the app pages contradict. That is also why it cannot be an
+ * unscoped preflight: a preflight reaches every page. It carries the layout
+ * group instead, which stx emits into <head> from the layout's filename.
+ * Measured on the served app: /, /pricing, /compare, /docs and /use-cases
+ * report `marketing`; /login and /dashboard report `default`.
+ *
+ * THIS FILE'S OWN DECISIONS THAT DEPENDED ON IT BEING UNLAYERED
+ *
+ * Two comments below were written because marketing.css was an unlayered
+ * stylesheet and a preflight lands in @layer tc-base. Neither breaks, because
+ * both remedies stay unlayered and so still win, but both reasons are now
+ * stale and are corrected where they sit:
+ *
+ *   `cmp-hl`   a shortcut rather than a preflight rule, to beat
+ *              `.cmp-cell { background: var(--surface) }` here. Shortcuts
+ *              compile to unlayered utilities, so it still wins.
+ *   `.hero-code .code-bar`  kept OUT of pageCss because it would have lost to
+ *              this file's `.code-bar`. Its two differing numbers are
+ *              utilities on the element, and utilities are unlayered too.
+ *
+ * WHAT WAS DROPPED
+ *
+ * Six tokens -- --bg, --border, --mono, --text, --text-2 and --text-3 --
+ * resolve to the same values as paletteCss, so marketing pages inherit them.
+ * --border differed only by whitespace inside rgba() and --mono only by quote
+ * character; neither distinction exists in CSS. 57 declarations to 36.
+ *
+ * What stays is what genuinely differs, and it is more than loghq had:
+ * --accent is #d31340 here against the app's #e11d48, --accent-ink #1a0509
+ * against #090b11, and --code-bg is a DARK surface (#0b0f19 / #05070c) where
+ * the app's is light (#f8fafc / #0b0e16). Plus the marketing-only
+ * --surface, --surface-2, --border-strong, --accent-soft, --accent-line,
+ * --code-ink, --r and --r-sm, and --sans, which carries `-apple-system`.
+ *
+ * `@keyframes reveal` is GONE rather than moved. An @keyframes cannot be
+ * nested inside a style rule -- only conditional at-rules can -- so it could
+ * not travel into the block, and it did not need to: pageCss already declares
+ * `@keyframes reveal { to { opacity: 1; transform: none; } }` byte-identical,
+ * unscoped, so it reaches these pages anyway. The `.reveal` RULE differs
+ * (12px/0.6s here against 10px/0.5s there) and stays, winning on marketing
+ * pages by both specificity and order.
+ *
+ * WHAT HAD TO BE SPELLED OUT
+ *
+ * Nesting puts the prefix in front of a descendant, so a rule rooted AT or
+ * ABOVE <html> cannot nest -- `html:has(...) html` matches nothing, and :root
+ * IS html. The four theme blocks, the `html` rule and `*` are written out;
+ * `*` becomes `P, P *` because it matched html itself. `body` nests fine and
+ * is written out only to keep the document-level rules together.
+ */
+const MARKETING = `
+html:has(meta[name="stx-layout-group"][content="marketing"]) {
+  --surface: #ffffff;
+  --surface-2: #f4f5f8;
+  --border-strong: rgba(15, 23, 42, 0.16);
+  --accent: #d31340;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(225, 29, 72, 0.08);
+  --accent-line: rgba(225, 29, 72, 0.34);
+  --code-bg: #0b0f19;
+  --code-ink: #d6deeb;
+  --r: 14px;
+  --r-sm: 9px;
+  --sans: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:has(meta[name="stx-layout-group"][content="marketing"]) {
+    --surface: #10131c; --surface-2: #161a24;
+    --border-strong: rgba(148, 163, 184, 0.2);
+    --accent: #fb7185; --accent-ink: #1a0509;
+    --accent-soft: rgba(251, 113, 133, 0.1); --accent-line: rgba(251, 113, 133, 0.32);
+    --code-bg: #05070c;
+  }
+}
+html:has(meta[name="stx-layout-group"][content="marketing"])[data-theme="dark"] {
+  --surface: #10131c; --surface-2: #161a24;
+  --border-strong: rgba(148, 163, 184, 0.2);
+  --accent: #fb7185; --accent-ink: #1a0509;
+  --accent-soft: rgba(251, 113, 133, 0.1); --accent-line: rgba(251, 113, 133, 0.32);
+  --code-bg: #05070c;
+}
+html:has(meta[name="stx-layout-group"][content="marketing"])[data-theme="light"] {
+  --surface: #ffffff; --surface-2: #f4f5f8;
+  --border-strong: rgba(15, 23, 42, 0.16);
+  --accent: #d31340; --accent-ink: #ffffff;
+  --accent-soft: rgba(225, 29, 72, 0.08); --accent-line: rgba(225, 29, 72, 0.34);
+  --code-bg: #0b0f19;
+}
+
+html:has(meta[name="stx-layout-group"][content="marketing"]), html:has(meta[name="stx-layout-group"][content="marketing"]) * { box-sizing: border-box; }
+html:has(meta[name="stx-layout-group"][content="marketing"]) { background: var(--bg); scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html:has(meta[name="stx-layout-group"][content="marketing"]) body {
+  margin: 0; min-height: 100vh; overflow-x: hidden;
+  color: var(--text); background: var(--bg);
+  font-family: var(--sans); font-size: 16px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+html:has(meta[name="stx-layout-group"][content="marketing"]) {
+a { color: inherit; text-decoration: none; }
+
+.shell { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+.shell-narrow { width: min(920px, calc(100% - 48px)); margin: 0 auto; }
+.mono { font-family: var(--mono); }
+
+/* nav */
+.nav {
+  position: sticky; top: 0; z-index: 30;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+.nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; min-height: 68px; }
+.brand { display: inline-flex; align-items: center; gap: 0.6rem; }
+.brand-mark {
+  display: grid; place-items: center; width: 30px; height: 30px;
+  border: 1px solid var(--accent-line); border-radius: var(--r-sm);
+  color: var(--accent); font-weight: 700; font-size: 1rem; line-height: 1;
+}
+.brand-name { font-weight: 700; font-size: 1.12rem; letter-spacing: -0.02em; }
+.nav-links { display: flex; align-items: center; gap: 1.6rem; margin-left: auto; color: var(--text-2); font-size: 0.9rem; }
+.nav-links a { transition: color 0.16s ease; }
+.nav-links a:hover { color: var(--text); }
+.nav-cta { margin-left: 1.6rem; }
+
+.nav-menu { display: none; margin-left: auto; position: relative; }
+.nav-menu > summary {
+  list-style: none; display: grid; place-items: center; width: 40px; height: 40px;
+  border: 1px solid var(--border-strong); border-radius: var(--r-sm); cursor: pointer;
+}
+.nav-menu > summary::-webkit-details-marker { display: none; }
+.nav-menu > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.burger, .burger::before, .burger::after {
+  display: block; width: 18px; height: 1.5px; background: var(--text);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.burger { position: relative; }
+.burger::before { content: ""; position: absolute; top: -5px; }
+.burger::after { content: ""; position: absolute; top: 5px; }
+.nav-menu[open] .burger { background: transparent; }
+.nav-menu[open] .burger::before { transform: translateY(5px) rotate(45deg); }
+.nav-menu[open] .burger::after { transform: translateY(-5px) rotate(-45deg); }
+.nav-menu-panel {
+  position: absolute; right: 0; top: calc(100% + 12px); z-index: 50;
+  display: flex; flex-direction: column; gap: 0.25rem; min-width: 232px; padding: 0.6rem;
+  max-height: calc(100dvh - 92px); overflow-y: auto; overscroll-behavior: contain;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+}
+.nav-menu-panel a { padding: 0.6rem 0.7rem; border-radius: var(--r-sm); color: var(--text-2); font-size: 0.95rem; }
+.nav-menu-panel a:hover { color: var(--text); background: var(--surface-2); }
+.nav-menu-panel .btn { margin-top: 0.35rem; justify-content: center; }
+
+/* buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  min-height: 46px; padding: 0 1.15rem; border: 1px solid var(--border-strong); border-radius: var(--r-sm);
+  color: var(--text); font-family: var(--sans); font-weight: 600; font-size: 0.92rem;
+  white-space: nowrap; background: transparent; cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+.btn.sm { min-height: 38px; padding: 0 0.85rem; font-size: 0.86rem; }
+.btn.primary { border-color: var(--accent); color: var(--accent-ink); background: var(--accent); }
+.btn.primary:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
+.btn.ghost:hover { border-color: var(--accent-line); }
+.btn:active { transform: translateY(1px); }
+
+/* section scaffolding */
+.section { padding: 3.5rem 0; }
+.section-head { max-width: 62ch; margin-bottom: 1.75rem; }
+.section-title { margin: 0; font-weight: 700; font-size: clamp(1.6rem, 3.5vw, 2.2rem); letter-spacing: -0.03em; line-height: 1.1; }
+.section-intro { margin: 0.9rem 0 0; color: var(--text-2); font-size: 1.02rem; line-height: 1.6; }
+.eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.textlink { color: var(--accent); font-weight: 500; }
+.textlink:hover { text-decoration: underline; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 3.5rem; align-items: center; padding: 3.5rem 0 4rem; }
+.hero-title { margin: 0; font-weight: 700; font-size: clamp(2.3rem, 5.4vw, 3.4rem); letter-spacing: -0.035em; line-height: 1.04; }
+.hero-sub { margin: 1.25rem 0 0; color: var(--text-2); font-size: 1.08rem; line-height: 1.6; max-width: 54ch; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2rem; }
+
+/* single-column feature/use-case hero */
+.feat-hero { padding: 2.5rem 0 1.5rem; max-width: 62ch; }
+.feat-hero .kicker { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.feat-hero h1 { margin: 1rem 0 0; font-weight: 700; font-size: clamp(2.1rem, 5vw, 3.1rem); line-height: 1.05; letter-spacing: -0.03em; }
+.feat-hero p { margin: 1.1rem 0 0; color: var(--text-2); font-size: 1.05rem; line-height: 1.6; }
+.feat-hero .hero-actions { margin-top: 1.75rem; }
+
+.subnav { display: flex; align-items: center; gap: 0.5rem; padding-top: 1.75rem; color: var(--text-3); font-size: 0.88rem; }
+.subnav a { color: var(--text-2); transition: color 0.16s ease; }
+.subnav a:hover { color: var(--text); }
+.subnav .sep { color: var(--text-3); }
+
+/* code panel */
+.code { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.code-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1rem; border-bottom: 1px solid rgba(148,163,184,0.14); }
+.code-body { margin: 0; padding: 1.1rem 1.25rem; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: var(--code-ink); }
+.chart-cap { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: #8a94a6; }
+
+/* panel (data viz container) */
+.panel { border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); padding: 1.4rem 1.5rem; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.panel-tag { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.live { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-2); }
+.live-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.stat-big { margin: 0; font-weight: 700; font-size: 2.6rem; letter-spacing: -0.03em; }
+.stat-label { margin: 0.15rem 0 0; color: var(--text-3); font-size: 0.9rem; }
+
+/* trackless bars */
+.bar-row { display: grid; grid-template-columns: 148px 1fr 52px; align-items: center; gap: 0.9rem; padding: 0.5rem 0; }
+.bar-row + .bar-row { border-top: 1px solid var(--border); }
+.bar-label { color: var(--text-2); font-size: 0.88rem; }
+.bar-track { height: 8px; border-radius: 999px; background: transparent; }
+.bar-fill { display: block; height: 100%; border-radius: 999px; background: var(--accent); opacity: 0.82; min-width: 4px; }
+.bar-value { font-family: var(--mono); font-size: 0.82rem; color: var(--text); text-align: right; }
+
+/* stat/severity tiles */
+.vitals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.vital { padding: 1.4rem 1.5rem; background: var(--surface); }
+.vital-k { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+.vital-v { margin-top: 0.5rem; font-weight: 700; font-size: 1.9rem; letter-spacing: -0.02em; color: var(--text); }
+.vital-tag { margin-top: 0.4rem; display: inline-flex; font-size: 0.78rem; color: var(--accent); }
+
+/* numbered flow */
+.flow { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.flow-step { display: grid; grid-template-columns: auto 1fr; gap: 1.1rem; padding: 1.4rem 1.5rem; background: var(--surface); }
+.flow-num { font-family: var(--mono); font-size: 0.82rem; color: var(--accent); padding-top: 0.15rem; }
+.flow-step h3 { margin: 0; font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; }
+.flow-step p { margin: 0.4rem 0 0; color: var(--text-2); font-size: 0.95rem; line-height: 1.55; }
+
+/* metric tiles */
+.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem 2.5rem; }
+.metric .m-value { font-weight: 700; font-size: clamp(1.8rem, 4vw, 2.4rem); letter-spacing: -0.02em; color: var(--text); }
+.metric .m-label { margin-top: 0.35rem; color: var(--text-2); font-size: 0.9rem; line-height: 1.5; }
+
+/* chips grid */
+.chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+.chip { border: 1px solid var(--border); border-radius: var(--r); padding: 1.4rem 1.5rem; background: var(--surface); }
+.chip h3 { margin: 0; font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; }
+.chip p { margin: 0.5rem 0 0; color: var(--text-2); font-size: 0.94rem; line-height: 1.6; }
+
+/* feature bento (landing) */
+.bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.cell { display: block; padding: 1.5rem 1.6rem; background: var(--surface); transition: background 0.16s ease; }
+a.cell { cursor: pointer; }
+a.cell:hover { background: var(--surface-2); }
+.cell h3 { margin: 0; font-weight: 600; font-size: 1.08rem; letter-spacing: -0.015em; }
+.cell p { margin: 0.5rem 0 0; color: var(--text-2); font-size: 0.93rem; line-height: 1.55; }
+.cell.lead { grid-column: span 1; }
+.cell.tint { background: var(--accent-soft); }
+a.cell.tint:hover { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.cell-more { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 1rem; font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); transition: color 0.16s ease, gap 0.16s ease; }
+.cell-more::after { content: "\\2192"; }
+a.cell:hover .cell-more { color: var(--accent); gap: 0.55rem; }
+
+/* comparison table */
+.cmp { display: grid; grid-template-columns: 1.1fr 1fr 1fr; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.cmp-cell { padding: 1rem 1.2rem; border-top: 1px solid var(--border); background: var(--surface); font-size: 0.92rem; }
+.cmp-cell:nth-child(-n+3) { border-top: none; font-weight: 600; }
+.cmp-dim { color: var(--text-3); }
+.cmp-ghost { color: var(--text); }
+
+/* related features */
+.related { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.related a { display: block; padding: 1.3rem 1.4rem; background: var(--surface); transition: background 0.16s ease; }
+.related a:hover { background: var(--surface-2); }
+.related .r-name { font-weight: 600; font-size: 1rem; color: var(--text); letter-spacing: -0.01em; }
+.related .r-desc { margin-top: 0.3rem; color: var(--text-3); font-size: 0.86rem; line-height: 1.45; }
+
+/* use-case cards */
+.usecases { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+.usecase { border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; background: var(--surface); }
+.usecase img { display: block; width: 100%; height: 168px; object-fit: cover; }
+.usecase-body { padding: 1.4rem 1.5rem 1.6rem; }
+/* h2, not h3: these card titles are the only headings under the page h1,
+   so h3 skipped a level. The element selector follows the markup. */
+.usecase-body h2 { margin: 0; font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; }
+.usecase-body p { margin: 0.55rem 0 0; color: var(--text-2); font-size: 0.94rem; line-height: 1.6; }
+.usecase-body .textlink { margin-top: 0.9rem; display: inline-block; }
+
+/* cta band */
+.cta-band { border: 1px solid var(--border); border-radius: var(--r); padding: 2.5rem; background: var(--surface); text-align: center; }
+.cta-band h2 { margin: 0 auto; max-width: 30ch; font-weight: 700; font-size: clamp(1.5rem, 3.5vw, 2rem); letter-spacing: -0.03em; }
+.cta-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; }
+
+/* footer */
+.footer { padding: 2.5rem 0; }
+.footer-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text-3); font-size: 0.88rem; }
+
+/* motion */
+.reveal { opacity: 0; transform: translateY(12px); animation: reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@media (prefers-reduced-motion: reduce) { .reveal { animation: none; opacity: 1; transform: none; } }
+
+/* responsive */
+@media (max-width: 900px) {
+  body:has(.nav-menu[open]) { overflow: hidden; }
+  .hero { grid-template-columns: 1fr; gap: 2rem; padding-top: 2.5rem; }
+  .bento, .related, .cmp { grid-template-columns: 1fr; }
+  .metrics { grid-template-columns: 1fr 1fr; }
+  .chips, .usecases { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .nav-cta { display: none; }
+  .nav-menu { display: block; }
+}
+@media (max-width: 560px) {
+  .metrics, .vitals { grid-template-columns: 1fr; }
+  .flow-step { grid-template-columns: 1fr; gap: 0.4rem; }
+  .bar-row { grid-template-columns: 120px 1fr 44px; }
+}
+
+/* login link beside the Sign up nav button */
+.nav-login { color: var(--text-2); font-size: 0.9rem; transition: color 0.16s ease; }
+.nav-login:hover { color: var(--text); }
+.nav-cta { margin-left: 0.95rem; }
+}
+`
+
 function pageCss(): string {
   return [
     // The /compare/* tables, which declared this identically in eight pages.
     //
     // Only `.cmp-note` lives here. The column highlight is a `cmp-hl` shortcut
     // instead, because it has to beat `.cmp-cell { background: var(--surface) }`
-    // in public/marketing.css. That file is unlayered and everything returned
-    // from a preflight lands in `@layer tc-base`, and an unlayered rule wins
-    // over a layered one whatever the specificity. As a preflight the highlight
-    // silently stopped applying; as a shortcut it compiles to an unlayered
-    // utility and wins. Nothing competes with `.cmp-note`, so it is fine here.
+    // in the MARKETING block above. That rule was in public/marketing.css, an
+    // unlayered stylesheet, when this was written: a preflight lands in
+    // `@layer tc-base` and an unlayered rule wins over a layered one whatever
+    // the specificity, so as a preflight the highlight silently stopped
+    // applying. Both are layered now, but the shortcut still wins -- shortcuts
+    // compile to unlayered utilities -- so this stays as it is. Nothing
+    // competes with `.cmp-note`, so it is fine here.
     '.cmp-note { margin-top: 1rem; color: var(--text-3); font-size: 0.86rem; line-height: 1.55; max-width: 68ch; }',
 
     // components/AutofixPanel.stx. Every selector here is `.autofix-*`, unique to
@@ -307,12 +633,13 @@ function pageCss(): string {
 
     // views/index.stx: the hero code frame and the open-source band.
     //
-    // `.hero-code .code-bar` is NOT here. It differed from marketing.css's
-    // `.code-bar` only in gap (0.55 vs 0.6rem) and padding (0.8 vs 0.75rem),
-    // and marketing.css is unlayered, so as a preflight it would have lost and
-    // the hero would have silently taken the marketing values. Those two
-    // numbers are utilities on the element now and the rest of the rule, which
-    // was identical, is gone.
+    // `.hero-code .code-bar` is NOT here. It differed from the marketing
+    // sheet's `.code-bar` only in gap (0.55 vs 0.6rem) and padding (0.8 vs
+    // 0.75rem), and that sheet was unlayered when this was written, so as a
+    // preflight it would have lost and the hero would have silently taken the
+    // marketing values. Those two numbers are utilities on the element now,
+    // and utilities are unlayered, so they still win; the rest of the rule,
+    // which was identical, is gone.
     `
       .hero-code { border: 1px solid var(--border); border-radius: var(--r); background: var(--code-bg); overflow: hidden; }
       .hero-code .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--accent); }
@@ -1632,6 +1959,11 @@ export default {
   preflights: [
     { getCSS: paletteCss },
     { getCSS: pageCss },
+    // Scoped to the marketing layout group; the two above are site-wide.
+    // LAST, so where a name is declared in both this and pageCss -- `.reveal`
+    // is the only one -- the marketing value wins on these pages. It also wins
+    // on specificity, the prefix being more specific than a bare class.
+    { getCSS: () => MARKETING },
   ],
   preflight: true,
   minify: false,

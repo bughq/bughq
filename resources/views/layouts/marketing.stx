@@ -48,11 +48,17 @@ catch {
          adds them to this head, deduped on href and on inline script content.
          Re-adding them would emit a second copy on every marketing page.
 
-         /marketing.css does stay here rather than in the global head: it defines
-         :root, html, body, * and a, plus .btn / .panel / .mono / .reveal, which
-         the authenticated app pages also use. Globalising it would restyle the
-         app. Scoping it to this layout is what makes it safe. --}}
-    <link rel="stylesheet" href="/marketing.css">
+         /marketing.css used to be linked here rather than in the global head,
+         because it defines :root, html, body, * and a, plus .btn / .panel /
+         .mono / .reveal, which the authenticated app pages also use.
+         Globalising it would have restyled the app.
+
+         It is the MARKETING preflight in config/crosswind.ts now
+         (stx-standards rule 3, §11.2). The same constraint still decides its
+         shape: it is the one preflight there that is SCOPED, carrying
+         `html:has(meta[name="stx-layout-group"][content="marketing"])` so it
+         reaches this layout's pages and no others. Nothing replaces the link
+         here, because the generated sheet is injected by the renderer. --}}
     @stack('styles')
   </head>
   <body>
