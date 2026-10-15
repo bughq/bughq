@@ -94,9 +94,10 @@ describe('hoisted shared chrome', () => {
      * card-lift's hover, asserted because it once failed silently. The obvious
      * spelling, `hover:[border-color:…]`, parsed and produced no rule at all,
      * so the tiles kept their transition and lost the border they transition
-     * TO. Filed as stacksjs/ts-css#36, fixed in 0.3.14; this app resolves
-     * 0.3.12 today, and `hover:border-[color-mix(…)]` is what the shortcut
-     * uses either way.
+     * TO. Filed as stacksjs/ts-css#36 (generator, 0.3.14) and #37 (extractor,
+     * 0.3.16, which made the fix reachable from a build). This app resolves
+     * 0.3.16 now and that spelling does emit, but
+     * `hover:border-[color-mix(…)]` is what the shortcut uses either way.
      *
      * The assertion stays regardless of which spelling is in fashion. Only
      * /projects renders this, only when the account has an app, so nothing

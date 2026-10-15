@@ -416,12 +416,22 @@ function pageCss(): string {
      * list-style nor cursor through a utility.
      *
      * The second half is the shared HQ date-range picker, the same stylesheet
-     * loghq carries. It stays CSS for the reason it does there: every state is
-     * a compound selector the client script toggles (.drp-day.is-range,
-     * .range-tool.is-active), no utility says "this class AND that class", and
-     * the spelling that would, [&.is-range]:bg-accent, is dropped by this
-     * engine's extractor before it reaches the generator -- ts-css#37, fixed in
-     * 0.3.16, and this app resolves 0.3.15.
+     * loghq carries. Every state there is a compound selector the client script
+     * toggles (.drp-day.is-range, .range-tool.is-active) and no ordinary
+     * utility says "this class AND that class".
+     *
+     * The spelling that does, [&.is-range]:bg-accent, used to be dropped by
+     * the extractor before it reached the generator. **That is fixed**
+     * (ts-css#37, in 0.3.16, which this app now resolves). Measured through
+     * this app's own loader and merge, against this config:
+     *
+     *   [&.is-range]:bg-accent          -> .….is-range { background-color: var(--accent) }
+     *   [&.drp-day.is-range]:bg-accent  -> .….drp-day.is-range { … }
+     *
+     * So it is possible now, and the reason to keep CSS is a different one:
+     * this is ONE stylesheet shared with loghq, byte for byte, and splitting
+     * it into per-element utilities here would fork it. Keep it in sync rather
+     * than converting it alone.
      */
     `
 /* bughq - Space Grotesk display + JetBrains Mono for numerics/code.
@@ -1231,12 +1241,14 @@ export default {
      * arbitrary-property form, and that was once the only spelling that
      * worked: `hover:[border-color:…]` parsed and emitted NOTHING, because a
      * variant did not reach that form at all. Filed as stacksjs/ts-css#36 and
-     * fixed in **0.3.14**, which also fixed `focus:[…]` and `md:[…]`.
+     * fixed in **0.3.14** for the generator, then #37 in **0.3.16** for the
+     * extractor, which is what made the fix reachable from a real build. Both
+     * also cover `focus:[…]` and `md:[…]`.
      *
-     * This stays as it is. The app resolves ts-css through stx's caret range
-     * and currently lands on 0.3.12, where the arbitrary-property form is
-     * still dead, and `hover:border-[…]` is the more idiomatic spelling in any
-     * case. Changing it would buy nothing and could only break.
+     * This app resolves 0.3.16 now, and `hover:[border-color:red]` does emit
+     * here -- measured through this app's own loader. It stays as it is anyway:
+     * `hover:border-[…]` is the more idiomatic spelling and changing a working
+     * shortcut buys nothing.
      *
      * The habit the episode is worth keeping: both spellings parse, and the
      * broken one failed with no error and no rule. Measure a variant against
