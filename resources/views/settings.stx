@@ -165,15 +165,15 @@ const memberView = members.map(m => ({ id: m.id, email: m.email }))
  */
 function deliveryNote(i: InviteRow): string {
   if (i.delivery_status === 'failed')
-    return `Email could not be delivered${i.delivery_error ? ` — ${i.delivery_error}` : ''}. Copy the link and send it yourself.`
+    return `Email could not be delivered${i.delivery_error ? `: ${i.delivery_error}` : ''}. Copy the link and send it yourself.`
   // 'pending' covers two cases: a send still in flight (the endpoint stops
   // waiting after 8s), and every invite created before delivery was tracked at
   // all. Backfilling those to 'sent' would be inventing the exact data this
   // feature exists to stop inventing, so the wording is honest about not
   // knowing and points at the button that settles it.
   if (i.delivery_status === 'pending')
-    return 'Delivery not confirmed yet — resend to check.'
-  return i.registered ? 'Has an account — pending accept' : 'Invite sent — awaiting sign-up'
+    return 'Delivery not confirmed yet. Resend to check.'
+  return i.registered ? 'Has an account, pending accept' : 'Invite sent, awaiting sign-up'
 }
 const inviteView = invites.map(i => ({
   id: i.id,
@@ -438,7 +438,7 @@ function toggleReveal() {
 // field quotes the same code; the two have to keep saying the same thing.
 function rotateKey() {
   const ask = window.stxConfirm
-    ? window.stxConfirm('The current key stops working immediately — any SDK still sending it is rejected with 404 unknown project until you update its config. Continue?', { title: 'Rotate API key?', confirmText: 'Rotate key', cancelText: 'Cancel', type: 'warning' })
+    ? window.stxConfirm('The current key stops working immediately. Any SDK still sending it is rejected with 404 unknown project until you update its config. Continue?', { title: 'Rotate API key?', confirmText: 'Rotate key', cancelText: 'Cancel', type: 'warning' })
     // Refuses rather than falling back to window.confirm(), which §8.2
     // prohibits. This is a <script client>, so the stx runtime is loaded and
     // stxConfirm is defined; the branch is defensive only. If it ever were
@@ -1126,9 +1126,9 @@ function unarchive(): void {
                  nothing arrives until the project is unarchived. Same voice as
                  the archived notice in the danger zone below. --}}
             @if (activeProject.is_active === false)
-              <p class="text-sm text-subtle"><span class="text-muted mono">{{ activeProject?.name }}</span> is archived, so its ingest rejects every event with <span class="mono">project inactive</span> — installing this now captures nothing. Unarchive it in the danger zone below first.</p>
+              <p class="text-sm text-subtle"><span class="text-muted mono">{{ activeProject?.name }}</span> is archived, so its ingest rejects every event with <span class="mono">project inactive</span>. Installing this now captures nothing. Unarchive it in the danger zone below first.</p>
             @else
-              <p class="text-sm text-subtle">Wire bughq into <span class="text-muted mono">{{ activeProject?.name }}</span> to start capturing errors — they group into issues automatically.</p>
+              <p class="text-sm text-subtle">Wire bughq into <span class="text-muted mono">{{ activeProject?.name }}</span> to start capturing errors. They group into issues automatically.</p>
             @endif
             <Badge variant="primary" size="sm" className="shrink-0 badge-hq">{{ guide.label }}</Badge>
           </div>
@@ -1151,7 +1151,7 @@ function unarchive(): void {
         <div class="px-5 py-5 panel">
           <p class="mb-4 text-sm text-subtle">
             This key authorizes error reports for <span class="text-muted mono">{{ activeProject?.name }}</span>.
-            It's a public identifier (safe to ship in client code), not a secret — it says <em>which</em> project a report belongs to.
+            It's a public identifier (safe to ship in client code), not a secret: it says <em>which</em> project a report belongs to.
           </p>
           <div class="flex flex-wrap gap-2 items-center">
             <code :text="keyDisplay()" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm truncate field field-quiet mono" style="letter-spacing:0.01em">{{ keyMask }}</code>
@@ -1163,7 +1163,7 @@ function unarchive(): void {
                in the note above rotateKey: a retired key resolves to no project,
                so the ingest never reaches the key comparison that would 401. --}}
           <p class="mt-3.5 leading-relaxed text-subtle text-xs">
-            Rotating generates a new key and <span style="color: var(--warn)">invalidates the current one immediately</span> — any SDK still sending the old key is rejected with <span class="mono">404 unknown project</span> until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
+            Rotating generates a new key and <span style="color: var(--warn)">invalidates the current one immediately</span>. Any SDK still sending the old key is rejected with <span class="mono">404 unknown project</span> until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
           </p>
           @if (keyNote() && keyNote()?.ok)
             <span class="mt-2 text-xs note note-ok show" :text="noteText(keyNote())"></span>
@@ -1349,7 +1349,7 @@ function unarchive(): void {
               <button type="button" @click="chType.set('discord')" :data-sel="chType() === 'discord' ? '1' : '0'" class="px-3 py-2.5 font-medium text-sm seg seg-discord" data-sel="0">Discord</button>
             </div>
             <input name="webhook_url" type="url" aria-label="Webhook URL" class="mb-2 px-3.5 py-2.5 w-full text-sm field field-quiet mono" :placeholder="urlPlaceholder()" placeholder="https://hooks.slack.com/services/…" autocomplete="off" spellcheck="false">
-            <input name="label" type="text" aria-label="Channel label (optional)" class="mb-3 px-3.5 py-2.5 w-full text-sm field field-quiet" placeholder="Label (optional) — e.g. #alerts" maxlength="255">
+            <input name="label" type="text" aria-label="Channel label (optional)" class="mb-3 px-3.5 py-2.5 w-full text-sm field field-quiet" placeholder="Label (optional), e.g. #alerts" maxlength="255">
             <div class="flex gap-3 items-center">
               <Button type="submit" variant="ghost" :loading="adding()" className="btn-dz btn-solid">Add channel</Button>
               @if (whNote() && whNote()?.ok)
@@ -1388,7 +1388,7 @@ function unarchive(): void {
                 <p class="text-sm text-subtle"><span class="text-muted mono">{{ activeProject?.name }}</span> is archived and isn’t capturing new errors. Unarchiving resumes ingestion right away.</p>
               @else
                 <div class="mb-0.5 font-semibold text-sm">Archive this project</div>
-                <p class="text-sm text-subtle">Stops capturing new errors and pauses alerts for <span class="text-muted mono">{{ activeProject?.name }}</span>. Existing issues and events are kept — you can unarchive anytime.</p>
+                <p class="text-sm text-subtle">Stops capturing new errors and pauses alerts for <span class="text-muted mono">{{ activeProject?.name }}</span>. Existing issues and events are kept, and you can unarchive anytime.</p>
               @endif
             </div>
             @if (activeProject.is_active === false)
@@ -1428,7 +1428,7 @@ function unarchive(): void {
                  hint appeared. This way the row only exists when there is
                  something to say and nothing else moves. --}}
             @if (dzMismatch())
-              <span class="w-full text-subtle text-xs">Doesn't match yet — type the name exactly.</span>
+              <span class="w-full text-subtle text-xs">Doesn't match yet. Type the name exactly.</span>
             @endif
             <Button variant="ghost" type="button" @click="dzClose" className="bg-panel btn-dz btn-ghost">Cancel</Button>
             {{-- Static text as well as :text. The dialog markup is always in the

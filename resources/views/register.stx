@@ -159,7 +159,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
     </div>
 
     @if (isInvite)
-      <p class="mb-3.5 px-3 py-2.5 text-[13px] rounded-[9px] invite-hint">You've been invited to a project — sign up to join it.</p>
+      <p class="mb-3.5 px-3 py-2.5 text-[13px] rounded-[9px] invite-hint">You've been invited to a project. Sign up to join it.</p>
     @endif
 
     <form @submit="handleSubmit" class="space-y-4">

@@ -1036,11 +1036,11 @@ fetch('/api/me', { credentials: 'same-origin' })
           <div class="flex gap-1.5 items-center justify-end row-actions shrink-0 w-24">
             @if (issue.status !== 'resolved')
               <button @click="triage('{{ issue.id }}', 'resolved')" :disabled="triaging() === '{{ issue.id }}'"
-                class="act act-resolve" aria-label="Resolve" title="Resolve — alerts again only if it comes back">&#10003;</button>
+                class="act act-resolve" aria-label="Resolve" title="Resolve: alerts again only if it comes back">&#10003;</button>
             @endif
             @if (issue.status !== 'ignored')
               <button @click="triage('{{ issue.id }}', 'ignored')" :disabled="triaging() === '{{ issue.id }}'"
-                class="act act-ignore" aria-label="Ignore" title="Ignore — stays counted, never alerts">&#8856;</button>
+                class="act act-ignore" aria-label="Ignore" title="Ignore: stays counted, never alerts">&#8856;</button>
             @endif
             @if (issue.status !== 'unresolved')
               <button @click="triage('{{ issue.id }}', 'unresolved')" :disabled="triaging() === '{{ issue.id }}'"
@@ -1051,11 +1051,11 @@ fetch('/api/me', { credentials: 'same-origin' })
                  bookkeeping per row, and works before hydration. --}}
             @if (issue.snoozed_until && snoozeLeft(issue.snoozed_until))
               <button @click="wake('{{ issue.id }}')" :disabled="triaging() === '{{ issue.id }}'"
-                class="act act-wake" aria-label="Wake now" title="Wake now — back to Unresolved">&#9200;</button>
+                class="act act-wake" aria-label="Wake now" title="Wake now: back to Unresolved">&#9200;</button>
             @endif
             @if (!snoozeLeft(issue.snoozed_until))
               <details class="snooze-wrap">
-                <summary class="act act-snooze" aria-label="Snooze" title="Snooze — hide until later, keeps counting">&#9925;</summary>
+                <summary class="act act-snooze" aria-label="Snooze" title="Snooze: hide until later, keeps counting">&#9925;</summary>
                 <div class="snooze-menu">
                   <button @click="snooze('{{ issue.id }}', '1h')" class="snooze-opt">1 hour</button>
                   <button @click="snooze('{{ issue.id }}', '4h')" class="snooze-opt">4 hours</button>
@@ -1074,7 +1074,7 @@ fetch('/api/me', { credentials: 'same-origin' })
           @if (!sdkSeenAt && !everCaptured)
             <div class="mb-1 font-medium text-base">No client has connected yet</div>
             <div class="mb-4 text-sm text-subtle">
-              Nothing from this app has ever reached bughq — not an error, not even a check-in.
+              Nothing from this app has ever reached bughq: not an error, not even a check-in.
               That usually means the SDK has not shipped, or is running with a different key.
             </div>
             <StxLink to="/settings?project={{ projectId }}#install" class="px-4 py-1.5 font-medium text-accent text-sm border border-line pill">Installation instructions</StxLink>
@@ -1150,7 +1150,7 @@ fetch('/api/me', { credentials: 'same-origin' })
              picks one; stx cloaks a directive-hidden element until then, so
              neither flashes. --}}
         <p class="text-sm text-subtle" @if="invitesShowing()">Accept an invitation above to get started, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
-        <p class="text-sm text-subtle" @if="!invitesShowing()">Dismissed for this visit only — reload to bring {{ pendingInviteCount === 1 ? 'the invitation' : 'them' }} back, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
+        <p class="text-sm text-subtle" @if="!invitesShowing()">Dismissed for this visit only. Reload to bring {{ pendingInviteCount === 1 ? 'the invitation' : 'them' }} back, or <StxLink to="/projects/new" class="text-accent">create your own app</StxLink>.</p>
       </div>
     @endif
 
