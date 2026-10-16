@@ -23,26 +23,26 @@ useSeoMeta({
       </section>
 
       <section class="reveal section shell" aria-label="Fingerprint grouping preview">
-        <div class="panel" style="max-width: 640px">
+        <div class="panel max-w-[640px]">
           <div class="panel-head"><span class="chart-cap">Top issues by event count</span><span class="panel-tag">Sample data</span></div>
           <div class="bar-row">
             <span class="bar-label">TypeError: cart is undefined</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 100%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[100%]"></span></span>
             <span class="bar-value">4213</span>
           </div>
           <div class="bar-row">
             <span class="bar-label">Timeout: /api/checkout</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 45%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[45%]"></span></span>
             <span class="bar-value">1897</span>
           </div>
           <div class="bar-row">
             <span class="bar-label">Failed to parse token</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 15%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[15%]"></span></span>
             <span class="bar-value">642</span>
           </div>
           <div class="bar-row">
             <span class="bar-label">RangeError: invalid date</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 5%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[5%]"></span></span>
             <span class="bar-value">208</span>
           </div>
         </div>

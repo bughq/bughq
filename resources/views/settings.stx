@@ -1079,7 +1079,7 @@ function unarchive(): void {
     @if (user && activeProject)
       <div class="mb-6">
         <div class="flex flex-wrap gap-3 items-center">
-          <h2 class="font-semibold text-xl" style="letter-spacing:-0.02em">Settings</h2>
+          <h2 class="font-semibold text-xl tracking-[-0.02em]">Settings</h2>
           @if (projects.length > 1)
             <select @change="switchProject" aria-label="Switch project" class="px-3 py-1.5 text-muted text-sm mono panel">
               @foreach (projects as p)
@@ -1139,7 +1139,7 @@ function unarchive(): void {
             </div>
           @endif
           <div class="relative">
-            <div class="code-block" style="white-space: pre">{{ guide.code }}</div>
+            <div class="code-block [white-space:pre]">{{ guide.code }}</div>
             <button type="button" class="copy-btn" @click="copyCode" :text="copyLabel('code')">Copy</button>
           </div>
         </div>
@@ -1154,7 +1154,7 @@ function unarchive(): void {
             It's a public identifier (safe to ship in client code), not a secret: it says <em>which</em> project a report belongs to.
           </p>
           <div class="flex flex-wrap gap-2 items-center">
-            <code :text="keyDisplay()" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm truncate field field-quiet mono" style="letter-spacing:0.01em">{{ keyMask }}</code>
+            <code :text="keyDisplay()" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm tracking-[0.01em] truncate field field-quiet mono">{{ keyMask }}</code>
             <button @click="toggleReveal" :text="revealed() ? 'Hide' : 'Reveal'" class="px-3 py-2 font-medium text-sm bg-panel btn-ghost">Reveal</button>
             <button @click="copyText('key', currentKey())" :text="copyLabel('key')" class="px-3 py-2 font-medium text-sm bg-panel btn-ghost">Copy</button>
             <Button variant="ghost" @click="rotateKey" :loading="rotating()" className="btn-danger btn-sm">Rotate</Button>
@@ -1163,7 +1163,7 @@ function unarchive(): void {
                in the note above rotateKey: a retired key resolves to no project,
                so the ingest never reaches the key comparison that would 401. --}}
           <p class="mt-3.5 leading-relaxed text-subtle text-xs">
-            Rotating generates a new key and <span style="color: var(--warn)">invalidates the current one immediately</span>. Any SDK still sending the old key is rejected with <span class="mono">404 unknown project</span> until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
+            Rotating generates a new key and <span class="text-[var(--warn)]">invalidates the current one immediately</span>. Any SDK still sending the old key is rejected with <span class="mono">404 unknown project</span> until you update its config (<span class="mono">BUGHQ_KEY</span> / <span class="mono">data-key</span>).
           </p>
           @if (keyNote() && keyNote()?.ok)
             <span class="mt-2 text-xs note note-ok show" :text="noteText(keyNote())"></span>
@@ -1200,7 +1200,7 @@ function unarchive(): void {
           @if (tokenView.length)
             <div class="mt-4">
               @foreach (tokenView as t)
-                <div class="flex gap-3 items-center justify-between py-2 text-sm" style="border-top:1px solid var(--border)">
+                <div class="flex gap-3 items-center justify-between py-2 text-sm border-t border-line">
                   <span><span class="text-muted">{{ t.name }}</span> <span class="text-subtle mono">{{ t.prefix }}</span></span>
                   <span class="text-subtle text-xs">{{ t.revoked ? 'revoked' : `last used ${t.used}` }}</span>
                   @if (!t.revoked)
@@ -1213,7 +1213,7 @@ function unarchive(): void {
           @if (debugFileView.length)
             <div class="mb-1 mt-5 text-muted text-xs">Recent uploads</div>
             @foreach (debugFileView as f)
-              <div class="flex gap-3 justify-between py-1.5 text-xs" style="border-top:1px solid var(--border)">
+              <div class="flex gap-3 justify-between py-1.5 text-xs border-t border-line">
                 <span class="truncate mono">{{ f.label }}</span>
                 <span class="shrink-0 text-subtle">{{ f.symbols }} symbols, {{ f.at }}</span>
               </div>
@@ -1241,7 +1241,7 @@ function unarchive(): void {
           </div>
           @foreach (memberView as m)
             <div class="flex gap-3.5 items-center px-4 py-3.5 panel" @if="!gone().includes('{{ m.id }}')">
-              <span class="grid place-items-center shrink-0 h-8 w-8 font-semibold text-muted rounded-lg" style="background: color-mix(in srgb, var(--text-3) 16%, var(--panel))">{{ (m.email || '?').charAt(0).toUpperCase() }}</span>
+              <span class="grid place-items-center shrink-0 h-8 w-8 font-semibold text-muted bg-[color-mix(in_srgb,var(--text-3)_16%,var(--panel))] rounded-lg">{{ (m.email || '?').charAt(0).toUpperCase() }}</span>
               <div class="flex-1 min-w-0">
                 <div class="font-medium text-sm truncate">{{ m.email }}</div>
                 <div class="mt-0.5 text-subtle text-xs">Can view &amp; triage issues</div>
@@ -1252,7 +1252,7 @@ function unarchive(): void {
           @endforeach
           @foreach (inviteView as i)
             <div class="flex gap-3.5 items-center px-4 py-3.5 panel" @if="!gone().includes('{{ i.id }}')">
-              <span class="grid place-items-center shrink-0 h-8 w-8 font-semibold text-subtle rounded-lg" style="background: color-mix(in srgb, var(--text-3) 12%, var(--panel))">{{ (i.email || '?').charAt(0).toUpperCase() }}</span>
+              <span class="grid place-items-center shrink-0 h-8 w-8 font-semibold text-subtle bg-[color-mix(in_srgb,var(--text-3)_12%,var(--panel))] rounded-lg">{{ (i.email || '?').charAt(0).toUpperCase() }}</span>
               <div class="flex-1 min-w-0">
                 <div class="font-medium text-sm truncate">{{ i.email }}</div>
                 <div class="text-xs mt-0.5 {{ i.failed ? 'note-failed' : 'text-subtle' }}">{{ i.note }}</div>
@@ -1378,7 +1378,7 @@ function unarchive(): void {
 
       <!-- ============================ DANGER ============================ -->
       <section id="danger" class="mb-6 sec">
-        <div class="mb-3 sec-title" style="color: var(--warn)">Danger zone</div>
+        <div class="mb-3 !text-[var(--warn)] sec-title">Danger zone</div>
         <div class="danger-panel panel">
           <!-- Archive / Unarchive -->
           <div class="flex gap-4 items-center justify-between px-5 py-4">

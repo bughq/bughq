@@ -53,7 +53,7 @@ useSeoMeta({
       </section>
 
       <section class="reveal section shell" aria-label="Install and initialize">
-        <div class="code" style="max-width: 700px">
+        <div class="code max-w-[700px]">
           <div class="code-bar"><span class="chart-cap">install and initialize</span></div>
           <pre class="code-body"><code># install
 bun add @bughq/sdk

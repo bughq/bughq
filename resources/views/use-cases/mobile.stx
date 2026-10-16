@@ -23,26 +23,26 @@ useSeoMeta({
       </section>
 
       <section class="reveal section shell" aria-label="Crashes by release">
-        <div class="panel" style="max-width: 640px">
+        <div class="panel max-w-[640px]">
           <div class="panel-head"><span class="chart-cap">Crash-free sessions, by release</span><span class="panel-tag">Sample data</span></div>
           <div class="bar-row">
             <span class="bar-label">4.3.0</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 27%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[27%]"></span></span>
             <span class="bar-value">96.4%</span>
           </div>
           <div class="bar-row">
             <span class="bar-label">4.2.1</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 96%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[96%]"></span></span>
             <span class="bar-value">99.7%</span>
           </div>
           <div class="bar-row">
             <span class="bar-label">4.2.0</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 90%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[90%]"></span></span>
             <span class="bar-value">99.3%</span>
           </div>
           <div class="bar-row">
             <span class="bar-label">4.1.4</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 93%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[93%]"></span></span>
             <span class="bar-value">99.5%</span>
           </div>
         </div>

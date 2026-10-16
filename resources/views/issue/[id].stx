@@ -640,7 +640,7 @@ function copyStack() {
     one line is all it takes to put the page on --sans like every other. --}}
 
 <div class="px-4 py-6 md:px-8 md:py-8 min-h-screen issue-root">
-  <div class="mx-auto" style="max-width: 78rem">
+  <div class="mx-auto max-w-[78rem]">
 
     <div class="flex gap-3 items-center justify-between mb-5">
       {{-- StxLink, not a plain anchor. interceptAllLinks is false (config/ui.ts:96),
@@ -691,7 +691,7 @@ function copyStack() {
             <span class="pill st-{{ status }}">{{ status }}</span>
             <span class="text-subtle text-xs">Last seen {{ lastSeenAgo }}</span>
           </div>
-          <h1 class="break-words mono" style="font-size:1.7rem; line-height:1.15; font-weight:800; letter-spacing:-0.01em">{{ issue.error_type || 'Error' }}</h1>
+          <h1 class="break-words text-[1.7rem] leading-[1.15] font-extrabold tracking-[-0.01em] mono">{{ issue.error_type || 'Error' }}</h1>
           <p class="mt-2.5 break-words text-base text-ink md:text-lg">{{ (latest && latest.message) || issue.title }}</p>
           @if (issue.culprit)
             <p class="mt-2.5 text-subtle text-xs truncate mono">{{ issue.culprit }}</p>
@@ -722,7 +722,7 @@ function copyStack() {
       <AutofixPanel issueId="{{ issueId }}" projectId="{{ projectId }}" />
 
       <!-- Two-column: stack + breadcrumbs (main), context (sidebar) -->
-      <div class="grid gap-5 items-start" style="grid-template-columns: minmax(0,1fr)">
+      <div class="grid grid-cols-[minmax(0,1fr)] gap-5 items-start">
         <div class="grid gap-5 items-start lg:grid-cols-[minmax(0,1fr)_20rem]">
 
           <!-- MAIN COLUMN — a div, not a main element: this is one grid column
@@ -735,22 +735,22 @@ function copyStack() {
                the count unbalanced, the extractor gave up and returned the whole
                document, and the router (trusting X-STX-Fragment) injected that
                document's head and body into the live main element. -->
-          <div class="grid gap-5 items-start min-w-0" style="grid-auto-rows:min-content">
+          <div class="grid [grid-auto-rows:min-content] gap-5 items-start min-w-0">
 
             @if (exceptions.length)
               <section class="overflow-hidden card">
-                <div class="card-head" style="justify-content:space-between">
+                <div class="card-head justify-between">
                   <span>Stack trace</span>
-                  <button type="button" class="btn-copy" @click="copyStack" style="padding:.25rem .55rem">{{ copyLabel() }}</button>
+                  <button type="button" class="btn-copy !px-[.55rem] !py-1" @click="copyStack">{{ copyLabel() }}</button>
                 </div>
                 @if (missingSymbols.length)
-                  <div class="px-3 py-2 text-subtle text-xs" style="border-bottom:1px solid var(--border)">
+                  <div class="px-3 py-2 text-subtle text-xs border-b border-line">
                     Some frames are addresses because these symbols were not uploaded yet: <span class="mono">{{ missingSymbols.join(', ') }}</span>. See <a href="/docs/capture/stacks-mobile#symbols">uploading symbols</a>.
                   </div>
                 @endif
-                <div style="padding:.5rem">
+                <div class="p-2">
                   @foreach (exceptions as ex)
-                    <div class="card exc" style="border-color:var(--border-2); box-shadow:none">
+                    <div class="card exc !border-[var(--border-2)] shadow-none">
                       @if (ex.isCause)
                         <!-- Cause-chain exceptions aren't in the page header, so
                              they still lead with their own type + message. The
@@ -829,7 +829,7 @@ function copyStack() {
             <section class="overflow-hidden card">
               <div class="card-head">Recent events <span class="text-muted">{{ events.length }}</span></div>
               @forelse (events as ev)
-                <div class="flex gap-3 items-center px-4 py-2.5" style="border-top:1px solid var(--border-2)">
+                <div class="flex gap-3 items-center px-4 py-2.5 border-t border-[var(--border-2)]">
                   <span class="shrink-0 rounded-full" style="width:7px; height:7px; background: {{ levelColor(ev.severity) }}; box-shadow: 0 0 8px color-mix(in srgb, {{ levelColor(ev.severity) }} 60%, transparent)"></span>
                   <div class="flex-1 min-w-0">
                     <div class="text-sm truncate {{ ev.url ? '' : 'mono' }}" title="{{ ev.url || ev.id }}">{{ ev.url || shortEventId(ev.id) }}</div>
@@ -848,7 +848,7 @@ function copyStack() {
           </div>
 
           <!-- SIDEBAR -->
-          <aside class="grid gap-5 items-start min-w-0" style="grid-auto-rows:min-content">
+          <aside class="grid [grid-auto-rows:min-content] gap-5 items-start min-w-0">
 
             <section class="overflow-hidden card">
               <div class="card-head">Event</div>
@@ -909,14 +909,14 @@ function copyStack() {
               <section class="overflow-hidden card">
                 <div class="card-head">{{ ctx.name }}</div>
                 @forelse (ctx.rows as r)
-                  <dl class="kv" style="padding-top:.6rem; padding-bottom:.2rem">
+                  <dl class="kv !pt-[.6rem] !pb-[.2rem]">
                     <dt>{{ r.k }}</dt>
                     <dd>{{ r.v }}</dd>
                   </dl>
                 @empty
                   <div class="px-4 py-3 text-subtle text-xs mono">empty</div>
                 @endforelse
-                <div style="height:.6rem"></div>
+                <div class="h-[.6rem]"></div>
               </section>
             @endforeach
 

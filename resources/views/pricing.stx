@@ -58,7 +58,7 @@ useSeoMeta({
         <p>Start free. Upgrade when you outgrow it. Self-host free forever.</p>
         <div class="inline-flex gap-1 items-center mt-6 p-1 text-sm border border-line border-solid rounded-pill">
           <button @click="pick('monthly')" :class="interval() === 'monthly' ? 'px-4 py-1.5 font-medium rounded-pill border-none cursor-pointer bg-accent text-accent-ink' : 'px-4 py-1.5 font-medium rounded-pill border-none cursor-pointer bg-transparent text-muted'">Monthly</button>
-          <button @click="pick('yearly')" :class="interval() === 'yearly' ? 'px-4 py-1.5 font-medium rounded-pill border-none cursor-pointer bg-accent text-accent-ink' : 'px-4 py-1.5 font-medium rounded-pill border-none cursor-pointer bg-transparent text-muted'">Yearly <span style="opacity:.8">-17%</span></button>
+          <button @click="pick('yearly')" :class="interval() === 'yearly' ? 'px-4 py-1.5 font-medium rounded-pill border-none cursor-pointer bg-accent text-accent-ink' : 'px-4 py-1.5 font-medium rounded-pill border-none cursor-pointer bg-transparent text-muted'">Yearly <span class="opacity-80">-17%</span></button>
         </div>
       </section>
 

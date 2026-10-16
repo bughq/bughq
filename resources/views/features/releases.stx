@@ -23,7 +23,7 @@ useSeoMeta({
       </section>
 
       <section class="reveal section shell" aria-label="Releases and environments preview">
-        <div class="code" style="max-width: 700px">
+        <div class="code max-w-[700px]">
           <div class="code-bar"><span class="chart-cap">Tag events with a release and environment</span></div>
           <pre class="code-body"><code>bughq.init({
   key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',

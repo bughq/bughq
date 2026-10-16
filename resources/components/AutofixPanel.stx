@@ -290,15 +290,15 @@ loadAutofix(true)
   </div>
 
   <div :class="loadingClass()" aria-busy="true">
-    <div class="autofix-skeleton" style="width:42%"></div>
-    <div class="autofix-skeleton" style="width:76%"></div>
-    <div class="autofix-skeleton" style="width:61%"></div>
+    <div class="autofix-skeleton w-[42%]"></div>
+    <div class="autofix-skeleton w-[76%]"></div>
+    <div class="autofix-skeleton w-[61%]"></div>
   </div>
 
   <div :class="disabledClass()" class="text-muted">AI Autofix is disabled in the server configuration.</div>
 
   <div :class="repositorySetupClass()">
-    <p :class="repositoryFieldsClass()" style="color:var(--text-2); font-size:.875rem; margin:0 0 .75rem">Connect the repository that produced this issue. BugHQ reads only the files selected for analysis and opens a draft pull request.</p>
+    <p class="mt-0 mx-0 mb-3 text-muted text-[.875rem]" :class="repositoryFieldsClass()">Connect the repository that produced this issue. BugHQ reads only the files selected for analysis and opens a draft pull request.</p>
     <div :class="repositoryFieldsClass()">
       <div class="autofix-fields">
         <div class="autofix-field">
@@ -365,7 +365,7 @@ loadAutofix(true)
       </summary>
       <div class="autofix-detail">
         <a :class="pullRequestLinkClass()" :href="currentPullRequestUrl()" target="_blank" rel="noopener noreferrer"><i class="h-4 w-4 i-hugeicons-git-pull-request"></i> Review pull request</a>
-        <div :class="pullRequestLinkClass()" aria-label="Autofix branch" style="display:block; padding:.5rem 0 0; color:var(--text-3); font-family:var(--mono); font-size:.75rem"><span class="autofix-value" :data-value="currentBranchName()"></span></div>
+        <div class="autofix-branch" :class="pullRequestLinkClass()" aria-label="Autofix branch"><span class="autofix-value" :data-value="currentBranchName()"></span></div>
         <span :class="pullRequestWaitingClass()">The draft pull request will stay unmerged until a human reviews it.</span>
       </div>
     </details>

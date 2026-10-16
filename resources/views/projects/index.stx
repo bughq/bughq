@@ -129,7 +129,7 @@ async function logout() {
     @if (user)
       @forelse (projects as p)
         <StxLink to="/dashboard?project={{ p.id }}" class="flex gap-4 items-center mb-3 px-5 py-4 card-lift panel">
-          <span class="flex items-center justify-center shrink-0 h-9 w-9 font-semibold rounded-lg" style="background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--accent)">{{ (p.name || '?').charAt(0).toUpperCase() }}</span>
+          <span class="flex items-center justify-center shrink-0 h-9 w-9 font-semibold text-accent bg-[color-mix(in_srgb,var(--accent)_14%,var(--panel))] rounded-lg">{{ (p.name || '?').charAt(0).toUpperCase() }}</span>
           <div class="flex-1 min-w-0">
             <div class="font-semibold truncate">{{ p.name }}</div>
             <div class="flex flex-wrap gap-2 items-center mt-0.5 text-subtle text-xs">

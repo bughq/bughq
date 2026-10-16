@@ -23,7 +23,7 @@ useSeoMeta({
       </section>
 
       <section class="reveal section shell" aria-label="Readable stack traces preview">
-        <div class="code" style="max-width: 700px">
+        <div class="code max-w-[700px]">
           <div class="code-bar"><span class="chart-cap">A frame, before and after the source map</span></div>
           <pre class="code-body"><code>// what production throws
 at t (/assets/app.4f2a.js:1:88214)

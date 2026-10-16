@@ -81,7 +81,7 @@ useSeoMeta({
           </div>
         </div>
 
-        <div class="hero-code reveal" style="animation-delay: 0.08s">
+        <div class="hero-code reveal ![animation-delay:0.08s]">
           <div class="code-bar gap-[0.55rem] py-[0.8rem]">
             <span class="dot" aria-hidden="true"></span>
             <span class="chart-cap">app/error-boundary.ts</span>

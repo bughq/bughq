@@ -825,7 +825,7 @@ fetch('/api/me', { credentials: 'same-origin' })
            classList sniffing to work out which button was hit. --}}
       <div class="mb-7">
         @foreach (pendingInvites as inv)
-          <div class="flex flex-wrap gap-3 items-center mb-2.5 px-5 py-3.5 panel" style="border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, var(--panel))" @if="!dismissed().includes('{{ inv.token }}')">
+          <div class="flex flex-wrap gap-3 items-center mb-2.5 px-5 py-3.5 panel !border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] !bg-[color-mix(in_srgb,var(--accent)_6%,var(--panel))]" @if="!dismissed().includes('{{ inv.token }}')">
             <span class="text-sm">🎉 You've been invited to <span class="font-semibold">{{ inv.project_name }}</span>.</span>
             <div class="flex gap-2 items-center ml-auto">
               <Button variant="ghost" @click="joinInvite('{{ inv.token }}')" :loading="joining() === '{{ inv.token }}'" className="btn-join">Join</Button>
@@ -968,7 +968,7 @@ fetch('/api/me', { credentials: 'same-origin' })
               @if (issue.unread)
                 <span class="shrink-0 unread-dot" aria-label="Unread"></span>
               @endif
-              <div class="truncate {{ issue.unread ? 'font-bold' : 'font-medium' }}" style="letter-spacing: -0.01em">{{ issue.title }}</div>
+              <div class="truncate tracking-[-0.01em] {{ issue.unread ? 'font-bold' : 'font-medium' }}">{{ issue.title }}</div>
               {{-- A count, not just a boolean. In week four a chronically
                    firing issue is permanently bold and plain boldness has
                    decayed into "this is alive"; "+18" still says something. --}}
@@ -1024,7 +1024,7 @@ fetch('/api/me', { credentials: 'same-origin' })
               <span class="tabular-nums text-subtle mono">{{ Number(issue.users_affected).toLocaleString() }}</span>
             @endif
             @if (issue.users_affected === 0)
-              <span class="text-subtle" style="opacity: .35">&mdash;</span>
+              <span class="text-subtle opacity-[.35]">&mdash;</span>
             @endif
           </div>
           <div class="hidden sm:block shrink-0 w-20 text-right">
@@ -1108,13 +1108,13 @@ fetch('/api/me', { credentials: 'same-origin' })
             @if (pager.hasPrev)
               <StxLink to="{{ pager.prevHref }}" class="px-3 py-1.5 font-medium text-muted text-xs border border-line pill">&larr; Prev</StxLink>
             @else
-              <span class="px-3 py-1.5 font-medium text-subtle text-xs border border-line pill" style="opacity: 0.45">&larr; Prev</span>
+              <span class="px-3 py-1.5 font-medium text-subtle text-xs border border-line opacity-45 pill">&larr; Prev</span>
             @endif
             <span class="tabular-nums text-subtle text-xs mono">{{ pager.page }} / {{ pager.pages }}</span>
             @if (pager.hasNext)
               <StxLink to="{{ pager.nextHref }}" class="px-3 py-1.5 font-medium text-muted text-xs border border-line pill">Next &rarr;</StxLink>
             @else
-              <span class="px-3 py-1.5 font-medium text-subtle text-xs border border-line pill" style="opacity: 0.45">Next &rarr;</span>
+              <span class="px-3 py-1.5 font-medium text-subtle text-xs border border-line opacity-45 pill">Next &rarr;</span>
             @endif
           </div>
         </div>
@@ -1130,7 +1130,7 @@ fetch('/api/me', { credentials: 'same-origin' })
         @foreach (releaseHealth as r)
           <div class="flex gap-4 items-center px-5 py-3 text-sm border-b border-line">
             <span class="w-28 truncate mono" title="{{ r.release }}">{{ r.release }}</span>
-            <span class="flex-1 h-1.5 rounded-full" style="background: var(--border)">
+            <span class="flex-1 h-1.5 rounded-full bg-[var(--border)]">
               <span class="block h-1.5 rounded-full" style="width: {{ r.width }}%; background: {{ r.tone }}"></span>
             </span>
             <span class="w-16 text-right mono">{{ r.crashFree }}</span>

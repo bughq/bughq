@@ -570,6 +570,15 @@ function pageCss(): string {
     // page that renders it, declares its own unlayered `.btn` with !important.
     `
 .autofix-hidden { display:none !important; }
+/* The branch name under an opened pull request. It shares pullRequestLinkClass()
+   with the Review button, so it arrives wearing .btn and has to undo most of
+   it: the inline style that used to do that overrode five of .btn's
+   declarations. A rule rather than utilities because both ends are ties --
+   a utility would tie with .btn, and an important utility would tie with
+   .autofix-hidden above. Sitting after .btn it wins on order, and it still
+   loses to that important, so the element hides exactly as it did.
+   No backticks in here: this block is inside a template literal. */
+.autofix-branch { display:block; padding:.5rem 0 0; color:var(--text-3); font-family:var(--mono); font-size:.75rem; }
 /* AI Autofix */
 .autofix-card { width:100%; min-width:0; overflow:hidden; background:var(--panel); border:1px solid var(--border); border-radius:14px; }
 .autofix-top { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.1rem; border-bottom:1px solid var(--border-2); }
@@ -1925,6 +1934,53 @@ export default {
    * all, on any page, signed in or not.
    */
   safelist: [
+    /*
+     * The utilities that replaced inline style attributes on the session-gated
+     * pages (stx-standards 11.5).
+     *
+     * Reachability was measured per page, not assumed: account.stx's avatar and
+     * skeleton sit OUTSIDE its @if (user ...) and are extracted normally, so
+     * nothing of theirs is listed here. dashboard, issue/[id], projects/index
+     * and settings render a loading shell with no session and none of these
+     * appear, so without the safelist each one would be a class that exists in
+     * the markup and in no stylesheet -- which is worse than the inline
+     * declaration it replaced, because the inline one always applied.
+     */
+    '!bg-[color-mix(in_srgb,var(--accent)_6%,var(--panel))]',
+    '!border-[color-mix(in_srgb,var(--accent)_45%,var(--border))]',
+    'bg-[var(--border)]',
+    'opacity-[.35]',
+    'opacity-45',
+    'tracking-[-0.01em]',
+    '!border-[var(--border-2)]',
+    '!pb-[.2rem]',
+    '!pt-[.6rem]',
+    '!px-[.55rem]',
+    '!py-1',
+    '[grid-auto-rows:min-content]',
+    'border-[var(--border-2)]',
+    'border-b',
+    'border-line',
+    'border-t',
+    'font-extrabold',
+    'grid-cols-[minmax(0,1fr)]',
+    'h-[.6rem]',
+    'justify-between',
+    'leading-[1.15]',
+    'max-w-[78rem]',
+    'p-2',
+    'shadow-none',
+    'text-[1.7rem]',
+    'bg-[color-mix(in_srgb,var(--accent)_14%,var(--panel))]',
+    'text-accent',
+    '!text-[var(--warn)]',
+    '[white-space:pre]',
+    'bg-[color-mix(in_srgb,var(--text-3)_12%,var(--panel))]',
+    'bg-[color-mix(in_srgb,var(--text-3)_16%,var(--panel))]',
+    'text-[var(--warn)]',
+    'tracking-[-0.02em]',
+    'tracking-[0.01em]',
+
     'btn-solid',
     'btn-outline',
     'btn-autofix',

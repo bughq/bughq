@@ -125,14 +125,14 @@ fetch('/api/me', { credentials: 'same-origin' })
           `@error` here would render as an inert attribute and never fire.
         -->
         <div class="relative shrink-0 h-14 w-14">
-          <div class="grid place-items-center h-14 w-14 text-accent avatar" style="font-weight: 700; font-size: 1.25rem">{{ user() ? initial(user()?.name || user()?.email) : '' }}</div>
+          <div class="grid place-items-center h-14 w-14 font-bold text-[1.25rem] text-accent avatar">{{ user() ? initial(user()?.name || user()?.email) : '' }}</div>
           @if (user()?.avatar)
             <img class="absolute inset-0 h-14 w-14 avatar" :src="user()?.avatar" alt="" width="56" height="56" onerror="this.hidden = true">
           @endif
         </div>
         <div class="min-w-0">
           @if (!user())
-            <div class="skeleton" style="width: 160px; height: 20px"></div>
+            <div class="skeleton w-[160px] h-[20px]"></div>
           @endif
           @if (user())
             <div class="font-semibold text-lg">{{ user()?.name || 'Your account' }}</div>
@@ -148,7 +148,7 @@ fetch('/api/me', { credentials: 'same-origin' })
     <section class="mb-5 card">
       <div class="flex items-center justify-between px-6 py-4">
         <div>
-          <div class="text-subtle text-xs tracking-wide uppercase" style="font-family: var(--mono)">Plan</div>
+          <div class="text-subtle text-xs tracking-wide uppercase mono">Plan</div>
           <div class="mt-1 font-semibold text-base">
             {{ pro() ? 'Pro' : 'Free' }}
             @if (pro())
@@ -165,7 +165,7 @@ fetch('/api/me', { credentials: 'same-origin' })
       </div>
       <div class="flex items-center justify-between row-rule px-6 py-4">
         <div>
-          <div class="text-subtle text-xs tracking-wide uppercase" style="font-family: var(--mono)">Member since</div>
+          <div class="text-subtle text-xs tracking-wide uppercase mono">Member since</div>
           <div class="mt-1 text-base text-muted">{{ fmtDate(user()?.created_at) }}</div>
         </div>
         <StxLink to="/dashboard" class="px-4 py-2 font-semibold text-sm active:translate-y-px btn-ghost">Open dashboard</StxLink>

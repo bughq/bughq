@@ -23,26 +23,26 @@ useSeoMeta({
       </section>
 
       <section class="reveal section shell" aria-label="Alerts by reason">
-        <div class="panel" style="max-width: 640px">
+        <div class="panel max-w-[640px]">
           <div class="panel-head"><span class="chart-cap">This week, by alert reason</span><span class="panel-tag">Sample data</span></div>
           <div class="bar-row">
             <span class="bar-label">New issue</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 62%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[62%]"></span></span>
             <span class="bar-value">14</span>
           </div>
           <div class="bar-row">
             <span class="bar-label">Spike</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 33%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[33%]"></span></span>
             <span class="bar-value">7</span>
           </div>
           <div class="bar-row">
             <span class="bar-label">Regression</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 19%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[19%]"></span></span>
             <span class="bar-value">4</span>
           </div>
           <div class="bar-row">
             <span class="bar-label">Reopened</span>
-            <span class="bar-track"><span class="bar-fill" style="width: 9%"></span></span>
+            <span class="bar-track"><span class="bar-fill w-[9%]"></span></span>
             <span class="bar-value">2</span>
           </div>
         </div>
