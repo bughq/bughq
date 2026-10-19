@@ -314,7 +314,7 @@ const projectName = activeProject?.name || ''
 // bridge escapes `<` to < on the way out (see the long note above) — and
 // naming them makes it explicit which values carry that hazard rather than
 // leaving it to whoever next reads the client block.
-defineClientPayload({ channelEnabled, codeText, installText, inviteEmails, justRotated, keyFull, keyMask, projectId, projectName })
+defineClientPayload({ channelEnabled, codeText, hasReadKeyInitial, installText, inviteEmails, justRotated, keyFull, keyMask, projectId, projectName, readKeyUsedInitial })
 </script>
 
 <script client>
