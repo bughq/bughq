@@ -86,10 +86,16 @@ jobs:
       # and Phase A took that to 0 — so errors are now load-bearing and fail the
       # build.
       #
-      # --lib is required and must be a SINGLE file: the checker does not read
-      # ambient types from tsconfig `include`, and repeating the flag silently
-      # drops all but the last (stacksjs/stx#1926). That is why the SSR globals
-      # share types/domain.d.ts instead of living in a file of their own.
+      # --lib is required, because the checker does not read ambient types from
+      # tsconfig `include`. It may be REPEATED: stacksjs/stx#1926, where all but
+      # the last flag were silently dropped, is fixed. Verified on this repo's
+      # own installed stx (0.2.520) with two .d.ts files each declaring one
+      # global: both passed resolves both, and passing only the first fails with
+      # `Cannot find name 'betaGlobal'`, which is the control that proves the
+      # checker ran at all. stacksjs/analyticshq passes six --lib flags in CI.
+      #
+      # The SSR globals share types/domain.d.ts because one file is enough here,
+      # not because they have to. Splitting them out is a free choice now.
       #
       # Warnings still fail too. The only one this emits is "values reach this
       # block on the implicit bridge and are untyped" — how a server value
