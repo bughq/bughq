@@ -437,7 +437,7 @@ function readKeyUsedLabel(): string {
 
 function readKeyStatus(): string {
   return hasReadKey()
-    ? `A read key is active — ${readKeyUsedLabel()}.`
+    ? `A read key is active, ${readKeyUsedLabel()}.`
     : 'No read key. Issue one to let a server read this project.'
 }
 
@@ -469,7 +469,7 @@ function issueReadKey(): void {
         readKeyOnce.set(String(res.b.read_key || ''))
         hasReadKey.set(true)
         readKeyUsed.set('')
-        readKeyNote.set({ text: 'Copy it now — this is the only time it is shown.', ok: true })
+        readKeyNote.set({ text: 'Copy it now. This is the only time it is shown.', ok: true })
       })
       .catch(() => {
         readKeyBusy.set(false)
@@ -1280,7 +1280,7 @@ function unarchive(): void {
         <div class="mb-3 sec-title">Read key</div>
         <div class="px-5 py-5 panel">
           <p class="mb-4 text-sm text-subtle">
-            Lets a server read this project's issues without signing in as you — a Stacks dashboard, or anything else reading the API machine-to-machine.
+            Lets a server read this project's issues without signing in as you: a Stacks dashboard, or anything else reading the API machine-to-machine.
             Unlike the API key above this one <em>is</em> a secret: it reads your errors, it belongs to no account, and it keeps working after you leave.
             Send it as <span class="mono">Authorization: Bearer</span>.
           </p>

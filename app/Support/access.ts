@@ -92,14 +92,26 @@ export async function projectReadAccess(request: any, projectId: string): Promis
   const presented = bearerFrom(request)
 
   if (looksLikeReadKey(presented)) {
-    const row = (await db.unsafe(
+    // db.unsafe answers an untyped row, so the columns are narrowed here rather
+    // than asserted: authorizeRead decides who may read a project and should be
+    // reading values it can see the shape of.
+    const found = (await db.unsafe(
       'SELECT id, read_key, read_key_last_used_at, is_active FROM projects WHERE id = $1 LIMIT 1',
       [String(projectId)],
-    ))?.[0] ?? null
+    ))?.[0]
+    const row = found
+      ? {
+          id: String(found.id),
+          read_key: found.read_key == null ? null : String(found.read_key),
+          read_key_last_used_at: found.read_key_last_used_at == null ? null : String(found.read_key_last_used_at),
+          is_active: found.is_active as boolean | number | null,
+        }
+      : null
     const verdict = authorizeRead(row, presented)
     if (!verdict.ok)
       return verdict.status === 401 ? { ok: false, status: 404, error: 'not found' } : verdict
-    await recordReadKeyUse(row)
+    if (row)
+      await recordReadKeyUse(row)
     return { ok: true, as: 'key' }
   }
 
