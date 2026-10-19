@@ -14,6 +14,7 @@ import { type ChannelType, sendTestAlert, validateWebhook } from '../app/Errors/
 import type { InviteDelivery } from '../app/Invites/invites'
 import { FREE_PROJECTS } from '../app/Billing/plans'
 import { isPro } from '../app/Billing/pro'
+import { newReadKey } from '../app/Support/read-key'
 import { deliverInvite, joinUrl, newInviteToken } from '../app/Invites/invites'
 
 function json(data: unknown, status = 200): Response {
@@ -250,6 +251,43 @@ route.post('/api/projects/{projectId}/rotate-key', async (request: any) => {
   const key = newIngestKey()
   await db.unsafe('UPDATE projects SET ingest_key = $1, updated_at = NOW() WHERE id = $2', [key, projectId])
   return json({ ingest_key: key })
+}).skipCsrf()
+
+// Issue (or replace) a project's read key. Owner-only.
+//
+// The credential a server presents to read this project's issues without a
+// person's account behind it (#19). Returned here and nowhere else: unlike the
+// ingest key, which the project listing carries so it can be copied into
+// client code, this one is a secret, so it is shown once and afterwards the
+// listing says only that it exists. Losing it means issuing another, and the
+// previous key stops working the moment that lands.
+route.post('/api/projects/{projectId}/read-key', async (request: any) => {
+  const user = await currentUser(request)
+  if (!user)
+    return json({ error: 'unauthorized' }, 401)
+  const projectId = request.params.projectId
+  if (!(await ownsProject(user, projectId)))
+    return json({ error: 'not found' }, 404)
+
+  const key = newReadKey()
+  // A new key starts with no last-used stamp: keeping the old one would read
+  // as "used before it existed".
+  await db.unsafe('UPDATE projects SET read_key = $1, read_key_last_used_at = NULL, updated_at = NOW() WHERE id = $2', [key, projectId])
+  return json({ read_key: key })
+}).skipCsrf()
+
+// Revoke a project's read key. Owner-only. Anything still presenting it gets
+// the same 404 an unknown project gets, on its next request.
+route.delete('/api/projects/{projectId}/read-key', async (request: any) => {
+  const user = await currentUser(request)
+  if (!user)
+    return json({ error: 'unauthorized' }, 401)
+  const projectId = request.params.projectId
+  if (!(await ownsProject(user, projectId)))
+    return json({ error: 'not found' }, 404)
+
+  await db.unsafe('UPDATE projects SET read_key = NULL, read_key_last_used_at = NULL, updated_at = NOW() WHERE id = $1', [projectId])
+  return json({ revoked: true })
 }).skipCsrf()
 
 // Delete a project and everything under it. Owner-only. Removes children first
