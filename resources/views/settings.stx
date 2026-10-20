@@ -1583,7 +1583,7 @@ function unarchive(): void {
                  technology reads if it gets there first. "Confirm" is a safe
                  default because the dialog cannot be open before that binding
                  has run, and :text owns the label from then on. --}}
-            <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :text="dzConfirmLabel()" type="button" class="px-4 py-2.5 font-semibold text-sm btn-danger" disabled>Confirm</button>
+            <button @click="dzConfirm" :disabled="dzBusy() || !dzMatches()" :aria-busy="dzBusy()" :text="dzConfirmLabel()" type="button" class="px-4 py-2.5 font-semibold text-sm btn-danger" disabled>Confirm</button>
           </div>
           @if (dzNote())
             <span class="mt-2.5 text-xs note note-err show" :text="noteText(dzNote())"></span>

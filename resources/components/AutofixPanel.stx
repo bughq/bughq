@@ -283,7 +283,7 @@ loadAutofix(true)
       <div class="mt-1 autofix-status">Analyze the issue and prepare a reviewable fix</div>
     </div>
     <div class="flex gap-2 items-center">
-      <button type="button" class="btn-outline" @click="loadAutofix(false)" :disabled="autofixLoading()" aria-label="Refresh Autofix">
+      <button type="button" class="btn-outline" @click="loadAutofix(false)" :disabled="autofixLoading()" :aria-busy="autofixLoading()" aria-label="Refresh Autofix">
         <i class="h-4 w-4 i-hugeicons-refresh"></i>
       </button>
     </div>

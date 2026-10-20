@@ -91,7 +91,7 @@ useSeoMeta({
               <li class="flex gap-2 items-center"><span class="text-accent">✓</span> Invite your team</li>
               <li class="flex gap-2 items-center"><span class="text-accent">✓</span> Priority support</li>
             </ul>
-            <button @click="upgrade" :disabled="loading()" class="mt-7 w-full disabled:opacity-60 disabled:cursor-default btn primary">{{ loading() ? 'Redirecting…' : 'Upgrade to Pro' }}</button>
+            <button @click="upgrade" :disabled="loading()" :aria-busy="loading()" class="mt-7 w-full disabled:opacity-60 disabled:cursor-default btn primary">{{ loading() ? 'Redirecting…' : 'Upgrade to Pro' }}</button>
             @if (err())
               <p class="mt-3 text-[#ef4444] text-center text-xs">{{ err() }}</p>
             @endif
