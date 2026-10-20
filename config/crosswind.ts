@@ -504,7 +504,34 @@ a.cell:hover .cell-more { color: var(--accent); gap: 0.55rem; }
 /* use-case cards */
 .usecases { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
 .usecase { border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; background: var(--surface); }
-.usecase img { display: block; width: 100%; height: 168px; object-fit: cover; }
+/* The card art.
+   No backticks in here: this block is inside a template literal.
+
+   Replaces five <img> tags that pulled random stock photographs from
+   picsum.photos on every view, each captioned with alt text describing
+   something the photograph did not contain. Real art wants real product
+   screenshots; until those exist this holds the cards' proportions and claims
+   nothing, at the 168px the images occupied so the grid is unchanged.
+
+   Built from the marketing palette, so it follows light and dark with the rest
+   of the page. An <img> could not have: an SVG loaded through src is a separate
+   document and never sees these custom properties. */
+.usecase-art {
+  height: 168px;
+  background:
+    linear-gradient(140deg, var(--accent-soft) 0%, transparent 58%),
+    repeating-linear-gradient(135deg, var(--border) 0 1px, transparent 1px 11px),
+    var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+/* The same band at five angles, so a column of cards does not read as one
+   repeated tile. Nothing here encodes meaning: these are decorative and
+   aria-hidden, and the heading below carries the card. */
+.usecase-art-frontend { background-position: 0 0; }
+.usecase-art-backend  { background: linear-gradient(200deg, var(--accent-soft) 0%, transparent 60%), repeating-linear-gradient(45deg, var(--border) 0 1px, transparent 1px 11px), var(--surface-2); }
+.usecase-art-mobile   { background: linear-gradient(110deg, var(--accent-soft) 0%, transparent 55%), repeating-linear-gradient(90deg, var(--border) 0 1px, transparent 1px 13px), var(--surface-2); }
+.usecase-art-oncall   { background: linear-gradient(250deg, var(--accent-soft) 0%, transparent 62%), repeating-linear-gradient(0deg, var(--border) 0 1px, transparent 1px 13px), var(--surface-2); }
+.usecase-art-agencies { background: linear-gradient(160deg, var(--accent-soft) 0%, transparent 56%), repeating-linear-gradient(135deg, var(--border) 0 1px, transparent 1px 7px), var(--surface-2); }
 .usecase-body { padding: 1.4rem 1.5rem 1.6rem; }
 /* h2, not h3: these card titles are the only headings under the page h1,
    so h3 skipped a level. The element selector follows the markup. */
