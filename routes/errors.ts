@@ -8,6 +8,7 @@
  */
 
 import { Auth } from '@stacksjs/auth'
+import { projectReadAccess } from '../app/Support/access'
 import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
 import { sameOrigin } from '../app/Support/origin'
@@ -461,11 +462,10 @@ route.post('/api/sessions', sessionIngest).skipCsrf()
 
 route.get('/api/projects/{projectId}/issues', async (request: any) => {
   const projectId = request.params.projectId
-  const user = await userFromRequest(request)
-  if (!user)
-    return json({ error: 'unauthorized' }, 401)
-  if (!(await ownsProject(user, projectId)))
-    return json({ error: 'not found' }, 404)
+  // A person who can see the project, or a read key issued for it (#19).
+  const access = await projectReadAccess(request, projectId)
+  if (!access.ok)
+    return json({ error: access.error }, access.status)
   const status = request.query?.status
   const cols = 'id, title, culprit, error_type, level, status, count, first_seen, last_seen'
   const issues = status
@@ -482,12 +482,15 @@ route.get('/api/projects/{projectId}/issues', async (request: any) => {
 
 route.get('/api/issues/{issueId}', async (request: any) => {
   const issueId = request.params.issueId
-  const user = await userFromRequest(request)
-  if (!user)
-    return json({ error: 'unauthorized' }, 401)
-  if (!(await ownsIssue(user, issueId)))
-    return json({ error: 'not found' }, 404)
+  // The issue is read before anyone is authorised, and returned only after.
+  // Answering 404 for a missing id before checking the caller would tell an
+  // unauthenticated one which issue ids exist, so: fetch, authorise against
+  // the issue's project (an empty id when there is none, which no key and no
+  // user can read), then answer.
   const issue = (await db.unsafe('SELECT * FROM issues WHERE id = $1 LIMIT 1', [issueId]))?.[0]
+  const access = await projectReadAccess(request, issue ? String(issue.project_id) : '')
+  if (!access.ok)
+    return json({ error: access.error }, access.status)
   if (!issue)
     return json({ error: 'not found' }, 404)
   const events = await db.unsafe(

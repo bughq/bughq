@@ -57,7 +57,7 @@ if (token) {
 // names exactly the columns its SELECT asks for rather than the whole table —
 // a row here genuinely does not carry `dsn` or `updated_at`, and promising it
 // would be the same class of lie the row types exist to stop.
-interface ProjectRow extends Pick<Project, 'id' | 'name' | 'platform' | 'ingest_key' | 'is_active'> {}
+interface ProjectRow extends Pick<Project, 'id' | 'name' | 'platform' | 'ingest_key' | 'is_active' | 'read_key' | 'read_key_last_used_at'> {}
 interface ChannelRow extends Pick<AlertChannel, 'id' | 'type' | 'label' | 'webhook_url' | 'enabled' | 'created_at'> {}
 interface MemberRow extends Pick<ProjectMember, 'id' | 'email' | 'role'> {}
 /** `registered` is computed per row (`u.id IS NOT NULL`), not a project_invites column. */
@@ -79,7 +79,7 @@ let debugFiles: DebugFileRow[] = []
 if (user) {
   // Owned projects only — settings is the owner's admin surface.
   projects = ((await db.unsafe(
-    'SELECT id, name, platform, ingest_key, is_active FROM projects WHERE owner_id = $1 ORDER BY created_at DESC NULLS LAST, id',
+    'SELECT id, name, platform, ingest_key, is_active, read_key, read_key_last_used_at FROM projects WHERE owner_id = $1 ORDER BY created_at DESC NULLS LAST, id',
     [Number(user.id)],
   )) as unknown as ProjectRow[]) ?? []
   if (projects.length === 0)
@@ -191,6 +191,11 @@ const inviteView = invites.map(i => ({
 const inviteEmails: Record<string, string> = Object.fromEntries(inviteView.map((i): [string, string] => [i.id, i.email]))
 const keyFull = activeProject ? String(activeProject.ingest_key || '') : ''
 const keyMask = maskKey(keyFull)
+// The read key itself never reaches the page: it is a secret, shown once when
+// it is issued and never again (#19). Only whether one exists, and when it was
+// last used, so a live key can be told from a forgotten one before revoking.
+const hasReadKeyInitial = !!(activeProject && activeProject.read_key)
+const readKeyUsedInitial = activeProject && activeProject.read_key_last_used_at ? String(activeProject.read_key_last_used_at) : ''
 
 // Framework-specific install snippet, keyed off the project's platform. Key-only
 // (Flare-style): the ingest key alone identifies the project — no project id, no DSN.
@@ -309,7 +314,7 @@ const projectName = activeProject?.name || ''
 // bridge escapes `<` to < on the way out (see the long note above) — and
 // naming them makes it explicit which values carry that hazard rather than
 // leaving it to whoever next reads the client block.
-defineClientPayload({ channelEnabled, codeText, installText, inviteEmails, justRotated, keyFull, keyMask, projectId, projectName })
+defineClientPayload({ channelEnabled, codeText, hasReadKeyInitial, installText, inviteEmails, justRotated, keyFull, keyMask, projectId, projectName, readKeyUsedInitial })
 </script>
 
 <script client>
@@ -406,6 +411,102 @@ const apiProjectId = projectId || ''
 // is, and this returns '' whether or not it does.
 function noteText(note: FormNote | null): string {
   return note ? note.text : ''
+}
+
+// ---- read key ------------------------------------------------------------
+// Issued on demand, shown once, revocable (#19). Deliberately NOT a reload on
+// success, unlike rotateKey below: the API key is rendered into the field, the
+// masked view and twice into the install snippet, so a reload is how those are
+// kept honest. A read key appears in exactly one place and is never rendered
+// from the server, so reloading would throw away the only copy the browser
+// ever had of it.
+const hasReadKey = state(hasReadKeyInitial)
+const readKeyUsed = state(readKeyUsedInitial)
+const readKeyOnce = state('')
+const readKeyBusy = state(false)
+const readKeyNote = state<FormNote | null>(null)
+
+/** "never used", or the stamp as the browser's locale writes it. */
+function readKeyUsedLabel(): string {
+  const at = readKeyUsed()
+  if (!at)
+    return 'never used'
+  const when = new Date(at)
+  return Number.isNaN(when.getTime()) ? 'used recently' : `last used ${when.toLocaleString()}`
+}
+
+function readKeyStatus(): string {
+  return hasReadKey()
+    ? `A read key is active, ${readKeyUsedLabel()}.`
+    : 'No read key. Issue one to let a server read this project.'
+}
+
+function issueReadKey(): void {
+  // Replacing is destructive in the same way rotating is, so it asks — but
+  // only when there is something to break.
+  const ask = !hasReadKey()
+    ? Promise.resolve(true)
+    : window.stxConfirm
+      ? window.stxConfirm('The current read key stops working immediately, and anything still using it is answered 404 until you update it. Continue?', { title: 'Replace read key?', confirmText: 'Replace key', cancelText: 'Cancel', type: 'warning' })
+      // Declining is the right failure for a destructive action, the same
+      // reasoning as rotateKey: nothing is lost by not replacing.
+      : Promise.resolve(false)
+  Promise.resolve(ask).then((ok) => {
+    if (!ok)
+      return
+    readKeyBusy.set(true)
+    fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/read-key`, {
+      method: 'POST',
+      credentials: 'same-origin',
+    })
+      .then(r => r.json().then((b: any) => ({ ok: r.ok, b })))
+      .then((res) => {
+        readKeyBusy.set(false)
+        if (!res.ok) {
+          readKeyNote.set({ text: res.b.error || 'Could not issue a key.', ok: false })
+          return
+        }
+        readKeyOnce.set(String(res.b.read_key || ''))
+        hasReadKey.set(true)
+        readKeyUsed.set('')
+        readKeyNote.set({ text: 'Copy it now. This is the only time it is shown.', ok: true })
+      })
+      .catch(() => {
+        readKeyBusy.set(false)
+        readKeyNote.set({ text: 'Network error.', ok: false })
+      })
+  })
+}
+
+function revokeReadKey(): void {
+  const ask = window.stxConfirm
+    ? window.stxConfirm('Anything using this key stops reading immediately. Continue?', { title: 'Revoke read key?', confirmText: 'Revoke', cancelText: 'Cancel', type: 'warning' })
+    : Promise.resolve(false)
+  Promise.resolve(ask).then((ok) => {
+    if (!ok)
+      return
+    readKeyBusy.set(true)
+    fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/read-key`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    })
+      .then(r => r.json().then((b: any) => ({ ok: r.ok, b })))
+      .then((res) => {
+        readKeyBusy.set(false)
+        if (!res.ok) {
+          readKeyNote.set({ text: res.b.error || 'Could not revoke.', ok: false })
+          return
+        }
+        hasReadKey.set(false)
+        readKeyUsed.set('')
+        readKeyOnce.set('')
+        readKeyNote.set({ text: 'Revoked.', ok: true })
+      })
+      .catch(() => {
+        readKeyBusy.set(false)
+        readKeyNote.set({ text: 'Network error.', ok: false })
+      })
+  })
 }
 
 // ---- API key -------------------------------------------------------------
@@ -1170,6 +1271,50 @@ function unarchive(): void {
           @endif
           @if (keyNote() && !keyNote()?.ok)
             <span class="mt-2 text-xs note note-err show" :text="noteText(keyNote())"></span>
+          @endif
+        </div>
+      </section>
+
+      <!-- ========================== READ KEY ========================== -->
+      <section id="read-key" class="mb-10 sec">
+        <div class="mb-3 sec-title">Read key</div>
+        <div class="px-5 py-5 panel">
+          <p class="mb-4 text-sm text-subtle">
+            Lets a server read this project's issues without signing in as you: a Stacks dashboard, or anything else reading the API machine-to-machine.
+            Unlike the API key above this one <em>is</em> a secret: it reads your errors, it belongs to no account, and it keeps working after you leave.
+            Send it as <span class="mono">Authorization: Bearer</span>.
+          </p>
+
+          {{-- Just issued: the only time the key is ever shown. --}}
+          <div :show="!!readKeyOnce()">
+            <div class="flex flex-wrap gap-2 items-center">
+              <code :text="readKeyOnce()" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm tracking-[0.01em] truncate field field-quiet mono"></code>
+              <button @click="copyText('readkey', readKeyOnce())" :text="copyLabel('readkey')" class="px-3 py-2 font-medium text-sm bg-panel btn-ghost">Copy</button>
+            </div>
+            <p class="mt-3.5 leading-relaxed text-[var(--warn)] text-xs">
+              Copy it now. It is not stored anywhere you can read it back, so leaving this page means issuing a new one.
+            </p>
+          </div>
+
+          {{-- Otherwise: whether one exists, and whether it is still in use. --}}
+          <div :show="!readKeyOnce()">
+            <div class="flex flex-wrap gap-2 items-center">
+              <span :text="readKeyStatus()" class="flex-1 min-w-[220px] text-sm text-subtle"></span>
+              <Button variant="ghost" @click="issueReadKey" :loading="readKeyBusy()" :label="hasReadKey() ? 'Replace' : 'Issue key'" className="btn-cta btn-solid">Issue key</Button>
+              <span :show="hasReadKey()">
+                <Button variant="ghost" @click="revokeReadKey" :loading="readKeyBusy()" className="btn-danger btn-sm">Revoke</Button>
+              </span>
+            </div>
+            <p class="mt-3.5 leading-relaxed text-subtle text-xs">
+              The last-used time is written at most once a minute, so a key in constant use shows a time up to a minute old.
+            </p>
+          </div>
+
+          @if (readKeyNote() && readKeyNote()?.ok)
+            <span class="mt-2 text-xs note note-ok show" :text="noteText(readKeyNote())"></span>
+          @endif
+          @if (readKeyNote() && !readKeyNote()?.ok)
+            <span class="mt-2 text-xs note note-err show" :text="noteText(readKeyNote())"></span>
           @endif
         </div>
       </section>

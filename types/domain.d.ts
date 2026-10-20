@@ -75,6 +75,9 @@ declare interface Project {
   platform: string | null
   dsn: string | null
   ingest_key: string | null
+  /** Secret read key: a machine reads this project's issues with it (#19). */
+  read_key: string | null
+  read_key_last_used_at: string | null
   owner_id: number | null
   /** `false` means archived: ingestion is rejected and alerts pause. */
   is_active: boolean | null
