@@ -97,8 +97,13 @@ fetch('/api/me', { credentials: 'same-origin' })
   <header class="flex items-center justify-between mx-auto px-5 md:px-6 h-16 max-w-3xl">
     <StxLink to="/" class="text-lg wordmark">bughq</StxLink>
     <div class="flex gap-2.5 items-center">
-      <StxLink to="/dashboard" class="px-3.5 py-2 font-semibold text-sm active:translate-y-px btn-ghost">Dashboard</StxLink>
-      <button @click="logout" class="px-3.5 py-2 font-semibold text-sm active:translate-y-px btn-ghost">Log out</button>
+      {{-- Bound, not branched: this page has no server auth block, so the viewer
+           only exists once /api/me answers. user() is null until then and a 401
+           bounces to /login, so the pair appears exactly when there is someone
+           to sign out. Ungated they painted over the skeleton first, offering
+           "Log out" to a visitor on their way back to the login page. --}}
+      <StxLink to="/dashboard" class="px-3.5 py-2 font-semibold text-sm active:translate-y-px btn-ghost" :show="!!user()">Dashboard</StxLink>
+      <button @click="logout" class="px-3.5 py-2 font-semibold text-sm active:translate-y-px btn-ghost" :show="!!user()">Log out</button>
     </div>
   </header>
 
