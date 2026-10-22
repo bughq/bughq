@@ -54,12 +54,28 @@ export default {
 
   // Enforces "no vanilla DOM" mechanically instead of by documentation.
   // AGENTS.md has said it in prose the whole time and 68 violations shipped
-  // anyway. failOnViolation stays FALSE deliberately: those 68 exist today, so
-  // failing the build now would block all work. The warnings are the migration
-  // queue; flip this to true once the queue is empty.
+  // anyway. That queue is now empty -- 42 .stx, 18 client blocks, 0 violations,
+  // measured by running stx's own validateClientScript over every block rather
+  // than over whichever pages a dev-server boot happens to render -- so the
+  // ratchet this comment used to promise has been applied below.
   strict: {
     enabled: true,
-    failOnViolation: false,
+    // Hard-fail on a prohibited DOM call in a developer's own environment,
+    // warn everywhere else. An ALLOWLIST deliberately, not `!== 'prod'`:
+    // APP_ENV is typed 'local'|'dev'|'stage'|'prod' (config/env.ts) with no
+    // 'production' member, and .env ships 'development', which is outside
+    // that enum -- so any predicate written against 'production' is TRUE in
+    // production, the exact inversion this guards against. An unset APP_ENV
+    // falls through to warn-only for the same reason: a missing variable must
+    // not be what turns a page into a 500. That covers the real production
+    // path twice over: APP_ENV ships dotenvx-encrypted in .env.production, so
+    // it arrives either decrypted as 'prod' or, if the key is missing, as the
+    // literal 'encrypted:v2:...' string — and neither is in the list.
+    //
+    // A violation under this flag is a real HTTP 500 with the custom /500 page
+    // (bun-plugin-stx serve.js:11111,11133), not a blank 200 -- verified
+    // against the installed copy.
+    failOnViolation: ['local', 'dev', 'development'].includes(process.env.APP_ENV ?? ''),
     // Pre-paint auth and theme guards legitimately need these — they must run
     // before render and their whole job is to leave the page.
     allowPatterns: [],
