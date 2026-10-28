@@ -56,6 +56,14 @@ route.post('/password/forgot', (request: any) => {
   return response.json(uniform)
 }).skipCsrf().rateLimit(3, 'minute')
 route.post('/password/reset', 'Actions/Password/PasswordResetAction').skipCsrf().rateLimit(5, 'minute')
+// Lets reset-password.stx ask whether a link is still good before it asks for a
+// password. Same verifyToken() the reset itself runs, so a token this accepts
+// and a token that resets cannot disagree. It answers 400 for an expired or
+// already-used token and 422 for a malformed request, which is only ever a
+// fact about the link in the URL: the caller is holding the token, so there is
+// nothing here an attacker could learn that they do not already have. The
+// limit is looser than the reset's because a page load spends one.
+route.post('/password/verify-token', 'Actions/Password/VerifyResetTokenAction').skipCsrf().rateLimit(10, 'minute')
 
 // Social sign-in (GitHub, Google) via the native @stacksjs/socials drivers.
 // GET flows, CSRF-exempt; provider credentials come from config/services.ts.
