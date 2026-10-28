@@ -1,6 +1,6 @@
 import type { RequestInstance } from '@stacksjs/types'
 import { Action } from '@stacksjs/actions'
-import { Auth } from '@stacksjs/auth'
+import { Auth, getTwoFactorState } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
 import { isPro } from '../Billing/pro'
 import { response } from '@stacksjs/router'
@@ -41,6 +41,14 @@ export default new Action({
     // momentary database error rendered a paying customer as Free and hid the
     // features they had paid for.
     const pro = await isPro(Number((user as any).id))
+
+    // Only `enabled` reaches the client. getTwoFactorState also returns the
+    // TOTP secret, which must never leave the server - the account page needs
+    // to know whether to show "set up" or "turn off", nothing more. Fails
+    // closed (shows "off") on a read error rather than hiding an enabled
+    // factor, which is the safer wrong answer here: it offers re-setup, it
+    // never implies protection that is not there.
+    const twoFactor = await getTwoFactorState(Number((user as any).id)).catch(() => ({ enabled: false }))
 
     // Two selects, not one, and the split is the whole point.
     //
@@ -86,6 +94,7 @@ export default new Action({
         avatar: profile.avatar ?? (user as any).avatar ?? null,
         provider: profile.provider ?? null,
         created_at: createdAt ?? null,
+        two_factor_enabled: Boolean(twoFactor.enabled),
       },
       pro,
       plan: pro ? 'pro' : 'free',

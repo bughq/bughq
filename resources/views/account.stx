@@ -25,6 +25,10 @@ interface AccountUser {
   avatar: string | null
   provider: string | null
   created_at: string | null
+  // Whether TOTP two-factor is on. Only this boolean crosses the wire; the
+  // secret stays server-side (app/Actions/MeAction.ts reads it but never
+  // sends it).
+  two_factor_enabled: boolean | null
 }
 
 /** What /api/me answers with. Everything optional: a 401 sends neither field. */
@@ -64,6 +68,123 @@ async function logout() {
   navigate('/login', { reload: true })
 }
 
+// --- Two-factor authentication ------------------------------------------
+// TOTP enrollment driven entirely over the same same-origin fetches this page
+// already uses. The secret is generated and stashed server-side
+// (/generate-two-factor-secret, delete-on-read); this page only shows it and
+// sends back the 6-digit code, never the secret. State starts from /api/me and
+// is flipped locally on enable/disable so there is no reload.
+const twoFaEnabled = state(false)
+const twoFaBusy = state(false)
+const twoFaError = state('')
+// { secret, uri } while a setup is mid-flight, null otherwise. Its presence is
+// what swaps the section from the pitch to the confirm form.
+const twoFaSetup = state<{ secret: string, uri: string } | null>(null)
+
+/** What /generate-two-factor-secret answers with (qr is ignored here). */
+interface TwoFaSetupResponse { secret?: string, uri?: string }
+
+async function startTwoFaSetup(): Promise<void> {
+  if (twoFaBusy())
+    return
+  twoFaBusy.set(true)
+  twoFaError.set('')
+  try {
+    const res = await fetch('/generate-two-factor-secret', { method: 'POST', credentials: 'same-origin' })
+    if (!res.ok) {
+      twoFaError.set('Could not start setup. Please try again.')
+      return
+    }
+    const d = await res.json().catch(() => ({})) as TwoFaSetupResponse
+    if (!d.secret || !d.uri) {
+      twoFaError.set('Could not start setup. Please try again.')
+      return
+    }
+    twoFaSetup.set({ secret: d.secret, uri: d.uri })
+  }
+  catch {
+    twoFaError.set('Could not reach the server. Check your connection and try again.')
+  }
+  finally {
+    twoFaBusy.set(false)
+  }
+}
+
+function cancelTwoFaSetup(): void {
+  twoFaSetup.set(null)
+  twoFaError.set('')
+}
+
+async function confirmTwoFa(e: SubmitEvent): Promise<void> {
+  e.preventDefault()
+  if (twoFaBusy())
+    return
+  const form = e.target as HTMLFormElement
+  const code = (form.elements.namedItem('code') as HTMLInputElement)?.value?.trim() ?? ''
+  // Checked here so a typo answers at once; the server re-verifies against the
+  // stashed secret regardless.
+  if (!/^\d{6}$/.test(code)) {
+    twoFaError.set('Enter the 6-digit code from your authenticator app.')
+    return
+  }
+  twoFaBusy.set(true)
+  twoFaError.set('')
+  try {
+    const res = await fetch('/enable-two-factor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ code }),
+    })
+    if (!res.ok) {
+      twoFaError.set('That code did not match. Check your authenticator app and try again.')
+      return
+    }
+    twoFaEnabled.set(true)
+    twoFaSetup.set(null)
+  }
+  catch {
+    twoFaError.set('Could not reach the server. Check your connection and try again.')
+  }
+  finally {
+    twoFaBusy.set(false)
+  }
+}
+
+async function disableTwoFa(e: SubmitEvent): Promise<void> {
+  e.preventDefault()
+  if (twoFaBusy())
+    return
+  const form = e.target as HTMLFormElement
+  const password = (form.elements.namedItem('password') as HTMLInputElement)?.value ?? ''
+  if (!password) {
+    twoFaError.set('Confirm your password to turn two-factor off.')
+    return
+  }
+  twoFaBusy.set(true)
+  twoFaError.set('')
+  try {
+    const res = await fetch('/disable-two-factor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ password }),
+    })
+    if (!res.ok) {
+      twoFaError.set('Incorrect password. Two-factor is still on.')
+      return
+    }
+    twoFaEnabled.set(false)
+    form.reset()
+  }
+  catch {
+    twoFaError.set('Could not reach the server. Check your connection and try again.')
+  }
+  finally {
+    twoFaBusy.set(false)
+  }
+}
+
 // Runs on hydration, including after a fragment swap onto this page. The session
 // rides the HttpOnly `auth-token` cookie sent automatically with the request; a
 // 401 (no/dead cookie) bounces to /login — the guard the removed pre-paint
@@ -81,6 +202,7 @@ fetch('/api/me', { credentials: 'same-origin' })
       return
     user.set(d.user)
     pro.set(d.pro === true)
+    twoFaEnabled.set(d.user.two_factor_enabled === true)
   })
   .catch(() => { /* leave the skeleton in place */ })
 </script>
@@ -174,6 +296,62 @@ fetch('/api/me', { credentials: 'same-origin' })
           <div class="mt-1 text-base text-muted">{{ fmtDate(user()?.created_at) }}</div>
         </div>
         <StxLink to="/dashboard" class="px-4 py-2 font-semibold text-sm active:translate-y-px btn-ghost">Open dashboard</StxLink>
+      </div>
+    </section>
+
+    <section class="mb-5 card">
+      <div class="px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-subtle text-xs tracking-wide uppercase mono">Two-factor authentication</div>
+            <div class="mt-1 font-semibold text-base">
+              {{ twoFaEnabled() ? 'On' : 'Off' }}
+              @if (twoFaEnabled())
+                <span class="ml-1 px-2 py-0.5 badge badge-pro">active</span>
+              @endif
+            </div>
+          </div>
+          @if (!twoFaEnabled() && !twoFaSetup())
+            <button @click="startTwoFaSetup" :disabled="twoFaBusy()" :aria-busy="twoFaBusy()" class="px-4 py-2 text-sm btn-solid">{{ twoFaBusy() ? 'Starting...' : 'Set up' }}</button>
+          @endif
+        </div>
+
+        @if (twoFaError())
+          <div role="alert" class="mt-3 py-2 err notice-box">{{ twoFaError() }}</div>
+        @endif
+
+        {{-- Off, nothing in progress: the pitch. --}}
+        @if (!twoFaEnabled() && !twoFaSetup())
+          <p class="mt-3 text-muted text-sm">Add a second step at sign-in so a stolen password alone cannot open your account. Works with any authenticator app (1Password, Google Authenticator, Authy).</p>
+        @endif
+
+        {{-- Setup mid-flight: show the secret and otpauth link, take the code.
+             The secret is held server-side for 10 minutes; re-opening setup
+             replaces it, so the code must come from the last secret shown. --}}
+        @if (!twoFaEnabled() && twoFaSetup())
+          <p class="mt-3 text-muted text-sm">Add this secret to your authenticator app, then enter the 6-digit code it shows. The secret is held for 10 minutes.</p>
+          <p class="mb-1 mt-3 text-subtle text-xs tracking-wide uppercase mono">Secret (enter manually)</p>
+          <p class="px-3 py-2 break-all text-sm tracking-[0.08em] card mono">{{ twoFaSetup()?.secret }}</p>
+          <p class="mt-2 text-muted text-sm">On this device? <a :href="twoFaSetup()?.uri" class="text-accent">open in your authenticator app</a> instead of typing it.</p>
+          <form @submit="confirmTwoFa" class="mt-4">
+            <label for="twofa-code" class="block mb-1.5 font-medium text-muted text-xs">6-digit code</label>
+            <input id="twofa-code" name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required placeholder="000000" class="px-3.5 py-2.5 w-full text-sm field mono">
+            <div class="flex gap-2.5 items-center mt-3">
+              <button type="submit" :disabled="twoFaBusy()" :aria-busy="twoFaBusy()" class="px-4 py-2 text-sm btn-solid">{{ twoFaBusy() ? 'Confirming...' : 'Confirm and enable' }}</button>
+              <button type="button" @click="cancelTwoFaSetup" :disabled="twoFaBusy()" class="px-4 py-2 font-semibold text-sm btn-ghost">Cancel</button>
+            </div>
+          </form>
+        @endif
+
+        {{-- Enabled: offer to turn off, password re-confirmed server-side. --}}
+        @if (twoFaEnabled())
+          <p class="mt-3 text-muted text-sm">Sign-in needs your password plus a code from your authenticator app. Confirm your password to turn this off.</p>
+          <form @submit="disableTwoFa" class="mt-3">
+            <label for="twofa-off-password" class="block mb-1.5 font-medium text-muted text-xs">Password</label>
+            <input id="twofa-off-password" name="password" type="password" autocomplete="current-password" required placeholder="Confirm your password" class="px-3.5 py-2.5 w-full text-sm field">
+            <button type="submit" :disabled="twoFaBusy()" :aria-busy="twoFaBusy()" class="mt-3 px-4 py-2 text-sm btn-danger">{{ twoFaBusy() ? 'Turning off...' : 'Turn off two-factor' }}</button>
+          </form>
+        @endif
       </div>
     </section>
 

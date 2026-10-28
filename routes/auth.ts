@@ -65,6 +65,27 @@ route.post('/password/reset', 'Actions/Password/PasswordResetAction').skipCsrf()
 // limit is looser than the reset's because a page load spends one.
 route.post('/password/verify-token', 'Actions/Password/VerifyResetTokenAction').skipCsrf().rateLimit(10, 'minute')
 
+// Two-factor enrollment for the account page. These are the framework's own
+// JSON actions (storage/framework/defaults/app/Actions/Auth), registered here
+// explicitly rather than left to framework-default registration - an app route
+// that names the action is not at the mercy of whether the default is mounted,
+// which is the shadowing trap that has bitten this estate before.
+//
+// generate-two-factor-secret makes a fresh secret, stashes it server-side with
+// a short TTL, and returns the otpauth URI + secret for the authenticator app;
+// enable-two-factor verifies the 6-digit code against that stash and only then
+// writes users.two_factor_secret, so the server never trusts a client-supplied
+// secret; disable-two-factor re-confirms the account password first, because
+// turning a second factor off is the first thing a session thief would try.
+//
+// skipCsrf + middleware('auth') match /logout: the dashboard fetches are
+// same-origin with the HttpOnly auth-token cookie (SameSite is the cross-site
+// guard, so no double-submit token), and the middleware validates that cookie
+// and populates request.user() for the actions.
+route.post('/generate-two-factor-secret', 'Actions/Auth/GenerateTwoFactorSecretAction').middleware('auth').skipCsrf().rateLimit(10, 'minute')
+route.post('/enable-two-factor', 'Actions/Auth/EnableTwoFactorAction').middleware('auth').skipCsrf().rateLimit(10, 'minute')
+route.post('/disable-two-factor', 'Actions/Auth/DisableTwoFactorAction').middleware('auth').skipCsrf().rateLimit(10, 'minute')
+
 // Social sign-in (GitHub, Google) via the native @stacksjs/socials drivers.
 // GET flows, CSRF-exempt; provider credentials come from config/services.ts.
 route.get('/api/auth/{provider}/redirect', 'Actions/Auth/SocialRedirectAction').skipCsrf()
