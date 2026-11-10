@@ -338,7 +338,7 @@ fetch('/api/me', { credentials: 'same-origin' })
             <input id="twofa-code" name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required placeholder="000000" class="px-3.5 py-2.5 w-full text-sm field mono">
             <div class="flex gap-2.5 items-center mt-3">
               <button type="submit" :disabled="twoFaBusy()" :aria-busy="twoFaBusy()" class="px-4 py-2 text-sm btn-solid">{{ twoFaBusy() ? 'Confirming...' : 'Confirm and enable' }}</button>
-              <button type="button" @click="cancelTwoFaSetup" :disabled="twoFaBusy()" class="px-4 py-2 font-semibold text-sm btn-ghost">Cancel</button>
+              <button type="button" @click="cancelTwoFaSetup" :disabled="twoFaBusy()" :aria-busy="twoFaBusy()" class="px-4 py-2 font-semibold text-sm btn-ghost">Cancel</button>
             </div>
           </form>
         @endif

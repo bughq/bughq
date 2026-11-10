@@ -42,7 +42,7 @@ describe('the shared inline form notice', () => {
       expect(source).not.toContain('px-3 py-2 text-sm rounded-lg')
       expect(source).not.toContain('px-3 py-3 text-sm rounded-lg')
     }
-    expect(total).toBe(8)
+    expect(total).toBe(9)
   })
 
   test('the colour and the vertical padding stay at the call site', () => {
