@@ -12,6 +12,12 @@ const { issueId, projectId } = defineProps<AutofixPanelProps>()
 // literal, so it brings its own. Wrapping it produced a string that literally
 // contained the quote characters, `encodeURIComponent` turned those into %22,
 // and every request this panel makes 404'd on an id no route could match.
+// The stx typecheck reads this block before the mustaches expand, so it sees
+// `issueId` / `projectId` as bare names. Declare them (type-only, erased at
+// build) so the names resolve; at build time each {{ }} is replaced by its
+// JSON-literal value from the server props above.
+declare const issueId: string
+declare const projectId: string
 const autofixIssueId = {{ issueId }}
 const autofixProjectId = {{ projectId }}
 const autofixState = state<AutofixState | null>(null)

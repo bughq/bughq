@@ -79,11 +79,15 @@
   "dependencies": {
     "@loghq/stacks": "^0.2.6",
     "@ts-analytics/tracking": "^0.1.17",
-    "stacks": "^0.75.463",
+    "stacks": "^0.75.529",
     "stripe": "^23.0.0"
   },
   "devDependencies": {
     "better-dx": "^0.2.38"
+  },
+  "overrides": {
+    "@stacksjs/stx": "0.2.807",
+    "bun-plugin-stx": "0.2.807"
   },
   "git-hooks": {
     "pre-commit": {
