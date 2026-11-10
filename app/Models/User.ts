@@ -15,6 +15,7 @@ export default defineModel({
   hasMany: ['Subscription'],
 
   traits: {
+    gdpr: { erasure: 'anonymize', basis: 'contract', purpose: 'User account and sign-in' },
     useAuth: {
       usePasskey: false,
     },
@@ -28,6 +29,7 @@ export default defineModel({
 
   attributes: {
     name: {
+      personal: true,
       fillable: true,
       validation: {
         rule: schema.string().required().min(2).max(100),
@@ -40,6 +42,7 @@ export default defineModel({
     },
 
     email: {
+      personal: true,
       unique: true,
       fillable: true,
       validation: {
