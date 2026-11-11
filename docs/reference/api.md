@@ -34,7 +34,7 @@ The message is required. The key can also be sent in the body. The collector rej
 
 ### Native events
 
-iOS and Android SDKs add `platform` (`ios` or `android`) and a structured `exception`. Frames are top of the stack first. An Apple frame names its binary, the binary's UUID and the offset into it, which the ingest symbolicates with uploaded symbols. A JVM frame names its class, method, file and line, which the ingest retraces with an uploaded R8 mapping.
+Native apps add `platform` and a structured `exception`. `platform` is `ios`, `android`, `macos`, `windows` or `linux`; any other value is treated as a web or server event. Frames are top of the stack first. An Apple frame (`ios`, `macos`) names its binary, the binary's UUID and the offset into it, which the ingest symbolicates with uploaded symbols. A JVM frame names its class, method, file and line, which the ingest retraces with an uploaded R8 mapping. Windows and Linux frames are stored with the names the app resolved.
 
 ```json
 {
@@ -55,6 +55,12 @@ iOS and Android SDKs add `platform` (`ios` or `android`) and a structured `excep
 }
 ```
 
+A native event that names a `session` updates it: `"level": "fatal"` or an unhandled `exception` ends the session as crashed, anything else marks it errored.
+
+### JavaScript stacks and sourcemaps
+
+When an event has a `stack` string and a `release`, and sourcemaps were uploaded for that release, every frame with a matching map is rewritten to its original function, file and line before the event is grouped. V8 frames (`at fn (file:line:column)`, as Bun, Node and WebView2 print them) and WebKit frames (`fn@file:line:column`) are both read. This applies to any platform, including a minified browser bundle. See [desktop apps](../capture/desktop.md#sourcemaps).
+
 ## Sessions
 
 ```http
@@ -67,17 +73,26 @@ X-BugHQ-Key: bughq_your_project_key
 { "sessions": [{ "id": "5c2f…", "release": "1.0.0+41", "status": "ok", "started_at": "2026-10-14T18:00:00.000Z" }] }
 ```
 
-One session per app launch, for crash-free sessions. A batch of up to 50 is accepted, so a device can replay its offline queue in one request. `status` is `ok`, `errored`, `abnormal` or `crashed` and only escalates. Sessions are not metered.
+One session per app launch, for crash-free sessions. Mobile and desktop apps both report them; `platform`, `environment` and `user_id` are optional, on each session or once beside `sessions`. A batch of up to 50 is accepted, so a device can replay its offline queue in one request. `status` is `ok`, `errored`, `abnormal` or `crashed` and only escalates. Sessions are not metered.
 
 ## Debug files
 
 ```http
 POST /api/debug-files?kind=apple
 POST /api/debug-files?kind=proguard&release=1.0.0%2B41
+POST /api/debug-files?kind=sourcemap&release=1.0.0%2B41&file=assets/app.js
 Authorization: Bearer bughq_up_your_upload_token
 ```
 
-The body is the output of `symbols -arch arm64 <dSYM>` or an R8 `mapping.txt`, gzipped or plain, up to 64 MiB. The upload token is a secret created in project settings; the ingest key is refused. A re-upload for the same binary UUID or release replaces the earlier one.
+The body is the output of `symbols -arch arm64 <dSYM>`, an R8 `mapping.txt` or a JavaScript sourcemap (the `.map` file, version 3), gzipped or plain, up to 64 MiB. The upload token is a secret created in project settings; the ingest key is refused. A re-upload for the same binary UUID, release, or release and file replaces the earlier one.
+
+| Query field | Kinds | Meaning |
+| --- | --- | --- |
+| `kind` | all | `apple`, `proguard` or `sourcemap`. Guessed from the body when left out. |
+| `release` | `proguard`, `sourcemap` | The release the app reports. Required. |
+| `file` | `sourcemap` | The script the map belongs to, as a stack frame names it. A frame matches when its path ends with this name. Falls back to the map's own `file` field. |
+
+Responses are `201` with the stored files, `401` for a missing or revoked token, `413` above the size limit, `422` when a required field is missing or the body cannot be read as its kind, and `429` above 30 uploads a minute per token.
 
 ## Service and SDK endpoints
 

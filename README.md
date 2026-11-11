@@ -21,6 +21,7 @@ bughq is open source error tracking focused on the loop that matters: capture pr
 
 - Captures browser and server errors through a public, revocable project ingest key.
 - Captures iOS and Android crashes, hangs and ANRs from Stacks and Craft mobile apps, symbolicated with uploaded dSYM symbols and R8 mappings, with crash-free sessions per release.
+- Captures macOS, Windows and Linux desktop apps the same way: sessions, native crashes, and webview and agent JavaScript errors read with uploaded sourcemaps.
 - Groups related events with stable fingerprints that ignore volatile message and stack data.
 - Tracks occurrence counts, affected users, environments, releases, and issue status.
 - Provides project dashboards, issue detail pages, search, filters, and triage controls.
@@ -124,7 +125,7 @@ Tests live in `tests/` and use Bun's test runner. The focused unit suite covers 
 | Path | Responsibility |
 | --- | --- |
 | `app/Errors/` | Fingerprinting (including native frames), ingest authorization, upload tokens, limits, and alert delivery |
-| `app/Symbols/` | Apple symbol maps from dSYMs and R8 retrace, stored per build and cached |
+| `app/Symbols/` | Apple symbol maps from dSYMs, R8 retrace and JavaScript sourcemaps, stored per build and cached |
 | `app/Releases/` | Sessions and crash-free rates per release |
 | `app/Autofix/` | AI analysis, repository access, and pull request workflow |
 | `app/Models/` | Project, issue, event, subscription, user, and alert channel models |

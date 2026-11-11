@@ -404,7 +404,7 @@ interface MetaBundle {
   sdk?: { name?: string, version?: string }
   session?: unknown
   client_timestamp?: unknown
-  /** Native (iOS, Android) events: the platform and their symbolicated frames. */
+  /** Native (iOS, Android, macOS, Windows, Linux) events: the platform and their symbolicated frames. */
   platform?: string
   exception?: { frames?: NativeWireFrame[], causes?: Array<{ type?: string, value?: string, frames?: NativeWireFrame[] }> }
   symbolication?: { symbolicated?: number, missing?: string[] }
@@ -420,7 +420,7 @@ interface NativeWireFrame {
   line?: number
   in_app?: boolean
 }
-const BUNDLE_KEYS = ['extra', 'tags', 'contexts', 'breadcrumbs', 'sdk', 'session', 'client_timestamp', 'exception', 'platform']
+const BUNDLE_KEYS = ['extra', 'tags', 'contexts', 'breadcrumbs', 'sdk', 'session', 'client_timestamp', 'exception', 'platform', 'symbolication']
 function isMetaBundle(value: unknown): value is MetaBundle {
   return !!value && typeof value === 'object' && !Array.isArray(value) && BUNDLE_KEYS.some(k => k in value)
 }
@@ -482,6 +482,11 @@ const exceptions = nativeExceptions ?? parsedExceptions
 // Binaries or releases whose symbols were not uploaded when this event came in.
 const missingSymbols: string[] = isBundle && Array.isArray(rawMeta.symbolication?.missing) ? rawMeta.symbolication.missing.map(String) : []
 const platform = isBundle && typeof rawMeta.platform === 'string' ? rawMeta.platform : null
+const { platformLabel } = await import('../../../app/Errors/native')
+// A JavaScript stack is missing sourcemaps; a native one, dSYM symbols or an R8
+// mapping. The two are uploaded differently, so the hint links to the right page.
+const missingSourcemaps = missingSymbols.some(m => m.startsWith('sourcemap for '))
+const symbolsDoc = missingSourcemaps ? '/docs/capture/desktop#sourcemaps' : '/docs/capture/stacks-mobile#symbols'
 const ctxApp = contexts && typeof contexts.app === 'object' && contexts.app ? contexts.app as Record<string, unknown> : null
 const ctxDevice = contexts && typeof contexts.device === 'object' && contexts.device ? contexts.device as Record<string, unknown> : null
 const appBuildLabel = ctxApp && ctxApp.version ? `${String(ctxApp.version)}${ctxApp.build ? ` build ${String(ctxApp.build)}` : ''}` : ''
@@ -561,7 +566,7 @@ const crumbs = (breadcrumbs || []).map(b => ({
 const eventMeta = issue ? [
   { label: 'Level', value: (issue.level || 'error'), pill: true },
   { label: 'Environment', value: latest?.environment || 'production' },
-  ...(platform ? [{ label: 'Platform', value: platform === 'ios' ? 'iOS' : platform === 'android' ? 'Android' : platform }] : []),
+  ...(platform ? [{ label: 'Platform', value: platformLabel(platform) }] : []),
   ...(latest?.release ? [{ label: 'Release', value: latest.release, mono: true }] : []),
   ...(appBuildLabel ? [{ label: 'App', value: appBuildLabel, mono: true }] : []),
   ...(deviceLabel ? [{ label: 'Device', value: deviceLabel }] : []),
@@ -745,7 +750,7 @@ function copyStack() {
                 </div>
                 @if (missingSymbols.length)
                   <div class="px-3 py-2 text-subtle text-xs border-b border-line">
-                    Some frames are addresses because these symbols were not uploaded yet: <span class="mono">{{ missingSymbols.join(', ') }}</span>. See <a href="/docs/capture/stacks-mobile#symbols">uploading symbols</a>.
+                    Some frames are {{ missingSourcemaps ? 'minified' : 'addresses' }} because these {{ missingSourcemaps ? 'sourcemaps' : 'symbols' }} were not uploaded yet: <span class="mono">{{ missingSymbols.join(', ') }}</span>. See <a href="{{ symbolsDoc }}">uploading {{ missingSourcemaps ? 'sourcemaps' : 'symbols' }}</a>.
                   </div>
                 @endif
                 <div class="p-2">

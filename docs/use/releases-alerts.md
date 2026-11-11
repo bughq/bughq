@@ -21,7 +21,7 @@ Separate production, staging, and development with `environment`. This keeps pre
 
 ## Crash-free sessions
 
-Mobile apps report a session per launch (see [Stacks and Craft mobile apps](../capture/stacks-mobile.md)). The dashboard then shows, for each release in the last 30 days, the share of sessions that did not end in a crash. The rate is rounded down, so a release with one crash in a hundred thousand sessions reads 99.99%, never 100%.
+Mobile and desktop apps report a session per launch (see [Stacks and Craft mobile apps](../capture/stacks-mobile.md) and [desktop apps](../capture/desktop.md)). The dashboard then shows, for each release in the last 30 days, the share of sessions that did not end in a crash. The rate is rounded down, so a release with one crash in a hundred thousand sessions reads 99.99%, never 100%.
 
 ## Alert events
 

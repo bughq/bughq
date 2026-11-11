@@ -73,7 +73,7 @@ let members: MemberRow[] = []
 let invites: InviteRow[] = []
 // Native projects' upload tokens (only their prefixes) and uploaded symbols.
 interface UploadTokenRow { id: string, name: string, token_prefix: string, last_used_at: string | null, revoked_at: string | null }
-interface DebugFileRow { id: string, kind: string, debug_id: string, code_name: string | null, symbol_count: number, created_at: string }
+interface DebugFileRow { id: string, kind: string, debug_id: string, code_name: string | null, release: string | null, symbol_count: number, created_at: string }
 let uploadTokens: UploadTokenRow[] = []
 let debugFiles: DebugFileRow[] = []
 if (user) {
@@ -110,16 +110,25 @@ if (user) {
       [activeProject.id],
     )) as unknown as UploadTokenRow[]) ?? []
     debugFiles = ((await db.unsafe(
-      `SELECT id, kind, debug_id, code_name, symbol_count, created_at FROM debug_files
+      `SELECT id, kind, debug_id, code_name, release, symbol_count, created_at FROM debug_files
        WHERE project_id = $1 ORDER BY created_at DESC LIMIT 20`,
       [activeProject.id],
     )) as unknown as DebugFileRow[]) ?? []
   }
 }
 const projectId = activeProject?.id || null
-const isNativeProject = activeProject?.platform === 'ios' || activeProject?.platform === 'android'
+const { isNativePlatform, platformLabel } = await import('../../app/Errors/native')
+const isNativeProject = isNativePlatform(activeProject?.platform)
+// What a build of this platform uploads to make its stacks readable.
+const symbolsBlurb = activeProject?.platform === 'ios'
+  ? 'Native frames arrive as addresses. Upload each build\'s dSYM symbols and bughq turns them into functions, files and lines.'
+  : activeProject?.platform === 'android'
+    ? 'Native frames arrive as addresses. Upload each build\'s R8 mapping.txt and bughq turns them into functions, files and lines.'
+    : activeProject?.platform === 'macos'
+      ? 'Webview and agent errors arrive minified, and native frames as addresses. Upload each build\'s JavaScript sourcemaps and dSYM symbols and bughq turns them into functions, files and lines.'
+      : 'Webview and agent errors arrive minified. Upload each build\'s JavaScript sourcemaps and bughq turns them into functions, files and lines.'
 const tokenView = uploadTokens.map(t => ({ id: t.id, name: t.name, prefix: t.token_prefix, revoked: !!t.revoked_at, used: t.last_used_at ? String(t.last_used_at).slice(0, 10) : 'never' }))
-const debugFileView = debugFiles.map(f => ({ id: f.id, label: f.kind === 'apple' ? `${f.code_name || 'binary'} ${f.debug_id}` : `mapping.txt ${f.debug_id}`, symbols: Number(f.symbol_count || 0).toLocaleString(), at: String(f.created_at).slice(0, 10) }))
+const debugFileView = debugFiles.map(f => ({ id: f.id, label: f.kind === 'apple' ? `${f.code_name || 'binary'} ${f.debug_id}` : f.kind === 'sourcemap' ? `${f.code_name || 'script'}.map ${f.release || ''}`.trim() : `mapping.txt ${f.debug_id}`, symbols: `${Number(f.symbol_count || 0).toLocaleString()} ${f.kind === 'sourcemap' ? 'sources' : 'symbols'}`, at: String(f.created_at).slice(0, 10) }))
 
 // Whether this owner can invite. Asked here so the form can say so before
 // anyone types an address; the API refuses it regardless
@@ -254,6 +263,24 @@ function installGuide(platform: string | null, key: string): InstallGuide {
         + `// captured natively and sent from an offline outbox.\n`
         + `// For readable stacks, create an upload token below and set\n`
         + `// BUGHQ_UPLOAD_TOKEN in ${p === 'ios' ? 'your Xcode Cloud workflow' : 'the environment of buddy build:android --bundle'}.`,
+    }
+  }
+  if (p === 'macos' || p === 'windows' || p === 'linux') {
+    return {
+      label: platformLabel(p),
+      install: '',
+      code: `# .env (the ingest key ships in the app, which is safe)\nBUGHQ_KEY=${key}\nBUGHQ_HOST=${INGEST_BASE}\n\n`
+        + `# A launch, for crash-free sessions per release\n`
+        + `POST ${INGEST_BASE}/sessions\n`
+        + `X-BugHQ-Key: ${key}\n`
+        + `{ "id": "<uuid>", "platform": "${p}", "release": "1.0.0+41", "status": "ok" }\n\n`
+        + `# A webview or agent error; the stack is read with your sourcemaps\n`
+        + `POST ${INGEST_BASE}/errors\n`
+        + `X-BugHQ-Key: ${key}\n`
+        + `{ "platform": "${p}", "release": "1.0.0+41", "type": "TypeError",\n`
+        + `  "message": "...", "stack": "<error.stack>", "session": { "id": "<uuid>" } }\n\n`
+        + `# For readable stacks, create an upload token below, set\n`
+        + `# BUGHQ_UPLOAD_TOKEN in CI and upload each build's sourcemaps.`,
     }
   }
   if (p === 'laravel')
@@ -1325,7 +1352,7 @@ function unarchive(): void {
         <div class="mb-3 sec-title">Symbols</div>
         <div class="px-5 py-5 panel">
           <p class="mb-4 text-sm text-subtle">
-            Native frames arrive as addresses. Upload each build's {{ activeProject?.platform === 'ios' ? 'dSYM symbols' : 'R8 mapping.txt' }} and bughq turns them into functions, files and lines.
+            {{ symbolsBlurb }}
             Uploads use an upload token, a secret for your CI only. Never put it in an app.
           </p>
           <div class="flex flex-wrap gap-2 items-center">
@@ -1360,7 +1387,7 @@ function unarchive(): void {
             @foreach (debugFileView as f)
               <div class="flex gap-3 justify-between py-1.5 text-xs border-t border-line">
                 <span class="truncate mono">{{ f.label }}</span>
-                <span class="shrink-0 text-subtle">{{ f.symbols }} symbols, {{ f.at }}</span>
+                <span class="shrink-0 text-subtle">{{ f.symbols }}, {{ f.at }}</span>
               </div>
             @endforeach
           @endif

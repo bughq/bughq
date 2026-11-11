@@ -164,7 +164,7 @@ function pageUrl(overrides: DashboardQuery): string {
 const switchTarget = pageUrl({ page: 1 })
 
 // Release health for app projects: crash-free sessions per release over the
-// last 30 days, from the sessions the mobile SDKs report (app_sessions). Empty,
+// last 30 days, from the sessions mobile and desktop apps report (app_sessions). Empty,
 // and the panel hidden, for a project that sends none.
 interface ReleaseHealthView { release: string, sessions: string, crashFree: string, width: number, tone: string }
 let releaseHealth: ReleaseHealthView[] = []

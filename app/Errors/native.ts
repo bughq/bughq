@@ -1,5 +1,5 @@
 /**
- * Native (iOS and Android) events.
+ * Native (iOS, Android, macOS, Windows and Linux) events.
  *
  * A browser error arrives as a `stack` string and is grouped by its type,
  * message and top frame. A native crash is different in three ways, and this
@@ -15,11 +15,32 @@
  *     crash type plus the top in-app frames, not on the message.
  *  3. It names a platform, a build and a device, which the issue page shows.
  *
+ * Desktop apps (a native shell around a webview and a Bun agent) report the
+ * same way. A macOS crash carries Apple frames and is symbolicated exactly like
+ * an iOS one. Windows and Linux frames arrive with whatever names the reporter
+ * resolved on the machine and are kept as they came: there is no PDB or DWARF
+ * reader here. Their JavaScript errors arrive as a `stack` string and are
+ * symbolicated against uploaded sourcemaps (app/Symbols/sourcemap.ts).
+ *
  * Everything here is pure. The symbol lookups are passed in, so grouping and
  * rendering are testable without a database (see tests/unit/native.test.ts).
  */
 
-export type NativePlatform = 'ios' | 'android'
+/** Every platform a native shell reports as, mobile first. */
+export const NATIVE_PLATFORMS = ['ios', 'android', 'macos', 'windows', 'linux'] as const
+export type NativePlatform = typeof NATIVE_PLATFORMS[number]
+
+/** The desktop subset: a webview plus an agent process, on a computer. */
+export const DESKTOP_PLATFORMS = ['macos', 'windows', 'linux'] as const
+export type DesktopPlatform = typeof DESKTOP_PLATFORMS[number]
+
+const PLATFORM_LABELS: Record<NativePlatform, string> = {
+  ios: 'iOS',
+  android: 'Android',
+  macos: 'macOS',
+  windows: 'Windows',
+  linux: 'Linux',
+}
 
 /** One frame, top of the stack first. Apple and JVM frames share the shape. */
 export interface NativeFrame {
@@ -60,7 +81,21 @@ const MAX_FRAMES = 128
 const MAX_CAUSES = 5
 
 export function isNativePlatform(value: unknown): value is NativePlatform {
-  return value === 'ios' || value === 'android'
+  return typeof value === 'string' && (NATIVE_PLATFORMS as readonly string[]).includes(value)
+}
+
+export function isDesktopPlatform(value: unknown): value is DesktopPlatform {
+  return typeof value === 'string' && (DESKTOP_PLATFORMS as readonly string[]).includes(value)
+}
+
+/** Platforms whose native frames are Mach-O `image + offset`, read with a dSYM symbol map. */
+export function isApplePlatform(value: unknown): value is 'ios' | 'macos' {
+  return value === 'ios' || value === 'macos'
+}
+
+/** How a platform is written for a person: `macos` is macOS. Unknown values pass through. */
+export function platformLabel(value: unknown): string {
+  return isNativePlatform(value) ? PLATFORM_LABELS[value] : String(value ?? '')
 }
 
 function str(value: unknown, max = 512): string | undefined {

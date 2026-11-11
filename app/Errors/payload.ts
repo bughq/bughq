@@ -1,3 +1,5 @@
+import { isNativePlatform } from './native'
+
 export const MAX_MESSAGE = 4096
 export const MAX_STACK = 24 * 1024
 export const MAX_METADATA_BYTES = 96 * 1024
@@ -75,7 +77,7 @@ export function buildMetadata(body: Record<string, unknown>): string | null {
     metadata.session = body.session
   // Native events: the platform and the (symbolicated) structured frames the
   // issue page renders instead of re-parsing the stack text.
-  if (body.platform === 'ios' || body.platform === 'android')
+  if (isNativePlatform(body.platform))
     metadata.platform = body.platform
   if (body.exception && typeof body.exception === 'object')
     metadata.exception = body.exception

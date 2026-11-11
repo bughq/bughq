@@ -18,10 +18,11 @@ import { dispatchAlerts } from '../app/Errors/alerts'
 import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, randomId } from '../app/Errors/fingerprint'
 import { authorizeIngest } from '../app/Errors/ingest'
 import { allowAlert, rateLimit } from '../app/Errors/limits'
-import { isNativePlatform, nativeCulprit, nativeFingerprintParts, parseNativeException, renderNativeStack } from '../app/Errors/native'
+import { isDesktopPlatform, isNativePlatform, nativeCulprit, nativeFingerprintParts, parseNativeException, renderNativeStack } from '../app/Errors/native'
 import { buildMetadata, clip, col255, MAX_MESSAGE, MAX_STACK, parseIngestEnvelope } from '../app/Errors/payload'
+import { sessionFromEvent } from '../app/Releases/health'
 import { parseSessions, recordSessions } from '../app/Releases/sessions'
-import { symbolicate } from '../app/Symbols/store'
+import { symbolicate, symbolicateJs } from '../app/Symbols/store'
 import { isIssueStatus, snoozedUntil } from '../app/Errors/triage'
 import { ingestUrl } from '../app/Support/urls'
 
@@ -237,7 +238,7 @@ route.post('/errors', async (request: any) => {
   const { fingerprintParts: fpOverride } = parsed.value
   let { errorType, message, stack } = parsed.value
 
-  // Native crashes (iOS, Android) carry structured frames. Symbolicate them
+  // Native crashes (iOS, Android, macOS, Windows, Linux) carry structured frames. Symbolicate them
   // against the build's uploaded dSYM symbols or R8 mapping, then group on the
   // crash type plus the top in-app frames instead of the message, which for a
   // native crash is an address or an obfuscated class name. See
@@ -262,6 +263,21 @@ route.post('/errors', async (request: any) => {
       ...body,
       exception: sym.exception,
       symbolication: { symbolicated: sym.symbolicated, missing: sym.missing },
+    }
+  }
+  else if (stack) {
+    // A JavaScript stack: a webview or Bun agent error from a desktop or
+    // mobile shell, or a minified browser bundle. Rewritten against the
+    // sourcemaps uploaded for its release BEFORE grouping, so the fingerprint
+    // is taken from `renderCheckout (src/app.ts)` and not from `i (app.js)`,
+    // which a minifier renames on every build. A release with no maps costs
+    // one cached lookup. See app/Symbols/sourcemap.ts.
+    const js = await symbolicateJs(projectId, typeof body.release === 'string' ? body.release : null, stack, {
+      expectMaps: isDesktopPlatform(platform),
+    })
+    if (js.symbolicated || js.missing.length) {
+      stack = clip(js.stack, MAX_STACK)
+      stored = { ...body, symbolication: { symbolicated: js.symbolicated, missing: js.missing } }
     }
   }
 
@@ -386,20 +402,10 @@ route.post('/errors', async (request: any) => {
   // Release health: a native event names the app session it happened in. A
   // crash ends that session as crashed; any other error marks it errored.
   // Browser SDKs send a per-tab session too, but those have no session pings
-  // to divide by, so only native platforms count here.
-  if (platform && body.session && typeof body.session === 'object' && body.session.id) {
-    const crashed = body.level === 'fatal' || (rawException !== null && !rawException.handled)
-    await recordSessions(projectId, [{
-      id: String(body.session.id).slice(0, 64),
-      release: col255(body.release)?.slice(0, 128) ?? '',
-      environment: String(body.environment ?? 'production').slice(0, 64),
-      platform,
-      status: crashed ? 'crashed' : 'errored',
-      errors: 1,
-      startedAt: typeof body.session.startedAt === 'string' ? body.session.startedAt : now,
-      userId: body.user?.id != null ? String(body.user.id) : null,
-    }]).catch(err => console.error('[sessions] could not mark session:', err instanceof Error ? err.message : err))
-  }
+  // to divide by, so only native platforms (mobile and desktop) count here.
+  const sessionUpdate = sessionFromEvent(body, platform, rawException, now)
+  if (sessionUpdate)
+    await recordSessions(projectId, [sessionUpdate]).catch(err => console.error('[sessions] could not mark session:', err instanceof Error ? err.message : err))
 
   return json({ ok: true, issue: issueId }, 201)
 }).skipCsrf() // public ingest: SDKs POST cross-origin with no CSRF cookie
@@ -409,7 +415,7 @@ route.post('/errors', async (request: any) => {
 // ---------------------------------------------------------------------------
 
 /**
- * `POST /sessions`: one row per app launch from the mobile SDKs, the
+ * `POST /sessions`: one row per app launch from the mobile and desktop SDKs, the
  * denominator for crash-free sessions. Authenticated by the ingest key exactly
  * like `/errors`, and accepts a batch so a device coming back online replays its
  * whole queue in one request.

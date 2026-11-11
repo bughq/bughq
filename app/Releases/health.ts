@@ -81,6 +81,40 @@ export function parseSessions(body: Record<string, any>, now = new Date()): Sess
   return out
 }
 
+/**
+ * The session an error event ends or marks, for the crash-free rate.
+ *
+ * Only an event from a native shell counts: iOS and Android, and the desktop
+ * platforms (macOS, Windows, Linux), whose apps report one session per launch
+ * exactly as a phone app does. `platform` is the event's platform when it is
+ * one of those and null otherwise, so a browser event, which has per-tab
+ * sessions but no session pings to divide by, never reaches the table.
+ *
+ * A fatal event or an unhandled native exception ends the session as crashed.
+ * Anything else, a caught exception or a JavaScript error in the webview or the
+ * agent process, marks it errored and leaves it crash-free.
+ */
+export function sessionFromEvent(
+  body: Record<string, any>,
+  platform: string | null,
+  exception: { handled: boolean } | null,
+  now: string,
+): SessionUpdate | null {
+  if (!platform || !body.session || typeof body.session !== 'object' || !body.session.id)
+    return null
+  const crashed = body.level === 'fatal' || (exception !== null && !exception.handled)
+  return {
+    id: String(body.session.id).slice(0, 64),
+    release: clean(body.release, 128),
+    environment: String(body.environment ?? 'production').slice(0, 64),
+    platform,
+    status: crashed ? 'crashed' : 'errored',
+    errors: 1,
+    startedAt: typeof body.session.startedAt === 'string' ? body.session.startedAt : now,
+    userId: body.user?.id != null ? String(body.user.id) : null,
+  }
+}
+
 export interface ReleaseHealthRow {
   release: string
   sessions: number

@@ -40,6 +40,7 @@ const config: BunPressOptions = {
             { text: 'Browser SDK', link: '/capture/browser' },
             { text: 'Stacks and stx', link: '/capture/stacks-stx' },
             { text: 'Stacks and Craft mobile apps', link: '/capture/stacks-mobile' },
+            { text: 'Desktop apps', link: '/capture/desktop' },
             { text: 'Vue and Nuxt', link: '/capture/vue-nuxt' },
             { text: 'PHP and Laravel', link: '/capture/php-laravel' },
           ],

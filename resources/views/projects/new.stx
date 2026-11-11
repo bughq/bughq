@@ -169,6 +169,9 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
           <option value="stacks">Stacks</option>
           <option value="ios">iOS (Stacks and Craft mobile)</option>
           <option value="android">Android (Stacks and Craft mobile)</option>
+          <option value="macos">macOS (desktop app)</option>
+          <option value="windows">Windows (desktop app)</option>
+          <option value="linux">Linux (desktop app)</option>
           <option value="laravel">Laravel</option>
           <option value="php">PHP</option>
           <option value="other">Other</option>
