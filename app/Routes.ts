@@ -18,4 +18,6 @@ export default {
   errors: { path: 'errors', prefix: '' },
   autofix: { path: 'autofix', prefix: '' },
   auth: { path: 'auth', prefix: '' },
+  // The HQ connect and usage endpoints (`buddy hq:connect`, `buddy hq:status`).
+  hq: { path: 'hq', prefix: '' },
 } satisfies RouteRegistry

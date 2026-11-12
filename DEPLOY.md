@@ -138,6 +138,37 @@ Step 7 applies only the SQL committed under `database/migrations/`. It answers
 keeps model diffing out of production. A failed migration fails the job on
 purpose: the release is already live by then, so a red step is the alarm.
 
+## Metering and the free allowance
+
+Nothing here needs a deploy-time setting, but it changes what the box does, so
+it is written down.
+
+- The Free allowance is one number in `app/Billing/limits.ts` (500 errors per
+  account per calendar month, UTC). The pricing page renders it from that file.
+- `POST /errors` counts every event through `@stacksjs/hq/meter` and decides in
+  memory: everything is kept up to 120% of the allowance, then one event in
+  ten. It always answers 2xx, with an `X-HQ-Usage` header
+  (`errors;412;500;warn;upgrade=<url>`). Paid accounts are counted and never
+  dropped.
+- Counts are buffered per process and folded into `hq_usage_counters` every ten
+  seconds. A restart or a crash loses at most that window. For the first event
+  per account after a restart the decision is made from zero while the stored
+  total loads behind it.
+- **Enforcement follows billing.** With no `STRIPE_SECRET_KEY` in the
+  environment every account is unlimited (the self-hosted case). In production
+  the key is set, so the allowance is live from the first deploy of this code.
+- If the subscriptions lookup fails, an account keeps the plan this process
+  last read for it. Only an account with no known plan is treated as Free.
+- `GET /api/v1/usage`, `POST /api/cli/connect` and `GET /api/cli/connect/{code}`
+  (`routes/hq.ts`) are what `buddy hq:connect` and `buddy hq:status` talk to.
+  The approve page is `/cli/connect` on the app site. Connect codes live in
+  `hq_connect_codes`, so the page (app process) and the API process agree.
+
+Two migrations carry this: `0000000047` creates `hq_usage_counters` and copies
+the existing `usage_counters` rows into it, and `0000000048` creates
+`hq_connect_codes`. Both are additive and safe to run twice. The old
+`usage_counters` table is left in place as the record of past months.
+
 ## Secrets
 
 Set these per GitHub **environment** (`production`, `staging`, `development`).

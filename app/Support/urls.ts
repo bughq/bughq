@@ -35,3 +35,8 @@ export function ingestUrl(): string {
   // tolerated.
   return abs(process.env.BUGHQ_INGEST_URL || env.APP_URL, 'http://localhost:3108')
 }
+
+/** Where this service sells its plan. Sent in `X-HQ-Usage` and `GET /api/v1/usage`. */
+export function upgradeUrl(): string {
+  return `${appUrl()}/pricing`
+}

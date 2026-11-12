@@ -1,0 +1,157 @@
+<script server>
+useSeoMeta({
+  title: 'Connect an app - bughq',
+  // Auth-walled and addressed by a one-time code. Never something to index.
+  robots: 'noindex, nofollow',
+})
+
+// The approve page for `buddy hq:connect`. The CLI started a connect, printed
+// (or opened) this URL with its code, and is now polling. This page shows which
+// app is asking, and the signed-in user confirms. Nothing is created until
+// they do: see routes/hq.ts for the approve endpoint and app/Hq/adapter.ts for
+// what approving provisions.
+const query = new URLSearchParams((typeof globalThis !== 'undefined' && globalThis.__stxServeSearch) || '')
+const code = query.get('code') || ''
+// Set by this page's own client script after a successful approval, when it
+// reloads. The outcome is rendered by the server like every other state here,
+// so no server value ever has to sit inside a client-side conditional (see the
+// note on that in projects/new.stx).
+const done = query.get('done') === '1'
+
+// Authenticate the render, like every other auth-walled page here. Unlike
+// those, a signed-out visitor is NOT bounced to /login: the redirect would
+// drop the code, and the code is the whole reason they are here. They are told
+// to sign in and reopen the link instead.
+const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('auth-token')) || ''
+let user = null
+if (token) {
+  try {
+    const { Auth } = await import('@stacksjs/auth')
+    user = await Auth.getUserFromToken(token)
+  }
+  catch { user = null }
+}
+
+// What is being asked for. `null` when the code is unknown, expired, or was
+// already approved: the three look the same on purpose, so this page cannot be
+// used to find out which codes exist.
+let pending = null
+if (user && code && !done) {
+  try {
+    const { hq } = await import('~/app/Hq/service')
+    pending = await hq.describeConnect(code)
+  }
+  catch { pending = null }
+}
+const appName = pending ? pending.app : ''
+const signedInAs = user ? String(user.email ?? '') : ''
+</script>
+
+<script client>
+// Approve a connect. One credentialed same-origin POST on the HttpOnly
+// auth-token cookie; the server does the rest and the waiting CLI picks the
+// keys up on its next poll. The keys are never sent to this page.
+const error = state('')
+const loading = state(false)
+const upgrade = state(false)
+
+async function approve(): Promise<void> {
+  if (loading())
+    return
+  const code = new URLSearchParams(route.query).get('code') || ''
+  loading.set(true)
+  error.set('')
+  upgrade.set(false)
+  try {
+    const res = await fetch(`/api/cli/connect/${encodeURIComponent(code)}/approve`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+    const data = await res.json().catch(() => ({}))
+    if (res.status === 401) {
+      error.set('Your session has ended. Sign in, then open the link from your terminal again.')
+      loading.set(false)
+      return
+    }
+    if (!res.ok) {
+      upgrade.set(res.status === 402)
+      error.set(data.error || 'Could not approve this request.')
+      loading.set(false)
+      return
+    }
+    // Same path, so reload: true (the router no-ops a same-URL navigate).
+    // replace, so Back does not return to a code that is now spent.
+    navigate('/cli/connect?done=1', { replace: true, reload: true })
+  }
+  catch {
+    error.set('Something went wrong. Please try again.')
+    loading.set(false)
+  }
+}
+</script>
+
+<div class="flex items-center justify-center px-5 py-12 min-h-[100dvh]">
+  <div class="max-w-md w-full">
+    <div class="mb-8 text-center">
+      <StxLink to="/" class="text-2xl wordmark">bughq</StxLink>
+    </div>
+
+    @if (!user)
+      <div class="text-center">
+        <h1 class="font-semibold text-xl tracking-tight">Sign in to connect your app</h1>
+        <p class="mt-2 text-sm text-subtle">A terminal is waiting for you to approve a connection to bughq. Sign in or create an account, then open the link from your terminal again.</p>
+        <div class="flex gap-3 justify-center mt-6">
+          <StxLink to="/login" class="px-5 py-2.5 font-semibold text-sm btn-accent">Sign in</StxLink>
+          <StxLink to="/register" class="px-5 py-2.5 font-semibold text-sm btn ghost">Create an account</StxLink>
+        </div>
+      </div>
+    @endif
+
+    @if (user && done)
+      <div class="text-center" role="status">
+        <h1 class="font-semibold text-xl tracking-tight">Connected</h1>
+        <p class="mt-2 text-sm text-subtle">Go back to your terminal. It is writing the keys to your app now.</p>
+        <div class="mt-6">
+          <StxLink to="/dashboard" class="text-accent text-sm">Go to your dashboard</StxLink>
+        </div>
+      </div>
+    @endif
+
+    @if (user && !done && !pending)
+      <div class="text-center">
+        <h1 class="font-semibold text-xl tracking-tight">This link is no longer valid</h1>
+        <p class="mt-2 text-sm text-subtle">A connect link works once and for ten minutes. Run the command in your terminal again to get a new one.</p>
+        <div class="mt-6">
+          <StxLink to="/dashboard" class="text-accent text-sm">Go to your dashboard</StxLink>
+        </div>
+      </div>
+    @endif
+
+    @if (user && !done && pending)
+      <div class="mb-8 text-center">
+        <h1 class="font-semibold text-xl tracking-tight">Connect {{ appName }} to bughq?</h1>
+        <p class="mt-2 text-sm text-subtle">Signed in as {{ signedInAs }}.</p>
+      </div>
+
+      <div class="px-4 py-3 text-sm rounded-[10px] limit-note">
+        Approving gives the terminal that opened this page the keys for an app called {{ appName }} in your account. If you already have one by that name it is reused, otherwise it is created. Only approve if you just ran the command yourself.
+      </div>
+
+      @if (error())
+        <div id="connect-error" role="alert" class="mt-4 py-2 err notice-box">{{ error() }}</div>
+      @endif
+      @if (upgrade())
+        <StxLink to="/pricing" class="block mt-4 py-2.5 w-full font-semibold text-center text-sm btn-accent">See Pro</StxLink>
+      @endif
+
+      <div class="mt-6">
+        <Button type="button" @click="approve" :loading="loading()" fullWidth className="btn-accent">
+          {{ loading() ? 'Approving…' : 'Approve' }}
+        </Button>
+      </div>
+      <p class="mt-4 text-center text-subtle text-xs">Not you? Close this page and nothing happens.</p>
+    @endif
+  </div>
+</div>

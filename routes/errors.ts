@@ -13,7 +13,9 @@ import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
 import { sameOrigin } from '../app/Support/origin'
 import { healthResponse } from '../app/Support/health'
-import { record as recordUsage } from '../app/Billing/usage'
+import { admitError } from '../app/Billing/admission'
+import { isPro } from '../app/Billing/pro'
+import { counter } from '../app/Billing/usage'
 import { dispatchAlerts } from '../app/Errors/alerts'
 import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, randomId } from '../app/Errors/fingerprint'
 import { authorizeIngest } from '../app/Errors/ingest'
@@ -24,7 +26,8 @@ import { sessionFromEvent } from '../app/Releases/health'
 import { parseSessions, recordSessions } from '../app/Releases/sessions'
 import { symbolicate, symbolicateJs } from '../app/Symbols/store'
 import { isIssueStatus, snoozedUntil } from '../app/Errors/triage'
-import { ingestUrl } from '../app/Support/urls'
+import { clientIp } from '../app/Support/client-ip'
+import { ingestUrl, upgradeUrl } from '../app/Support/urls'
 
 // Ingest abuse bounds. The public key gate is not enough on its own - a script
 // with the key (readable from any bundle) could flood the ingest.
@@ -36,35 +39,15 @@ const PROJECT_LIMIT = 120
 const IP_LIMIT = 300
 const RATE_WINDOW_MS = 10_000
 
-// Number of trusted reverse-proxy / load-balancer hops in front of the app.
-// X-Forwarded-For is built left-to-right (client, proxy1, proxy2, …), so the
-// real client sits at index (length - TRUSTED_PROXY_HOPS). Counting from the
-// RIGHT means a client can only forge entries we then skip over — taking the
-// leftmost value (as before) let anyone spoof their IP and dodge the per-IP
-// quota. Default 1 (a single edge LB); set TRUSTED_PROXY_HOPS to match your
-// topology, or 0 if the app is exposed directly (XFF is then ignored).
-const TRUSTED_PROXY_HOPS = Math.max(0, Number(process.env.TRUSTED_PROXY_HOPS ?? 1))
-
-function clientIp(request: any): string {
-  const direct = request.headers?.get('x-real-ip') || request.ip || 'unknown'
-  if (TRUSTED_PROXY_HOPS === 0)
-    return direct
-  const xff = request.headers?.get('x-forwarded-for')
-  if (xff) {
-    const hops = String(xff).split(',').map((s: string) => s.trim()).filter(Boolean)
-    if (hops.length) {
-      const idx = hops.length - TRUSTED_PROXY_HOPS
-      return hops[idx >= 0 ? idx : 0]
-    }
-  }
-  return direct
-}
-
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, X-BugHQ-Key',
   'Access-Control-Max-Age': '86400',
+  // A cross-origin script can only read response headers named here, and the
+  // browser SDK is exactly that. Without this the usage header would reach
+  // server SDKs and nobody else.
+  'Access-Control-Expose-Headers': 'X-HQ-Usage',
 }
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}): Response {
@@ -218,22 +201,27 @@ route.post('/errors', async (request: any) => {
   if (project.console_muted === true && parsed.value.errorType === 'ConsoleError')
     return json({ ok: true, muted: true })
 
-  // Meter this event against the owning account.
+  // Meter this event against the owning account, and decide whether to keep it.
   //
-  // MEASURE ONLY: nothing is refused here yet, and `enforcing()` is what will
-  // later turn this into a gate. The cap has never been counted, so enforcing a
-  // number nobody has verified would drop real customer events on a guess —
-  // and a dropped event is invisible by definition, which makes it the worst
-  // possible thing to get wrong quietly.
+  // The allowance and what happens past it live in app/Billing/limits.ts and
+  // app/Billing/admission.ts: everything is kept up to 120% of the allowance,
+  // then one event in ten. A paid account has no limit.
+  //
+  // A sampled-out event is still answered 2xx. A refusal would be read by the
+  // SDK as a failed delivery and retried, which is the same event again. The
+  // X-HQ-Usage header on every response says where the account stands.
   //
   // Placed here on purpose: authenticated, canonical projectId, the cheap
   // flood-killer has already run, and NOTHING has been written. A check after
   // the issue upsert would have already incremented issues.count for an event
-  // it then refused, corrupting the number the dashboard, the alerts and the
+  // it then dropped, corrupting the number the dashboard, the alerts and the
   // issue page all render.
   //
-  // Costs one Map mutation. No round-trip: see app/Billing/usage.ts.
-  recordUsage(project.owner_id, 'accepted')
+  // Costs one Map mutation, plus the plan check, which is cached per account
+  // and queries at most once every ten seconds. See app/Billing/usage.ts.
+  const usage = await admitError(project.owner_id, { counter, isPro, upgradeUrl })
+  if (!usage.accept)
+    return json({ ok: true, sampled: true }, 202, usage.headers)
 
   const { fingerprintParts: fpOverride } = parsed.value
   let { errorType, message, stack } = parsed.value
@@ -407,7 +395,7 @@ route.post('/errors', async (request: any) => {
   if (sessionUpdate)
     await recordSessions(projectId, [sessionUpdate]).catch(err => console.error('[sessions] could not mark session:', err instanceof Error ? err.message : err))
 
-  return json({ ok: true, issue: issueId }, 201)
+  return json({ ok: true, issue: issueId }, 201, usage.headers)
 }).skipCsrf() // public ingest: SDKs POST cross-origin with no CSRF cookie
 
 // ---------------------------------------------------------------------------
