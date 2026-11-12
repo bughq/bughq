@@ -1,0 +1,128 @@
+<script server>
+useSeoMeta({
+  title: 'Connect an app - bughq',
+  // Auth-walled and single-use: nothing here is worth an index entry.
+  robots: 'noindex, nofollow',
+})
+
+// The approve page for `buddy hq:connect` (routes/hq.ts). The CLI opens this
+// URL with the code it was issued; a signed-in person confirms, and the CLI
+// collects that project's keys on its next poll. Nothing is created by loading
+// the page: only the button does that.
+const query = new URLSearchParams((typeof globalThis !== 'undefined' && globalThis.__stxServeSearch) || '')
+const code = query.get('code') || ''
+
+const token = (typeof requestContext !== 'undefined' && requestContext.cookie && requestContext.cookie('auth-token')) || ''
+let user = null
+if (token) {
+  try {
+    const { Auth } = await import('@stacksjs/auth')
+    user = await Auth.getUserFromToken(token)
+  }
+  catch { user = null }
+}
+
+// Looked up only for a signed-in viewer. A pending code answers the app's name;
+// an unknown, expired or already approved one answers nothing, and the page
+// says the same thing for all three so it cannot be used to test codes.
+let appName = ''
+let pending = false
+if (user && code) {
+  try {
+    const { hq } = await import('~/app/Hq/service')
+    const described = await hq.describeConnect(code)
+    if (described) {
+      appName = described.app
+      pending = true
+    }
+  }
+  catch { pending = false }
+}
+</script>
+
+<script client>
+// The code is read from the URL rather than handed over from the server
+// script, so no server value crosses into client code untyped.
+const error = state('')
+const loading = state(false)
+const connected = state('')
+
+async function approve(): Promise<void> {
+  if (loading())
+    return
+  const code = new URLSearchParams(useRoute().query).get('code') || ''
+  loading.set(true)
+  error.set('')
+  try {
+    const res = await fetch(`/api/cli/connect/${encodeURIComponent(code)}/approve`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+    const data = await res.json().catch(() => ({}))
+    if (res.status === 401) {
+      navigate('/login', { replace: true, reload: true })
+      return
+    }
+    if (!res.ok) {
+      error.set(data.error || 'Could not approve the connection.')
+      loading.set(false)
+      return
+    }
+    connected.set(data.project?.name || 'your app')
+  }
+  catch {
+    error.set('Something went wrong. Please try again.')
+    loading.set(false)
+  }
+}
+</script>
+
+<div class="flex items-center justify-center px-5 py-12 min-h-[100dvh]">
+  <div class="max-w-md w-full">
+    <div class="mb-8 text-center">
+      <StxLink to="/" class="text-2xl wordmark">bughq</StxLink>
+    </div>
+
+    @if (!user)
+      <div class="text-center">
+        <h1 class="font-semibold text-xl tracking-tight">Sign in to connect your app</h1>
+        <p class="mt-2 text-sm text-subtle">Your terminal is waiting for you to approve this connection. Sign in, then come back to this tab and reload it.</p>
+        <div class="flex flex-col gap-3 mt-6">
+          <a href="/login" target="_blank" rel="noopener" class="block py-2.5 w-full font-semibold text-center text-sm btn-accent">Sign in</a>
+          <a href="/register" target="_blank" rel="noopener" class="block py-2.5 w-full text-center text-sm btn ghost">Create an account</a>
+        </div>
+      </div>
+    @endif
+
+    @if (user && !pending)
+      <div class="text-center">
+        <h1 class="font-semibold text-xl tracking-tight">This link is no longer valid</h1>
+        <p class="mt-2 text-sm text-subtle">A connection request lasts ten minutes and can be approved once. Run the connect command again to get a new one.</p>
+      </div>
+    @endif
+
+    @if (user && pending)
+      @if (connected())
+        <div class="text-center" role="status">
+          <h1 class="font-semibold text-xl tracking-tight">Connected</h1>
+          <p class="mt-2 text-sm text-subtle">{{ connected() }} is connected to bughq. You can close this tab and return to your terminal.</p>
+        </div>
+      @endif
+      @if (!connected())
+        <div class="mb-6 text-center">
+          <h1 class="font-semibold text-xl tracking-tight">Connect {{ appName }} to bughq?</h1>
+          <p class="mt-2 text-sm text-subtle">This creates an app called {{ appName }} in your account, or reuses the one you already have, and sends its keys to the terminal that asked.</p>
+        </div>
+        @if (error())
+          <div id="connect-error" role="alert" class="mb-4 py-2 err notice-box">{{ error() }}</div>
+        @endif
+        <Button @click="approve" :loading="loading()" fullWidth className="btn-accent">
+          {{ loading() ? 'Connecting…' : 'Approve connection' }}
+        </Button>
+        <p class="mt-4 text-center text-subtle text-xs">Only approve this if you just ran the connect command yourself.</p>
+      @endif
+    @endif
+  </div>
+</div>

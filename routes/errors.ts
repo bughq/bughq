@@ -13,7 +13,10 @@ import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
 import { sameOrigin } from '../app/Support/origin'
 import { healthResponse } from '../app/Support/health'
-import { record as recordUsage } from '../app/Billing/usage'
+import { USAGE_HEADER } from '@stacksjs/hq/meter'
+import { admitError, usageCounter } from '../app/Billing/meter'
+import { isPro } from '../app/Billing/pro'
+import { clientIp } from '../app/Support/client-ip'
 import { dispatchAlerts } from '../app/Errors/alerts'
 import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, randomId } from '../app/Errors/fingerprint'
 import { authorizeIngest } from '../app/Errors/ingest'
@@ -36,35 +39,13 @@ const PROJECT_LIMIT = 120
 const IP_LIMIT = 300
 const RATE_WINDOW_MS = 10_000
 
-// Number of trusted reverse-proxy / load-balancer hops in front of the app.
-// X-Forwarded-For is built left-to-right (client, proxy1, proxy2, …), so the
-// real client sits at index (length - TRUSTED_PROXY_HOPS). Counting from the
-// RIGHT means a client can only forge entries we then skip over — taking the
-// leftmost value (as before) let anyone spoof their IP and dodge the per-IP
-// quota. Default 1 (a single edge LB); set TRUSTED_PROXY_HOPS to match your
-// topology, or 0 if the app is exposed directly (XFF is then ignored).
-const TRUSTED_PROXY_HOPS = Math.max(0, Number(process.env.TRUSTED_PROXY_HOPS ?? 1))
-
-function clientIp(request: any): string {
-  const direct = request.headers?.get('x-real-ip') || request.ip || 'unknown'
-  if (TRUSTED_PROXY_HOPS === 0)
-    return direct
-  const xff = request.headers?.get('x-forwarded-for')
-  if (xff) {
-    const hops = String(xff).split(',').map((s: string) => s.trim()).filter(Boolean)
-    if (hops.length) {
-      const idx = hops.length - TRUSTED_PROXY_HOPS
-      return hops[idx >= 0 ? idx : 0]
-    }
-  }
-  return direct
-}
-
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, X-BugHQ-Key',
   'Access-Control-Max-Age': '86400',
+  // Without this a browser SDK cannot read the header the ingest answers with.
+  'Access-Control-Expose-Headers': USAGE_HEADER,
 }
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}): Response {
@@ -218,22 +199,27 @@ route.post('/errors', async (request: any) => {
   if (project.console_muted === true && parsed.value.errorType === 'ConsoleError')
     return json({ ok: true, muted: true })
 
-  // Meter this event against the owning account.
+  // Meter this event against the owning account, and decide whether to keep it.
   //
-  // MEASURE ONLY: nothing is refused here yet, and `enforcing()` is what will
-  // later turn this into a gate. The cap has never been counted, so enforcing a
-  // number nobody has verified would drop real customer events on a guess —
-  // and a dropped event is invisible by definition, which makes it the worst
-  // possible thing to get wrong quietly.
+  // A Free account is taken in full up to 120% of its allowance
+  // (app/Billing/plans.ts), then one event in ten. A Pro account is counted
+  // and never limited. The answer is 2xx either way: an SDK retries anything
+  // else, which would turn "over the allowance" into more traffic for the
+  // same data. The account is told through X-HQ-Usage instead, on every
+  // response from here on.
   //
   // Placed here on purpose: authenticated, canonical projectId, the cheap
   // flood-killer has already run, and NOTHING has been written. A check after
   // the issue upsert would have already incremented issues.count for an event
-  // it then refused, corrupting the number the dashboard, the alerts and the
+  // it then dropped, corrupting the number the dashboard, the alerts and the
   // issue page all render.
   //
-  // Costs one Map mutation. No round-trip: see app/Billing/usage.ts.
-  recordUsage(project.owner_id, 'accepted')
+  // No round-trip for the count: see app/Billing/meter.ts. The plan is a
+  // cached verdict, queried at most once per account every ten seconds.
+  const ownerId = project?.owner_id == null ? null : Number(project.owner_id)
+  const quota = admitError(usageCounter, ownerId, await isPro(ownerId))
+  if (!quota.accept)
+    return json({ ok: true, sampled: true }, 200, quota.headers)
 
   const { fingerprintParts: fpOverride } = parsed.value
   let { errorType, message, stack } = parsed.value
@@ -407,7 +393,7 @@ route.post('/errors', async (request: any) => {
   if (sessionUpdate)
     await recordSessions(projectId, [sessionUpdate]).catch(err => console.error('[sessions] could not mark session:', err instanceof Error ? err.message : err))
 
-  return json({ ok: true, issue: issueId }, 201)
+  return json({ ok: true, issue: issueId }, 201, quota.headers)
 }).skipCsrf() // public ingest: SDKs POST cross-origin with no CSRF cookie
 
 // ---------------------------------------------------------------------------
