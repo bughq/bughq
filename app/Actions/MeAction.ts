@@ -37,9 +37,9 @@ export default new Action({
     // (user_id, type), so a stale canceled row can shadow a live subscription
     // and downgrade a paying customer. See app/Billing/pro.ts.
     //
-    // It also fails OPEN, where this used to `catch { pro = false }` — a
-    // momentary database error rendered a paying customer as Free and hid the
-    // features they had paid for.
+    // When the lookup itself fails it answers the last plan it knew for this
+    // account, so a momentary database error does not render a paying customer
+    // as Free. Only an account never resolved since boot falls back to Free.
     const pro = await isPro(Number((user as any).id))
 
     // Only `enabled` reaches the client. getTwoFactorState also returns the

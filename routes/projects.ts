@@ -14,6 +14,7 @@ import { type ChannelType, sendTestAlert, validateWebhook } from '../app/Errors/
 import type { InviteDelivery } from '../app/Invites/invites'
 import { FREE_PROJECTS } from '../app/Billing/plans'
 import { isPro } from '../app/Billing/pro'
+import { newIngestKey, newProjectId } from '../app/Support/project-keys'
 import { newReadKey } from '../app/Support/read-key'
 import { deliverInvite, joinUrl, newInviteToken } from '../app/Invites/invites'
 
@@ -99,26 +100,6 @@ async function userFromCookie(request: any): Promise<any | null> {
   }
 }
 
-/** A short, readable, unique project id: slug of the name + a random suffix. */
-function newProjectId(name: string): string {
-  const slug = (name || 'app')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 24) || 'app'
-  const rand = globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 6)
-  return `${slug}-${rand}`
-}
-
-/**
- * A public, revocable ingest key (not a secret; ships in client code). The
- * `bughq_` prefix makes it recognizable as a bughq key at a glance (Stripe/
- * GitHub style) and greppable in code and logs.
- */
-function newIngestKey(): string {
-  return `bughq_${(globalThis.crypto.randomUUID() + globalThis.crypto.randomUUID()).replace(/-/g, '')}`
-}
-
 function newMemberId(): string {
   return `mem_${globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 20)}`
 }
@@ -201,9 +182,9 @@ route.post('/api/projects', async (request: any) => {
   // Counts every project the user owns, archived ones included: archiving does
   // not free a slot.
   //
-  // Fails OPEN: isPro() returns true when billing is unconfigured (self-hosted)
-  // or when the lookup itself errors. A billing hiccup must never stop someone
-  // creating a project they are entitled to.
+  // isPro() is true when billing is unconfigured (self-hosted). When the
+  // lookup itself errors it answers the last plan it knew for this account, and
+  // Free only if it never resolved one: see app/Billing/pro.ts.
   if (!(await isPro(Number(user.id)))) {
     const owned = Number((await db.unsafe(
       'SELECT COUNT(*) AS n FROM projects WHERE owner_id = $1',

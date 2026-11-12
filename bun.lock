@@ -6,6 +6,7 @@
       "name": "bughq",
       "dependencies": {
         "@loghq/stacks": "^0.2.6",
+        "@stacksjs/hq": "^0.75.541",
         "@ts-analytics/tracking": "^0.1.17",
         "stacks": "^0.75.529",
         "stripe": "^23.0.0",
@@ -145,6 +146,8 @@
     "@stacksjs/gitlint": ["@stacksjs/gitlint@0.1.7", "", { "bin": { "gitlint": "./dist/bin/cli.js" } }, "sha512-7d43l2r5gSLXK8YKflvkwZvN/huoJqbUSmDN+OY3CGHjb4ItimV6GJ/8JyFJwGI7tDEc5VgNGL0JYyIbk2IQ6g=="],
 
     "@stacksjs/health": ["@stacksjs/health@0.75.529", "", {}, "sha512-xsOvBslgoBdpz9mGfR1LUEFgtUTownriWe3j2K8FmpkOMnK9ErmgaPuVUdFkbGq3lZbHBJ2Idl1JXMm00BODKg=="],
+
+    "@stacksjs/hq": ["@stacksjs/hq@0.75.543", "", {}, "sha512-fK9W4jNAx1My+6k/PlF4dLlrBJU9HS0lKKmchx+Owt12IpFufZWHXxt7FVlshLrbvylatKwFINfoqTBhJr+XfA=="],
 
     "@stacksjs/http": ["@stacksjs/http@0.75.529", "", { "dependencies": { "@stacksjs/httx": "^0.1.11" } }, "sha512-JnMDjW/G4OU/+RVZQivL8hbNixIqpVMVbvuNh9BBFsfguR07D/JPUyAPKPq2T9MHR1D97Eg5hpBa8VtKIx9PiQ=="],
 

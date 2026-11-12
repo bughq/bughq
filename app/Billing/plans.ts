@@ -2,13 +2,32 @@
  * What each plan allows. One place, so the pricing page, the gates and the
  * usage meter cannot drift apart.
  *
- * These numbers are what resources/views/pricing.stx advertises. Changing one
- * here without changing the page there makes the product lie, which is the
- * failure mode this file exists to prevent.
+ * resources/views/pricing.stx renders these values rather than restating them,
+ * and the ingest (app/Billing/meter.ts) enforces the same constants. Change a
+ * number here and both the copy and the enforcement move with it.
  */
 
-/** Free's advertised monthly event allowance, per ACCOUNT (not per project). */
-export const FREE_EVENTS_PER_MONTH = 5000
+/** The meter errors are counted under in `hq_usage_counters` and `X-HQ-Usage`. */
+export const ERRORS_METER = 'errors'
+
+/** Free's monthly error allowance, per ACCOUNT (not per project). */
+export const FREE_ERRORS_PER_MONTH = 500
+
+/**
+ * A plan's monthly error allowance. `null` is unlimited.
+ *
+ * What happens past it is not decided here: the ingest takes everything up to
+ * 120% of the allowance and then keeps one error in ten (`SOFT_INGEST` in
+ * `@stacksjs/hq/meter`), and it never refuses a request over quota.
+ */
+export function errorsPerMonth(pro: boolean): number | null {
+  return pro ? null : FREE_ERRORS_PER_MONTH
+}
+
+/** "500", "5,000": the allowance as the pricing page prints it. */
+export function formatAllowance(value: number): string {
+  return value.toLocaleString('en-US')
+}
 
 /** Free's advertised project allowance. */
 export const FREE_PROJECTS = 5
@@ -29,10 +48,3 @@ export const FREE_MEMBERS = 0
  * third. That falls out of gating creation rather than access, so there is no
  * grandfathering flag to store, drift, or explain.
  */
-
-/**
- * The fraction of the allowance at which a customer is warned. Warning only
- * when the cap is reached is too late — by then events are already being lost,
- * and a dropped event is invisible by definition.
- */
-export const WARN_AT = 0.8

@@ -138,6 +138,34 @@ Step 7 applies only the SQL committed under `database/migrations/`. It answers
 keeps model diffing out of production. A failed migration fails the job on
 purpose: the release is already live by then, so a red step is the alarm.
 
+Migrations here are hand-written SQL, not generated from models: adding a model
+for one of these tables makes the generator rewrite the rest (see the note at
+the top of `0000000039`). A new file may need `git add --force`, because a
+global gitignore that lists `*.sql` hides it from `git status`.
+
+### Metering and the connect endpoints
+
+Two tables back the free allowance and `buddy hq:connect`, both created by step
+7 with no manual step and no new environment variable:
+
+| Migration | Table | What it holds |
+|---|---|---|
+| `0000000047` | `hq_usage_counters` | Errors stored per account per month, in the shape `@stacksjs/hq/meter` counts into |
+| `0000000048` | `hq_connect_codes` | Pending connect codes, hashed, each alive for ten minutes |
+
+`0000000047` copies completed months out of the older `usage_counters` table
+and leaves the month it runs in behind, so every account starts the enforced
+allowance from zero on the day it ships. `usage_counters` is kept and no longer
+written.
+
+The allowance is `FREE_ERRORS_PER_MONTH` in `app/Billing/plans.ts`, which the
+pricing page prints and the ingest enforces. Enforcement only applies when
+`STRIPE_SECRET_KEY` is set; without it billing is off and nothing is limited.
+
+The release is live before step 7 migrates. In that window the meter's flush
+and the connect endpoints fail against the missing tables. Ingest is not
+affected: counting happens in memory and a failed flush is logged and dropped.
+
 ## Secrets
 
 Set these per GitHub **environment** (`production`, `staging`, `development`).
