@@ -84,12 +84,12 @@
     "stripe": "^23.0.0"
   },
   "devDependencies": {
-    "@stacksjs/components": "0.2.873",
+    "@stacksjs/components": "0.2.882",
     "better-dx": "^0.2.38"
   },
   "overrides": {
-    "@stacksjs/stx": "0.2.873",
-    "bun-plugin-stx": "0.2.873"
+    "@stacksjs/stx": "0.2.882",
+    "bun-plugin-stx": "0.2.882"
   },
   "git-hooks": {
     "pre-commit": {
