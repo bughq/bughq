@@ -78,9 +78,9 @@
   },
   "dependencies": {
     "@loghq/stacks": "^0.2.6",
-    "@stacksjs/hq": "^0.75.585",
+    "@stacksjs/hq": "^0.75.586",
     "@ts-analytics/tracking": "^0.1.17",
-    "stacks": "^0.75.585",
+    "stacks": "^0.75.586",
     "stripe": "^23.0.0"
   },
   "devDependencies": {
