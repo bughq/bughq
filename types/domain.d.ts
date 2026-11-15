@@ -78,9 +78,6 @@ declare interface Project {
   /** Secret read key: a machine reads this project's issues with it (#19). */
   read_key: string | null
   read_key_last_used_at: string | null
-  /** Secret triage key: a machine changes this project's issue statuses with it. */
-  triage_key: string | null
-  triage_key_last_used_at: string | null
   owner_id: number | null
   /** `false` means archived: ingestion is rejected and alerts pause. */
   is_active: boolean | null

@@ -16,8 +16,8 @@ const token = (typeof requestContext !== 'undefined' && requestContext.cookie &&
 let user = null
 if (token) {
   try {
-    const { Auth } = await import('@stacksjs/auth')
-    user = await Auth.getUserFromToken(token)
+    const { sessionUser } = await import('../../../app/Support/access')
+    user = await sessionUser(token)
   }
   catch { user = null }
 }

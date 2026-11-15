@@ -7,7 +7,6 @@
  * localStorage. Each new project gets its own public `ingest_key`.
  */
 
-import { Auth } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
 import { type ChannelType, sendTestAlert, validateWebhook } from '../app/Errors/channels'
@@ -16,7 +15,7 @@ import { FREE_PROJECTS } from '../app/Billing/plans'
 import { isPro } from '../app/Billing/pro'
 import { newIngestKey, newProjectId } from '../app/Support/project-keys'
 import { newReadKey } from '../app/Support/read-key'
-import { newTriageKey } from '../app/Support/triage-key'
+import { sessionUser } from '../app/Support/access'
 import { deliverInvite, joinUrl, newInviteToken } from '../app/Invites/invites'
 
 function json(data: unknown, status = 200): Response {
@@ -76,14 +75,8 @@ async function currentUser(request: any): Promise<any | null> {
     if (m)
       token = decodeURIComponent(m[1])
   }
-  if (!token)
-    return null
-  try {
-    return await Auth.getUserFromToken(token)
-  }
-  catch {
-    return null
-  }
+  // A full session only: an API token cannot manage a project.
+  return sessionUser(token)
 }
 
 // Resolve the user from the `auth-token` cookie (browser navigations like the
@@ -94,7 +87,7 @@ async function userFromCookie(request: any): Promise<any | null> {
   if (!m)
     return null
   try {
-    return await Auth.getUserFromToken(decodeURIComponent(m[1]))
+    return await sessionUser(decodeURIComponent(m[1]))
   }
   catch {
     return null
@@ -269,38 +262,6 @@ route.delete('/api/projects/{projectId}/read-key', async (request: any) => {
     return json({ error: 'not found' }, 404)
 
   await db.unsafe('UPDATE projects SET read_key = NULL, read_key_last_used_at = NULL, updated_at = NOW() WHERE id = $1', [projectId])
-  return json({ revoked: true })
-}).skipCsrf()
-
-// Issue (or replace) a project's triage key. Owner-only.
-//
-// The credential a machine presents to change the status of this project's
-// issues (app/Support/triage-key.ts): a release pipeline resolving what it
-// fixed, without a person's session. Shown once, here, like the read key, and
-// replacing it stops the previous one at once.
-route.post('/api/projects/{projectId}/triage-key', async (request: any) => {
-  const user = await currentUser(request)
-  if (!user)
-    return json({ error: 'unauthorized' }, 401)
-  const projectId = request.params.projectId
-  if (!(await ownsProject(user, projectId)))
-    return json({ error: 'not found' }, 404)
-
-  const key = newTriageKey()
-  await db.unsafe('UPDATE projects SET triage_key = $1, triage_key_last_used_at = NULL, updated_at = NOW() WHERE id = $2', [key, projectId])
-  return json({ triage_key: key })
-}).skipCsrf()
-
-// Revoke a project's triage key. Owner-only.
-route.delete('/api/projects/{projectId}/triage-key', async (request: any) => {
-  const user = await currentUser(request)
-  if (!user)
-    return json({ error: 'unauthorized' }, 401)
-  const projectId = request.params.projectId
-  if (!(await ownsProject(user, projectId)))
-    return json({ error: 'not found' }, 404)
-
-  await db.unsafe('UPDATE projects SET triage_key = NULL, triage_key_last_used_at = NULL, updated_at = NOW() WHERE id = $1', [projectId])
   return json({ revoked: true })
 }).skipCsrf()
 

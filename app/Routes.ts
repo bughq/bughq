@@ -19,4 +19,5 @@ export default {
   autofix: { path: 'autofix', prefix: '' },
   auth: { path: 'auth', prefix: '' },
   hq: { path: 'hq', prefix: '' },
+  tokens: { path: 'tokens', prefix: '' },
 } satisfies RouteRegistry

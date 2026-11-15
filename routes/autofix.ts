@@ -1,6 +1,6 @@
-import { Auth } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
+import { sessionUser } from '../app/Support/access'
 import { sameOrigin } from '../app/Support/origin'
 import RunAutofix from '../app/Jobs/RunAutofix'
 import { parseRepository, repositoryInfo, repositoryTree } from '../app/Autofix/github'
@@ -21,9 +21,8 @@ async function currentUser(request: any): Promise<any | null> {
     const m = cookie.match(/(?:^|;)\s*auth-token=([^;]+)/)
     if (m) token = decodeURIComponent(m[1])
   }
-  if (!token) return null
-  try { return await Auth.getUserFromToken(token) }
-  catch { return null }
+  // A full session only: an API token cannot start or configure autofix.
+  return sessionUser(token)
 }
 
 function userEmail(user: any): string {

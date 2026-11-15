@@ -1,6 +1,7 @@
+import { sessionUser } from '../Support/access'
 import type { RequestInstance } from '@stacksjs/types'
 import { Action } from '@stacksjs/actions'
-import { Auth, getTwoFactorState } from '@stacksjs/auth'
+import { getTwoFactorState } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
 import { isPro } from '../Billing/pro'
 import { response } from '@stacksjs/router'
@@ -28,7 +29,8 @@ export default new Action({
       if (m)
         token = decodeURIComponent(m[1])
     }
-    const user = token ? await Auth.getUserFromToken(token) : await request.user()
+    // A full session only (app/Support/access.ts): an API token is not its owner.
+    const user = token ? await sessionUser(token) : await request.user()
     if (!user)
       return response.unauthorized('Authentication required')
 

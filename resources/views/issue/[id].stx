@@ -69,9 +69,9 @@ interface Viewer {
 let user: Viewer | null = null
 if (token) {
   try {
-    const { Auth } = await import('@stacksjs/auth')
+    const { sessionUser } = await import('../../../app/Support/access')
     // A full model instance in, the fields this file uses out.
-    user = (await Auth.getUserFromToken(token)) as unknown as Viewer
+    user = (await sessionUser(token)) as unknown as Viewer
   }
   catch { user = null }
 }

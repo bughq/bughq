@@ -1,6 +1,6 @@
+import { sessionUser } from '../../Support/access'
 import type { RequestInstance } from '@stacksjs/types'
 import { Action } from '@stacksjs/actions'
-import { Auth } from '@stacksjs/auth'
 import { config } from '@stacksjs/config'
 import { isBillable } from '@stacksjs/orm'
 import { getPrice } from '@stacksjs/payments'
@@ -21,7 +21,8 @@ export default new Action({
     // not the 'auth' middleware alias populated request.user() on the route.
     const authHeader = ((request as any).headers?.get?.('authorization') ?? '')
     const bearer = (request as any).bearerToken?.() ?? authHeader.replace(/^Bearer\s+/i, '')
-    const user = bearer ? await Auth.getUserFromToken(bearer) : await request.user()
+    // A full session only (app/Support/access.ts): an API token cannot start a checkout.
+    const user = bearer ? await sessionUser(bearer) : await request.user()
     if (!user)
       return response.unauthorized('Authentication required')
     // The token resolves the framework's User, whose type has no billing

@@ -7,9 +7,7 @@
  * Storage is Postgres, queried through bun-query-builder's `db`.
  */
 
-import { Auth } from '@stacksjs/auth'
-import { projectReadAccess, projectTriageAccess } from '../app/Support/access'
-import { bulkIssueIds, MAX_BULK_TRIAGE } from '../app/Support/triage-key'
+import { projectReadAccess, projectTriageAccess, sessionUser } from '../app/Support/access'
 import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
 import { sameOrigin } from '../app/Support/origin'
@@ -27,7 +25,7 @@ import { buildMetadata, clip, col255, headerIngestKey, MAX_MESSAGE, MAX_STACK, p
 import { sessionFromEvent } from '../app/Releases/health'
 import { parseSessions, recordSessions } from '../app/Releases/sessions'
 import { symbolicate, symbolicateJs } from '../app/Symbols/store'
-import { isIssueStatus, snoozedUntil } from '../app/Errors/triage'
+import { bulkIssueIds, isIssueStatus, MAX_BULK_TRIAGE, snoozedUntil } from '../app/Errors/triage'
 import { ingestUrl } from '../app/Support/urls'
 
 // Ingest abuse bounds. The public key gate is not enough on its own - a script
@@ -70,14 +68,8 @@ async function userFromRequest(request: any): Promise<any | null> {
     if (m)
       token = decodeURIComponent(m[1])
   }
-  if (!token)
-    return null
-  try {
-    return await Auth.getUserFromToken(token)
-  }
-  catch {
-    return null
-  }
+  // A full session only: an API token acts through the triage endpoints below.
+  return sessionUser(token)
 }
 
 /** The user's email, lowercased, for case-insensitive membership matching. */
@@ -580,14 +572,13 @@ route.post('/issue/{issueId}/status', async (request: any) => {
 // Change the status of one issue, or of up to MAX_BULK_TRIAGE of them, in a
 // project. For whatever closes issues without a person at the keyboard: a
 // release pipeline resolving what it shipped a fix for, an agent that has
-// verified one. Authorised by the project's triage key
-// (app/Support/triage-key.ts) sent as `Authorization: Bearer`, or by a
-// signed-in owner or member, who can already do this from the issue page.
+// verified one. Authorised by an API token carrying `issues:triage`
+// (app/Support/access.ts), sent as `Authorization: Bearer`, or by a signed-in
+// owner or member, who can already do this from the issue page.
 //
-// The project is in the path, and the statement below is scoped to it, so a
-// key can never touch an issue that belongs to another project: an id from
-// elsewhere is reported as missing, the same answer an id that does not exist
-// gets.
+// The project is in the path, the caller must be able to access it, and the
+// statement below is scoped to it, so an id from another project is reported
+// as missing: the same answer an id that does not exist gets.
 //
 // Resolving through here is the same act as pressing Resolve: the status is
 // set and any snooze is cleared, and an issue that occurs again afterwards is

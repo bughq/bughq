@@ -1,7 +1,6 @@
-import { Auth } from '@stacksjs/auth'
+import { Auth, findToken } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
 import { authorizeRead, looksLikeReadKey, shouldRecordUse } from './read-key'
-import { authorizeTriage, looksLikeProjectKey, looksLikeTriageKey } from './triage-key'
 
 /**
  * Who is calling, and may they touch this project.
@@ -11,32 +10,101 @@ import { authorizeTriage, looksLikeProjectKey, looksLikeTriageKey } from './tria
  */
 
 /**
- * The signed-in user, from a bearer token (API callers) or the HttpOnly
- * `auth-token` cookie the dashboard sends.
+ * What an API token may be allowed to do.
+ *
+ * API tokens are Stacks personal access tokens (`createToken` in
+ * @stacksjs/auth): hashed at rest, named, scoped, expiring and revocable. A
+ * person creates one under their account and it acts as them, within its
+ * scopes, on every project they can access. The app adds nothing to that but
+ * the two scope names below.
  */
-export async function currentUser(request: any): Promise<any | null> {
-  const authHeader = request.headers?.get?.('authorization') ?? ''
-  let token = request.bearerToken?.() ?? authHeader.replace(/^Bearer\s+/i, '')
-  // An upload token is not a session; never try it as one. Nor is a read key
-  // (app/Support/read-key.ts), which authorises one project rather than a
-  // person and is resolved by projectReadAccess below, or a triage key
-  // (app/Support/triage-key.ts), resolved by projectTriageAccess.
-  if (token && (token.startsWith('bughq_up_') || looksLikeProjectKey(token)))
-    token = ''
-  if (!token) {
-    const cookie = request.headers?.get?.('cookie') ?? ''
-    const m = cookie.match(/(?:^|;)\s*auth-token=([^;]+)/)
-    if (m)
-      token = decodeURIComponent(m[1])
-  }
-  if (!token)
+export const TOKEN_SCOPES = {
+  /** Read a project's issues: the issue list and a single issue. */
+  read: 'issues:read',
+  /** Change an issue's status: resolve, ignore, reopen. */
+  triage: 'issues:triage',
+} as const
+
+export type TokenScope = typeof TOKEN_SCOPES[keyof typeof TOKEN_SCOPES]
+
+/** The scopes somebody may ask for when creating an API token. */
+export const GRANTABLE_SCOPES: readonly TokenScope[] = [TOKEN_SCOPES.read, TOKEN_SCOPES.triage]
+
+/** What a sign-in is issued, and what an API token must never carry. */
+const FULL_ACCESS = '*'
+
+/** Credentials that are shaped like a bearer but are never a person's token. */
+function isProjectCredential(token: string): boolean {
+  // An upload token and a read key (app/Support/read-key.ts) each authorise
+  // one project rather than a person, and are resolved by their own checks.
+  return token.startsWith('bughq_up_') || looksLikeReadKey(token)
+}
+
+/**
+ * Whether these scopes are a full session rather than an API token.
+ *
+ * Every sign-in is issued `*` (config.auth.defaultAbilities), and an API
+ * token is created with named scopes only, so `*` is what separates "this is
+ * the person" from "this may do one thing on their behalf". The framework
+ * draws the same line for its own administrator checks.
+ */
+export function isFullSession(scopes: readonly string[]): boolean {
+  return scopes.includes(FULL_ACCESS)
+}
+
+/** Whether a token's scopes allow `scope`: by name, or by being a session. */
+export function scopesAllow(scopes: readonly string[], scope: TokenScope): boolean {
+  return isFullSession(scopes) || scopes.includes(scope)
+}
+
+/** The user a token belongs to and the scopes it carries, or null. */
+async function tokenHolder(token: string): Promise<{ user: any, scopes: readonly string[] } | null> {
+  if (!token || isProjectCredential(token))
     return null
   try {
-    return await Auth.getUserFromToken(token)
+    // `findToken` is the native lookup: it answers only for a live token (not
+    // revoked, not expired, not issued before the last password change).
+    const access = await findToken(token)
+    if (!access || (access.subjectType ?? 'users') !== 'users')
+      return null
+    const user = await Auth.getUserFromToken(token)
+    return user ? { user, scopes: access.scopes } : null
   }
   catch {
     return null
   }
+}
+
+/**
+ * The person signed in behind this token, and only a full session.
+ *
+ * This is the one place a token becomes "the user" for everything a signed-in
+ * person can do: the dashboard, settings, billing, deleting a project. An API
+ * token is refused here, so a token created to resolve issues cannot be put in
+ * an `auth-token` cookie or a bearer header and used as its owner. Routes and
+ * views call this rather than `Auth.getUserFromToken`, which answers for any
+ * valid token whatever its scopes (tests/unit/api-tokens.test.ts holds that).
+ */
+export async function sessionUser(token: string | null | undefined): Promise<any | null> {
+  const holder = await tokenHolder(String(token ?? ''))
+  return holder && isFullSession(holder.scopes) ? holder.user : null
+}
+
+/**
+ * The person a token acts for when the request needs `scope`: a full session,
+ * or an API token that names the scope.
+ */
+export async function userWithScope(token: string | null | undefined, scope: TokenScope): Promise<any | null> {
+  const holder = await tokenHolder(String(token ?? ''))
+  return holder && scopesAllow(holder.scopes, scope) ? holder.user : null
+}
+
+/**
+ * The signed-in user, from a bearer token or the HttpOnly `auth-token` cookie
+ * the dashboard sends. A full session only: see `sessionUser`.
+ */
+export async function currentUser(request: any): Promise<any | null> {
+  return sessionUser(bearerFrom(request))
 }
 
 /** Owner-only: credentials, deletion, members. */
@@ -117,7 +185,8 @@ export async function projectReadAccess(request: any, projectId: string): Promis
     return { ok: true, as: 'key' }
   }
 
-  const user = await currentUser(request)
+  // A person signed in, or an API token of theirs that may read issues.
+  const user = await userWithScope(presented, TOKEN_SCOPES.read)
   if (!user)
     return { ok: false, status: 401, error: 'unauthorized' }
   if (!(await canAccessProject(user, projectId)))
@@ -136,58 +205,23 @@ async function recordReadKeyUse(project: { id: string, read_key_last_used_at?: s
 }
 
 export type ProjectTriageAccess =
-  | { ok: true, as: 'user', user: any }
-  | { ok: true, as: 'key' }
-  | { ok: false, status: 401 | 403 | 404, error: string }
+  | { ok: true, user: any }
+  | { ok: false, status: 401 | 404, error: string }
 
 /**
- * Who may change the status of this project's issues: the person signed in
- * (owner or member, as the dashboard's own buttons allow), or a triage key
- * issued for the project.
+ * Who may change the status of this project's issues: a person signed in, or
+ * an API token of theirs carrying `issues:triage`. Either way it is somebody
+ * who can access the project, owner or member, as the issue page's own
+ * buttons allow.
  *
- * A read key is refused here on purpose. It is shaped like a project key, so
- * it never reaches the session lookup, and it is not a triage key, so it
- * answers the same 404 a stranger gets: reading a project does not come with
- * closing its issues.
+ * A read key is not a person's token and is refused: reading a project does
+ * not come with closing its issues.
  */
 export async function projectTriageAccess(request: any, projectId: string): Promise<ProjectTriageAccess> {
-  const presented = bearerFrom(request)
-
-  if (looksLikeProjectKey(presented)) {
-    if (!looksLikeTriageKey(presented))
-      return { ok: false, status: 404, error: 'not found' }
-    const found = (await db.unsafe(
-      'SELECT id, triage_key, triage_key_last_used_at, is_active FROM projects WHERE id = $1 LIMIT 1',
-      [String(projectId)],
-    ))?.[0]
-    const row = found
-      ? {
-          id: String(found.id),
-          triage_key: found.triage_key == null ? null : String(found.triage_key),
-          triage_key_last_used_at: found.triage_key_last_used_at == null ? null : String(found.triage_key_last_used_at),
-          is_active: found.is_active as boolean | number | null,
-        }
-      : null
-    const verdict = authorizeTriage(row, presented)
-    if (!verdict.ok)
-      return verdict.status === 401 ? { ok: false, status: 404, error: 'not found' } : verdict
-    if (row)
-      await recordTriageKeyUse(row)
-    return { ok: true, as: 'key' }
-  }
-
-  const user = await currentUser(request)
+  const user = await userWithScope(bearerFrom(request), TOKEN_SCOPES.triage)
   if (!user)
     return { ok: false, status: 401, error: 'unauthorized' }
   if (!(await canAccessProject(user, projectId)))
     return { ok: false, status: 404, error: 'not found' }
-  return { ok: true, as: 'user', user }
-}
-
-/** Stamp the key as used, at most once a minute, and never fail the change over it. */
-async function recordTriageKeyUse(project: { id: string, triage_key_last_used_at?: string | null }): Promise<void> {
-  const now = new Date()
-  if (!shouldRecordUse(project.triage_key_last_used_at, now))
-    return
-  await db.unsafe('UPDATE projects SET triage_key_last_used_at = $1 WHERE id = $2', [now.toISOString(), String(project.id)]).catch(() => {})
+  return { ok: true, user }
 }

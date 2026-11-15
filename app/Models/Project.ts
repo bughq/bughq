@@ -33,11 +33,6 @@ export default defineModel({
     // null. See app/Support/read-key.ts.
     read_key: { fillable: false, validation: { rule: schema.string().optional() } },
     read_key_last_used_at: { fillable: false, validation: { rule: schema.string().optional() } },
-    // Secret triage key: a machine presents it as `Authorization: Bearer` to
-    // change the status of this project's issues, and nothing else. Issued and
-    // revoked the way the read key is. See app/Support/triage-key.ts.
-    triage_key: { fillable: false, validation: { rule: schema.string().optional() } },
-    triage_key_last_used_at: { fillable: false, validation: { rule: schema.string().optional() } },
     owner_id: { fillable: true, validation: { rule: schema.number().optional() } },
     is_active: { fillable: true, validation: { rule: schema.boolean().optional() }, factory: () => true },
   },
