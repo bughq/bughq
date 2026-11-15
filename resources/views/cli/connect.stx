@@ -9,6 +9,11 @@ useSeoMeta({
 // URL with the code it was issued; a signed-in person confirms, and the CLI
 // collects that project's keys on its next poll. Nothing is created by loading
 // the page: only the button does that.
+//
+// The confirmation code is deliberately NOT rendered here. The person types
+// what their own terminal shows, and the server checks it (routes/hq.ts). A
+// page that displayed it could be agreed with by somebody who was sent the
+// link and has no terminal at all.
 const query = new URLSearchParams((typeof globalThis !== 'undefined' && globalThis.__stxServeSearch) || '')
 const code = query.get('code') || ''
 
@@ -46,10 +51,17 @@ if (user && code) {
 const error = state('')
 const loading = state(false)
 const connected = state('')
+const confirm = state('')
 
-async function approve(): Promise<void> {
+async function approve(e: Event): Promise<void> {
+  e.preventDefault()
   if (loading())
     return
+  const typed = confirm().trim()
+  if (!typed) {
+    error.set('Enter the confirmation code your terminal is showing.')
+    return
+  }
   const code = new URLSearchParams(useRoute().query).get('code') || ''
   loading.set(true)
   error.set('')
@@ -58,7 +70,7 @@ async function approve(): Promise<void> {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: '{}',
+      body: JSON.stringify({ confirm: typed }),
     })
     const data = await res.json().catch(() => ({}))
     if (res.status === 401) {
@@ -118,10 +130,14 @@ async function approve(): Promise<void> {
         @if (error())
           <div id="connect-error" role="alert" class="mb-4 py-2 err notice-box">{{ error() }}</div>
         @endif
-        <Button @click="approve" :loading="loading()" fullWidth className="btn-accent">
-          {{ loading() ? 'Connecting…' : 'Approve connection' }}
-        </Button>
-        <p class="mt-4 text-center text-subtle text-xs">Only approve this if you just ran the connect command yourself.</p>
+        <form action="/api/cli/connect" method="POST" @submit="approve">
+          <label for="connect-confirm" class="block mb-1.5 font-medium text-subtle text-xs">Confirmation code from your terminal</label>
+          <input id="connect-confirm" name="confirm" type="text" required autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="ABC-DEF" :model="confirm" class="mb-4 px-3.5 py-2.5 w-full font-mono text-center text-sm tracking-[0.2em] uppercase field" :aria-invalid="error() ? 'true' : 'false'" aria-describedby="connect-confirm-help">
+          <Button type="submit" :loading="loading()" fullWidth className="btn-accent">
+            {{ loading() ? 'Connecting…' : 'Approve connection' }}
+          </Button>
+        </form>
+        <p id="connect-confirm-help" class="mt-4 text-center text-subtle text-xs">The command you ran printed this code. If you did not just run a connect command yourself, or you were sent this link, close this page.</p>
       @endif
     @endif
   </div>
