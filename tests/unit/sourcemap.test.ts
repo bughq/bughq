@@ -4,7 +4,6 @@ import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fingerprint } from '../../app/Errors/fingerprint'
-import { generateUploadToken, hashUploadToken } from '../../app/Errors/uploadTokens'
 import {
   decodeVlq,
   jsStackFiles,
@@ -312,15 +311,15 @@ describe('symbolicating a real minified stack', () => {
 
 /** The four statements the upload and lookup paths run, against arrays. */
 function memoryDatabase() {
-  const tokens: Array<{ id: string, project_id: string, token_hash: string, revoked: boolean, last_used: boolean }> = []
+  // What the framework's token lookup answers, stood in for by a list: a
+  // token is live until revoked, and names the project it uploads to.
+  const tokens: Array<{ id: string, project_id: string, token: string, revoked: boolean }> = []
   const files: Array<Record<string, any>> = []
+  const authorize = async (presented: string) => {
+    const found = tokens.find(t => t.token === presented && !t.revoked)
+    return found ? { projectId: found.project_id, tokenId: found.id } : null
+  }
   const sql: Sql = async (query, params = []) => {
-    if (query.includes('FROM upload_tokens t JOIN projects'))
-      return tokens.filter(t => t.token_hash === params[0] && !t.revoked).map(t => ({ id: t.id, project_id: t.project_id }))
-    if (query.startsWith('UPDATE upload_tokens')) {
-      tokens.filter(t => t.id === params[0]).forEach(t => t.last_used = true)
-      return []
-    }
     if (query.includes(`VALUES ($1, $2, 'sourcemap'`)) {
       const [id, project_id, debug_id, code_name, release, symbol_count, size_bytes, content, uploaded_by] = params as any[]
       const row = { id, project_id, kind: 'sourcemap', debug_id, code_name, release, symbol_count, size_bytes, content, uploaded_by }
@@ -337,7 +336,7 @@ function memoryDatabase() {
       return files.filter(f => f.project_id === params[0] && f.debug_id === params[1])
     throw new Error(`unexpected query: ${query}`)
   }
-  return { sql, tokens, files }
+  return { sql, tokens, files, authorize }
 }
 
 const allow = async () => ({ ok: true, retryAfter: 0 })
@@ -357,10 +356,10 @@ describe('sourcemap upload', () => {
 
   function setup() {
     const store = memoryDatabase()
-    const token = generateUploadToken()
-    store.tokens.push({ id: 'upt_1', project_id: PROJECT, token_hash: hashUploadToken(token), revoked: false, last_used: false })
+    const token = 'an-upload-token-for-fettler'
+    store.tokens.push({ id: '17', project_id: PROJECT, token, revoked: false })
     forgetProject(PROJECT)
-    return { ...store, token, deps: { sql: store.sql, rateLimit: allow } }
+    return { ...store, token, deps: { sql: store.sql, rateLimit: allow, authorize: store.authorize } }
   }
 
   test('the upload token stores a gzipped map under its release and script', async () => {
@@ -372,8 +371,7 @@ describe('sourcemap upload', () => {
     expect(body.files[0].debug_id).toBe(sourceMapDebugId(RELEASE, 'assets/app.js'))
     expect(files).toHaveLength(1)
     expect(files[0].project_id).toBe(PROJECT)
-    expect(files[0].uploaded_by).toBe('upt_1')
-    expect(tokens[0].last_used).toBe(true)
+    expect(files[0].uploaded_by).toBe('17')
     // Nothing in the response carries the map or the token back.
     expect(JSON.stringify(body)).not.toContain(token)
     expect(body.files[0].content).toBeUndefined()
@@ -399,7 +397,7 @@ describe('sourcemap upload', () => {
     const { deps, token, tokens, files } = setup()
     expect((await handleDebugFileUpload(upload(query, mapText, null), deps)).status).toBe(401)
     expect((await handleDebugFileUpload(upload(query, mapText, 'bughq_5f3a19b7c4d2e8091ab12cd34ef56ab7'), deps)).status).toBe(401)
-    expect((await handleDebugFileUpload(upload(query, mapText, generateUploadToken()), deps)).status).toBe(401)
+    expect((await handleDebugFileUpload(upload(query, mapText, 'some-other-token'), deps)).status).toBe(401)
     tokens[0].revoked = true
     expect((await handleDebugFileUpload(upload(query, mapText, token), deps)).status).toBe(401)
     expect(files).toHaveLength(0)

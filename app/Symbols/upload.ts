@@ -1,12 +1,13 @@
 import type { Sql } from './store'
 import { rateLimit as defaultRateLimit } from '../Errors/limits'
-import { hashUploadToken, tokenFromAuthorization } from '../Errors/uploadTokens'
+import { tokenFromAuthorization } from '../Errors/uploadTokens'
+import { uploadTarget } from '../Support/access'
 import { database, detectDebugFileKind, sourceMapFileName, storeAppleSymbols, storeProguardMapping, storeSourceMap } from './store'
 
 /**
  * `POST /api/debug-files`: build tooling uploads what makes a release's stacks
  * readable. One endpoint, one credential (the upload token, never the public
- * ingest key; see database/migrations/0000000043), three kinds:
+ * ingest key; see app/Errors/uploadTokens.ts), three kinds:
  *
  *   ?kind=apple                              the output of `symbols -arch arm64 <dSYM>`
  *   ?kind=proguard&release=1.0.0+41          an R8 mapping.txt
@@ -46,9 +47,22 @@ function decodeUpload(bytes: Uint8Array<ArrayBuffer>): string {
   return new TextDecoder().decode(raw)
 }
 
+/** Where a presented upload token may upload, and which token it is. */
+export interface UploadTarget {
+  projectId: string
+  tokenId: string
+}
+
 export interface DebugFileUploadDeps {
   sql?: Sql
   rateLimit?: typeof defaultRateLimit
+  /** Resolve a bearer to its upload target. Defaults to the framework's tokens. */
+  authorize?: (token: string) => Promise<UploadTarget | null>
+}
+
+/** A bucket for the rate limiter that is not the token: only its digest. */
+function rateKey(token: string): string {
+  return new Bun.CryptoHasher('sha256').update(token).digest('hex').slice(0, 16)
 }
 
 export async function handleDebugFileUpload(request: any, deps: DebugFileUploadDeps = {}): Promise<Response> {
@@ -59,15 +73,15 @@ export async function handleDebugFileUpload(request: any, deps: DebugFileUploadD
   if (!token)
     return json({ error: 'missing upload token' }, 401)
 
-  const limit = await rateLimit(`upload:${hashUploadToken(token).slice(0, 16)}`, 30, 60_000)
+  const limit = await rateLimit(`upload:${rateKey(token)}`, 30, 60_000)
   if (!limit.ok)
     return json({ error: 'rate limited' }, 429)
 
-  const owner = (await sql(
-    `SELECT t.id, t.project_id FROM upload_tokens t JOIN projects p ON p.id = t.project_id
-      WHERE t.token_hash = $1 AND t.revoked_at IS NULL AND p.is_active IS NOT FALSE LIMIT 1`,
-    [hashUploadToken(token)],
-  ))?.[0]
+  // The token says which project it uploads to (its `symbols:upload:<id>`
+  // scope); the framework says whether it is live. Anything else is a 401:
+  // revoked, expired, a session, an API token for something else, or a token
+  // whose project is archived or no longer its holder's.
+  const owner = await (deps.authorize ?? uploadTarget)(token)
   if (!owner)
     return json({ error: 'invalid upload token' }, 401)
 
@@ -90,9 +104,10 @@ export async function handleDebugFileUpload(request: any, deps: DebugFileUploadD
 
   const url = new URL(request.url)
   const kind = url.searchParams.get('kind') ?? detectDebugFileKind(text)
-  const projectId = String(owner.project_id)
-  const tokenId = String(owner.id)
-  await sql('UPDATE upload_tokens SET last_used_at = NOW() WHERE id = $1', [tokenId])
+  const projectId = owner.projectId
+  // Recorded on each stored file as who uploaded it. The framework stamps the
+  // token as used when it resolves it, so there is no last-used write here.
+  const tokenId = owner.tokenId
 
   if (kind === 'apple') {
     const files = await storeAppleSymbols(projectId, text, tokenId, sql)

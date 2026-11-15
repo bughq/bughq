@@ -1,5 +1,6 @@
 import { Auth, findToken } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
+import { uploadProject } from '../Errors/uploadTokens'
 import { authorizeRead, looksLikeReadKey, shouldRecordUse } from './read-key'
 
 /**
@@ -35,9 +36,9 @@ const FULL_ACCESS = '*'
 
 /** Credentials that are shaped like a bearer but are never a person's token. */
 function isProjectCredential(token: string): boolean {
-  // An upload token and a read key (app/Support/read-key.ts) each authorise
-  // one project rather than a person, and are resolved by their own checks.
-  return token.startsWith('bughq_up_') || looksLikeReadKey(token)
+  // A read key (app/Support/read-key.ts) authorises one project rather than a
+  // person, and is resolved by its own check.
+  return looksLikeReadKey(token)
 }
 
 /**
@@ -224,4 +225,38 @@ export async function projectTriageAccess(request: any, projectId: string): Prom
   if (!(await canAccessProject(user, projectId)))
     return { ok: false, status: 404, error: 'not found' }
   return { ok: true, user }
+}
+
+/**
+ * Where an upload token may upload: the project its `symbols:upload:<id>`
+ * scope names, when the token is live, the project is active and the token's
+ * holder still owns it. Null otherwise.
+ *
+ * The holder is checked on every upload, not only when the token is made, so
+ * a token stops working the moment its project changes hands or is archived,
+ * without anybody having to remember to revoke it.
+ */
+export async function uploadTarget(token: string): Promise<{ projectId: string, tokenId: string } | null> {
+  if (!token || isProjectCredential(token))
+    return null
+  try {
+    const access = await findToken(token)
+    if (!access || (access.subjectType ?? 'users') !== 'users')
+      return null
+    const projectId = uploadProject(access.scopes)
+    if (!projectId)
+      return null
+    // Resolving the holder is also what stamps the token as used.
+    const user = await Auth.getUserFromToken(token)
+    if (!user)
+      return null
+    const row = (await db.unsafe(
+      'SELECT 1 FROM projects WHERE id = $1 AND owner_id = $2 AND is_active IS NOT FALSE LIMIT 1',
+      [projectId, Number(user.id)],
+    ))?.[0]
+    return row ? { projectId, tokenId: String(access.id) } : null
+  }
+  catch {
+    return null
+  }
 }

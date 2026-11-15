@@ -93,7 +93,7 @@ gzip -c dist/assets/app.js.map | curl -X POST \
 | Part | Value |
 | --- | --- |
 | Method and path | `POST /api/debug-files` |
-| `Authorization` header | `Bearer <upload token>`, which starts with `bughq_up_` |
+| `Authorization` header | `Bearer <upload token>` |
 | `kind` query field | `sourcemap` |
 | `release` query field | The release the app reports, URL-encoded (`+` is `%2B`) |
 | `file` query field | The script the map belongs to, as it is named in a stack frame |

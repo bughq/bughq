@@ -1,0 +1,12 @@
+-- Drop the upload_tokens table.
+--
+-- An upload token is now a Stacks personal access token whose scope names the
+-- project it uploads to, `symbols:upload:<project id>`
+-- (app/Errors/uploadTokens.ts), stored hashed in oauth_access_tokens by the
+-- framework. This table was a second copy of that: its own id, prefix,
+-- SHA-256, last-used stamp and revoked flag.
+--
+-- No token was ever issued here, so there is nothing to carry over.
+-- `debug_files.uploaded_by` keeps recording which token uploaded a file, now
+-- as the framework token's id; it never had a foreign key to this table.
+DROP TABLE IF EXISTS "upload_tokens";

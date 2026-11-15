@@ -13,10 +13,10 @@
  * public, ingest-key-authenticated surface.
  */
 
+import { createToken, revokeTokenById, tokens } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
-import { randomId } from '../app/Errors/fingerprint'
-import { displayPrefix, generateUploadToken, hashUploadToken } from '../app/Errors/uploadTokens'
+import { uploadScope, uploadTokenExpiry, uploadTokenName } from '../app/Errors/uploadTokens'
 import type { ReleaseHealthRow } from '../app/Releases/health'
 import { withCrashFree } from '../app/Releases/health'
 import { canAccessProject, currentUser, ownsProject } from '../app/Support/access'
@@ -70,6 +70,25 @@ route.delete('/api/projects/{projectId}/debug-files/{fileId}', async (request: a
 // Upload tokens (owner-only)
 // ---------------------------------------------------------------------------
 
+// Upload tokens are Stacks personal access tokens (app/Errors/uploadTokens.ts).
+// The project's owner holds them, each carrying the scope that names this
+// project, so a project's tokens are the owner's live tokens with that scope.
+
+/** How long a token has gone unused for it to read as "never used". */
+function usedAt(token: { createdAt: Date, updatedAt: Date }): string | null {
+  // The framework stamps a token as it is used, and writes the same stamp at
+  // creation: a token whose two times match has not been used.
+  return token.updatedAt.getTime() - token.createdAt.getTime() > 1000 ? token.updatedAt.toISOString() : null
+}
+
+async function uploadTokensOf(ownerId: number, projectId: string): Promise<Awaited<ReturnType<typeof tokens>>> {
+  const scope = uploadScope(projectId)
+  const now = Date.now()
+  return (await tokens(ownerId))
+    .filter(token => !token.scopes.includes('*') && token.scopes.includes(scope))
+    .filter(token => token.expiresAt == null || token.expiresAt.getTime() > now)
+}
+
 route.get('/api/projects/{projectId}/upload-tokens', async (request: any) => {
   const user = await currentUser(request)
   if (!user)
@@ -77,12 +96,15 @@ route.get('/api/projects/{projectId}/upload-tokens', async (request: any) => {
   const projectId = request.params.projectId
   if (!(await ownsProject(user, projectId)))
     return json({ error: 'not found' }, 404)
-  const tokens = await db.unsafe(
-    `SELECT id, name, token_prefix, last_used_at, revoked_at, created_at
-       FROM upload_tokens WHERE project_id = $1 ORDER BY created_at DESC`,
-    [projectId],
-  )
-  return json({ tokens: tokens ?? [] })
+  const held = await uploadTokensOf(Number(user.id), projectId)
+  return json({
+    tokens: held.map(token => ({
+      id: String(token.id),
+      name: token.name,
+      last_used_at: usedAt(token),
+      created_at: token.createdAt.toISOString(),
+    })),
+  })
 })
 
 route.post('/api/projects/{projectId}/upload-tokens', async (request: any) => {
@@ -94,16 +116,12 @@ route.post('/api/projects/{projectId}/upload-tokens', async (request: any) => {
   const projectId = request.params.projectId
   if (!(await ownsProject(user, projectId)))
     return json({ error: 'not found' }, 404)
-  const name = String(request.jsonBody?.name ?? '').trim().slice(0, 120) || 'CI'
-  const token = generateUploadToken()
-  const id = `upt_${randomId().slice(0, 20)}`
-  await db.unsafe(
-    `INSERT INTO upload_tokens (id, project_id, name, token_hash, token_prefix, created_by, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-    [id, projectId, name, hashUploadToken(token), displayPrefix(token), Number(user.id)],
-  )
+  const name = uploadTokenName(request.jsonBody?.name)
+  // One scope, naming this project, and no refresh token: an upload token is
+  // replaced by creating another.
+  const created = await createToken(Number(user.id), name, [uploadScope(projectId)], { expiresAt: uploadTokenExpiry(), withRefreshToken: false })
   // The only response that will ever carry the plaintext.
-  return json({ token, id, name, token_prefix: displayPrefix(token) }, 201)
+  return json({ token: created.plainTextToken, id: String(created.accessToken.id), name }, 201)
 }).skipCsrf()
 
 route.delete('/api/projects/{projectId}/upload-tokens/{tokenId}', async (request: any) => {
@@ -115,10 +133,14 @@ route.delete('/api/projects/{projectId}/upload-tokens/{tokenId}', async (request
   const projectId = request.params.projectId
   if (!(await ownsProject(user, projectId)))
     return json({ error: 'not found' }, 404)
-  await db.unsafe(
-    'UPDATE upload_tokens SET revoked_at = COALESCE(revoked_at, NOW()) WHERE id = $1 AND project_id = $2',
-    [request.params.tokenId, projectId],
-  )
+  // Looked up among this project's tokens rather than trusted, so an id that
+  // belongs to another project, or to a session, revokes nothing.
+  const tokenId = Number(request.params.tokenId)
+  const owned = Number.isSafeInteger(tokenId)
+    ? (await uploadTokensOf(Number(user.id), projectId)).find(token => token.id === tokenId)
+    : undefined
+  if (owned)
+    await revokeTokenById(owned.id)
   return json({ ok: true })
 }).skipCsrf()
 

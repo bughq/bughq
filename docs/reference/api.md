@@ -103,7 +103,7 @@ One session per app launch, for crash-free sessions. Mobile and desktop apps bot
 POST /api/debug-files?kind=apple
 POST /api/debug-files?kind=proguard&release=1.0.0%2B41
 POST /api/debug-files?kind=sourcemap&release=1.0.0%2B41&file=assets/app.js
-Authorization: Bearer bughq_up_your_upload_token
+Authorization: Bearer your_upload_token
 ```
 
 The body is the output of `symbols -arch arm64 <dSYM>`, an R8 `mapping.txt` or a JavaScript sourcemap (the `.map` file, version 3), gzipped or plain, up to 64 MiB. The upload token is a secret created in project settings; the ingest key is refused. A re-upload for the same binary UUID, release, or release and file replaces the earlier one.

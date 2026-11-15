@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { fingerprintFromParts } from '../../app/Errors/fingerprint'
 import {
   frameKey,
@@ -12,7 +12,7 @@ import {
   symbolicateAppleFrames,
 } from '../../app/Errors/native'
 import { buildMetadata } from '../../app/Errors/payload'
-import { displayPrefix, generateUploadToken, hashUploadToken, tokenFromAuthorization, UPLOAD_TOKEN_PREFIX } from '../../app/Errors/uploadTokens'
+import { tokenFromAuthorization, uploadProject, uploadScope, UPLOAD_TOKEN_LIFETIME_DAYS, uploadTokenExpiry, uploadTokenName } from '../../app/Errors/uploadTokens'
 import { crashFreeRate, escalate, ESCALATE_SQL, parseSessions } from '../../app/Releases/health'
 import { lookupSymbol, normalizeUuid, packSymbolMap, parseSymbolsOutput, unpackSymbolMap } from '../../app/Symbols/apple'
 import { parseMapping, retraceClassNames, retraceFrame, retraceFrames } from '../../app/Symbols/proguard'
@@ -191,20 +191,63 @@ describe('native grouping', () => {
 })
 
 describe('upload tokens', () => {
-  test('are prefixed, long, and stored only as a hash', () => {
-    const token = generateUploadToken()
-    expect(token.startsWith(UPLOAD_TOKEN_PREFIX)).toBe(true)
-    expect(token.length).toBe(UPLOAD_TOKEN_PREFIX.length + 40)
-    expect(/^[\w]+$/.test(token)).toBe(true)
-    expect(hashUploadToken(token)).toMatch(/^[0-9a-f]{64}$/)
-    expect(generateUploadToken()).not.toBe(token)
-    expect(displayPrefix(token)).toBe(`${token.slice(0, UPLOAD_TOKEN_PREFIX.length + 6)}…`)
+  test('the scope names the one project a token uploads to', () => {
+    expect(uploadScope('fettler-ios-1a2b3c')).toBe('symbols:upload:fettler-ios-1a2b3c')
+    expect(uploadProject([uploadScope('fettler-ios-1a2b3c')])).toBe('fettler-ios-1a2b3c')
   })
 
-  test('only an upload token is accepted from the header, never an ingest key', () => {
-    expect(tokenFromAuthorization('Bearer bughq_up_abc')).toBe('bughq_up_abc')
-    expect(tokenFromAuthorization('Bearer bughq_0123')).toBeNull()
+  test('nothing but an upload scope names a project', () => {
+    // A sign-in, an API token for something else, and a scope with no project.
+    expect(uploadProject(['*'])).toBeNull()
+    expect(uploadProject(['*', uploadScope('fettler')])).toBeNull()
+    expect(uploadProject(['issues:triage', 'issues:read'])).toBeNull()
+    expect(uploadProject(['symbols:upload:'])).toBeNull()
+    expect(uploadProject([])).toBeNull()
+  })
+
+  test('a token naming two projects is refused rather than guessed at', () => {
+    expect(uploadProject([uploadScope('one'), uploadScope('two')])).toBeNull()
+  })
+
+  test('other scopes beside the upload scope do not change where it uploads', () => {
+    expect(uploadProject(['issues:read', uploadScope('fettler')])).toBe('fettler')
+  })
+
+  test('a name is trimmed, capped and never empty', () => {
+    expect(uploadTokenName('  Xcode   Cloud ')).toBe('Xcode Cloud')
+    expect(uploadTokenName('x'.repeat(500))).toHaveLength(120)
+    for (const value of ['', '   ', null, undefined])
+      expect(uploadTokenName(value)).toBe('CI')
+  })
+
+  test('a token lasts the longest life given here', () => {
+    const now = new Date('2026-01-01T00:00:00.000Z')
+    expect(uploadTokenExpiry(now).getTime() - now.getTime()).toBe(UPLOAD_TOKEN_LIFETIME_DAYS * 24 * 60 * 60 * 1000)
+  })
+
+  test('the bearer is read from the header, whatever it is', () => {
+    // Which bearers are upload tokens is the framework's answer, from the
+    // token's scopes, and no longer something a prefix can tell.
+    expect(tokenFromAuthorization('Bearer abc123')).toBe('abc123')
+    expect(tokenFromAuthorization('bearer abc123')).toBe('abc123')
+    expect(tokenFromAuthorization('Basic abc123')).toBeNull()
+    expect(tokenFromAuthorization('Bearer ')).toBeNull()
     expect(tokenFromAuthorization(null)).toBeNull()
+  })
+
+  test('the app generates, hashes and stores nothing of its own', () => {
+    const source = readFileSync(join(import.meta.dir, '../../app/Errors/uploadTokens.ts'), 'utf8')
+    expect(source).not.toMatch(/getRandomValues|createHash|randomUUID/)
+    const routes = readFileSync(join(import.meta.dir, '../../routes/native.ts'), 'utf8')
+    expect(routes).toContain('import { createToken, revokeTokenById, tokens } from \'@stacksjs/auth\'')
+    expect(routes).not.toContain('upload_tokens')
+  })
+
+  test('an upload is authorised against the project\'s current owner', () => {
+    const access = readFileSync(join(import.meta.dir, '../../app/Support/access.ts'), 'utf8')
+    const target = access.slice(access.indexOf('export async function uploadTarget'))
+    expect(target).toContain('uploadProject(access.scopes)')
+    expect(target).toContain('owner_id = $2 AND is_active IS NOT FALSE')
   })
 })
 

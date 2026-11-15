@@ -72,7 +72,7 @@ let channels: ChannelRow[] = []
 let members: MemberRow[] = []
 let invites: InviteRow[] = []
 // Native projects' upload tokens (only their prefixes) and uploaded symbols.
-interface UploadTokenRow { id: string, name: string, token_prefix: string, last_used_at: string | null, revoked_at: string | null }
+interface UploadTokenRow { id: string, name: string, last_used_at: string | null }
 interface DebugFileRow { id: string, kind: string, debug_id: string, code_name: string | null, release: string | null, symbol_count: number, created_at: string }
 let uploadTokens: UploadTokenRow[] = []
 let debugFiles: DebugFileRow[] = []
@@ -104,11 +104,20 @@ if (user) {
        WHERE i.project_id = $1 ORDER BY i.created_at ASC NULLS LAST, i.email`,
       [activeProject.id],
     )) as unknown as InviteRow[]) ?? []
-    uploadTokens = ((await db.unsafe(
-      `SELECT id, name, token_prefix, last_used_at, revoked_at FROM upload_tokens
-       WHERE project_id = $1 ORDER BY created_at DESC`,
-      [activeProject.id],
-    )) as unknown as UploadTokenRow[]) ?? []
+    // Upload tokens are Stacks personal access tokens the owner holds, each
+    // scoped to one project (app/Errors/uploadTokens.ts): this project's are
+    // the owner's live tokens carrying its scope.
+    const { tokens } = await import('@stacksjs/auth')
+    const { uploadScope } = await import('../../app/Errors/uploadTokens')
+    const scope = uploadScope(String(activeProject.id))
+    uploadTokens = (await tokens(Number(user.id)))
+      .filter(t => !t.scopes.includes('*') && t.scopes.includes(scope))
+      .filter(t => t.expiresAt == null || t.expiresAt.getTime() > Date.now())
+      .map(t => ({
+        id: String(t.id),
+        name: t.name,
+        last_used_at: t.updatedAt.getTime() - t.createdAt.getTime() > 1000 ? t.updatedAt.toISOString() : null,
+      }))
     debugFiles = ((await db.unsafe(
       `SELECT id, kind, debug_id, code_name, release, symbol_count, created_at FROM debug_files
        WHERE project_id = $1 ORDER BY created_at DESC LIMIT 20`,
@@ -127,7 +136,7 @@ const symbolsBlurb = activeProject?.platform === 'ios'
     : activeProject?.platform === 'macos'
       ? 'Webview and agent errors arrive minified, and native frames as addresses. Upload each build\'s JavaScript sourcemaps and dSYM symbols and bughq turns them into functions, files and lines.'
       : 'Webview and agent errors arrive minified. Upload each build\'s JavaScript sourcemaps and bughq turns them into functions, files and lines.'
-const tokenView = uploadTokens.map(t => ({ id: t.id, name: t.name, prefix: t.token_prefix, revoked: !!t.revoked_at, used: t.last_used_at ? String(t.last_used_at).slice(0, 10) : 'never' }))
+const tokenView = uploadTokens.map(t => ({ id: t.id, name: t.name, used: t.last_used_at ? `last used ${String(t.last_used_at).slice(0, 10)}` : 'never used' }))
 const debugFileView = debugFiles.map(f => ({ id: f.id, label: f.kind === 'apple' ? `${f.code_name || 'binary'} ${f.debug_id}` : f.kind === 'sourcemap' ? `${f.code_name || 'script'}.map ${f.release || ''}`.trim() : `mapping.txt ${f.debug_id}`, symbols: `${Number(f.symbol_count || 0).toLocaleString()} ${f.kind === 'sourcemap' ? 'sources' : 'symbols'}`, at: String(f.created_at).slice(0, 10) }))
 
 // Whether this owner can invite. Asked here so the form can say so before
@@ -1373,11 +1382,9 @@ function unarchive(): void {
             <div class="mt-4">
               @foreach (tokenView as t)
                 <div class="flex gap-3 items-center justify-between py-2 text-sm border-t border-line">
-                  <span><span class="text-muted">{{ t.name }}</span> <span class="text-subtle mono">{{ t.prefix }}</span></span>
-                  <span class="text-subtle text-xs">{{ t.revoked ? 'revoked' : `last used ${t.used}` }}</span>
-                  @if (!t.revoked)
-                    <Button variant="ghost" @click="revokeUploadToken('{{ t.id }}')" className="btn-danger btn-xs">Revoke</Button>
-                  @endif
+                  <span class="text-muted">{{ t.name }}</span>
+                  <span class="text-subtle text-xs">{{ t.used }}</span>
+                  <Button variant="ghost" @click="revokeUploadToken('{{ t.id }}')" className="btn-danger btn-xs">Revoke</Button>
                 </div>
               @endforeach
             </div>
