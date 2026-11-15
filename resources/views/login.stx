@@ -155,7 +155,10 @@ async function handleTwoFactor(e: SubmitEvent): Promise<void> {
 <div class="flex items-center justify-center px-5 py-12 min-h-[100dvh]">
   <div class="max-w-sm w-full">
     <div class="mb-8 text-center">
-      <StxLink to="/" class="text-2xl wordmark">bughq</StxLink>
+      <StxLink to="/" class="inline-flex flex-col gap-3 items-center no-underline" aria-label="bughq home">
+        <span class="auth-mark" aria-hidden="true">b</span>
+        <span class="text-2xl wordmark">bughq</span>
+      </StxLink>
       <p class="mt-2 text-sm text-subtle">Sign in to your account</p>
     </div>
 
@@ -164,7 +167,7 @@ async function handleTwoFactor(e: SubmitEvent): Promise<void> {
     @endif
 
     @if (step() === 'credentials')
-    <form @submit="handleSubmit" class="space-y-4">
+    <form @submit="handleSubmit" class="flex flex-col gap-4">
       <div>
         <label for="login-email" class="block mb-1.5 font-medium text-muted text-xs">Email</label>
         <input name="email" id="login-email" type="email" required autocomplete="email" placeholder="you@example.com" class="px-3.5 py-2.5 w-full text-sm field" :aria-invalid="error() ? 'true' : 'false'" :aria-describedby="error() ? 'login-error' : ''">
@@ -189,7 +192,7 @@ async function handleTwoFactor(e: SubmitEvent): Promise<void> {
     @endif
 
     @if (step() === 'twofa')
-    <form @submit="handleTwoFactor" class="space-y-4">
+    <form @submit="handleTwoFactor" class="flex flex-col gap-4">
       <p class="text-sm text-subtle">Enter the 6-digit code from your authenticator app.</p>
       <div>
         <label for="login-code" class="block mb-1.5 font-medium text-muted text-xs">Authentication code</label>

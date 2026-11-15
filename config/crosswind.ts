@@ -1430,6 +1430,9 @@ export default {
     // font-sans resolves to the same stack as var(--sans), so this is identical
     // to the nine copies that omitted the family and inherited it from body.
     wordmark: 'font-sans font-bold tracking-[-0.03em]',
+    // The logo on the signed-out pages: the marketing nav's outlined tile and
+    // letter (.brand-mark there), sized up to sit above the wordmark.
+    'auth-mark': 'flex items-center justify-center w-11 h-11 rounded-[12px] border border-[color-mix(in_srgb,var(--accent)_36%,transparent)] bg-[color-mix(in_srgb,var(--accent)_7%,transparent)] text-[var(--accent)] text-[24px] font-bold leading-none select-none',
     // font-mono resolves to the same stack as var(--mono). dashboard.stx keeps a
     // local `font-feature-settings: 'tnum' 1` on top of this — tabular figures
     // are deliberate there and were never in the other three copies.

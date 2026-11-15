@@ -154,7 +154,10 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
 <div class="flex items-center justify-center px-5 py-12 min-h-[100dvh]">
   <div class="max-w-sm w-full">
     <div class="mb-8 text-center">
-      <StxLink to="/" class="text-2xl wordmark">bughq</StxLink>
+      <StxLink to="/" class="inline-flex flex-col gap-3 items-center no-underline" aria-label="bughq home">
+        <span class="auth-mark" aria-hidden="true">b</span>
+        <span class="text-2xl wordmark">bughq</span>
+      </StxLink>
       <p class="mt-2 text-sm text-subtle">Create your account</p>
     </div>
 
@@ -162,7 +165,7 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
       <p class="mb-3.5 px-3 py-2.5 text-[13px] rounded-[9px] invite-hint">You've been invited to a project. Sign up to join it.</p>
     @endif
 
-    <form @submit="handleSubmit" class="space-y-4">
+    <form @submit="handleSubmit" class="flex flex-col gap-4">
       @if (error())
         <div id="form-error" role="alert" class="py-2 err notice-box">{{ error() }}</div>
       @endif
