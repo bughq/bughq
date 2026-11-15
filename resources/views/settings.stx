@@ -57,7 +57,7 @@ if (token) {
 // names exactly the columns its SELECT asks for rather than the whole table —
 // a row here genuinely does not carry `dsn` or `updated_at`, and promising it
 // would be the same class of lie the row types exist to stop.
-interface ProjectRow extends Pick<Project, 'id' | 'name' | 'platform' | 'ingest_key' | 'is_active' | 'read_key' | 'read_key_last_used_at'> {}
+interface ProjectRow extends Pick<Project, 'id' | 'name' | 'platform' | 'ingest_key' | 'is_active' | 'read_key' | 'read_key_last_used_at' | 'triage_key' | 'triage_key_last_used_at'> {}
 interface ChannelRow extends Pick<AlertChannel, 'id' | 'type' | 'label' | 'webhook_url' | 'enabled' | 'created_at'> {}
 interface MemberRow extends Pick<ProjectMember, 'id' | 'email' | 'role'> {}
 /** `registered` is computed per row (`u.id IS NOT NULL`), not a project_invites column. */
@@ -79,7 +79,7 @@ let debugFiles: DebugFileRow[] = []
 if (user) {
   // Owned projects only — settings is the owner's admin surface.
   projects = ((await db.unsafe(
-    'SELECT id, name, platform, ingest_key, is_active, read_key, read_key_last_used_at FROM projects WHERE owner_id = $1 ORDER BY created_at DESC NULLS LAST, id',
+    'SELECT id, name, platform, ingest_key, is_active, read_key, read_key_last_used_at, triage_key, triage_key_last_used_at FROM projects WHERE owner_id = $1 ORDER BY created_at DESC NULLS LAST, id',
     [Number(user.id)],
   )) as unknown as ProjectRow[]) ?? []
   if (projects.length === 0)
@@ -205,6 +205,14 @@ const keyMask = maskKey(keyFull)
 // last used, so a live key can be told from a forgotten one before revoking.
 const hasReadKeyInitial = !!(activeProject && activeProject.read_key)
 const readKeyUsedInitial = activeProject && activeProject.read_key_last_used_at ? String(activeProject.read_key_last_used_at) : ''
+// The triage key is the same kind of secret and reaches the page the same
+// way: whether one exists and when it was last used, never the key.
+const hasTriageKeyInitial = !!(activeProject && activeProject.triage_key)
+const triageKeyUsedInitial = activeProject && activeProject.triage_key_last_used_at ? String(activeProject.triage_key_last_used_at) : ''
+// Where the triage endpoints live, absolute, for the example shown with a
+// freshly issued key. The API host, which is the ingest host: the web app's
+// own origin is a different port in local dev.
+const triageBase = `${INGEST_BASE}/api/projects/${encodeURIComponent(projectId || '')}/issues`
 
 // Framework-specific install snippet, keyed off the project's platform. Key-only
 // (Flare-style): the ingest key alone identifies the project — no project id, no DSN.
@@ -341,7 +349,7 @@ const projectName = activeProject?.name || ''
 // bridge escapes `<` to < on the way out (see the long note above) — and
 // naming them makes it explicit which values carry that hazard rather than
 // leaving it to whoever next reads the client block.
-defineClientPayload({ channelEnabled, codeText, hasReadKeyInitial, installText, inviteEmails, justRotated, keyFull, keyMask, projectId, projectName, readKeyUsedInitial })
+defineClientPayload({ channelEnabled, codeText, hasReadKeyInitial, hasTriageKeyInitial, installText, inviteEmails, justRotated, keyFull, keyMask, projectId, projectName, readKeyUsedInitial, triageBase, triageKeyUsedInitial })
 </script>
 
 <script client>
@@ -532,6 +540,97 @@ function revokeReadKey(): void {
       .catch(() => {
         readKeyBusy.set(false)
         readKeyNote.set({ text: 'Network error.', ok: false })
+      })
+  })
+}
+
+// ---- triage key ----------------------------------------------------------
+// The read key's sibling: issued on demand, shown once, revocable, and not a
+// reload on success for the same reason. It changes an issue's status and
+// reads nothing, so the two are issued and revoked on their own.
+const hasTriageKey = state(hasTriageKeyInitial)
+const triageKeyUsed = state(triageKeyUsedInitial)
+const triageKeyOnce = state('')
+const triageKeyBusy = state(false)
+const triageKeyNote = state<FormNote | null>(null)
+
+function triageKeyStatus(): string {
+  if (!hasTriageKey())
+    return 'No triage key. Issue one to let a pipeline or an agent resolve this project\'s issues.'
+  const at = triageKeyUsed()
+  if (!at)
+    return 'A triage key is active, never used.'
+  const when = new Date(at)
+  return Number.isNaN(when.getTime())
+    ? 'A triage key is active, used recently.'
+    : `A triage key is active, last used ${when.toLocaleString()}.`
+}
+
+/** The copy-paste call for the key just issued, so it is usable at once. */
+function triageExample(): string {
+  return `curl -X POST ${triageBase}/ISSUE_ID/status \\\n  -H "Authorization: Bearer ${triageKeyOnce()}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"status":"resolved"}'`
+}
+
+function issueTriageKey(): void {
+  const ask = !hasTriageKey()
+    ? Promise.resolve(true)
+    : window.stxConfirm
+      ? window.stxConfirm('The current triage key stops working immediately, and anything still using it is answered 404 until you update it. Continue?', { title: 'Replace triage key?', confirmText: 'Replace', cancelText: 'Cancel', type: 'warning' })
+      : Promise.resolve(false)
+  Promise.resolve(ask).then((ok) => {
+    if (!ok)
+      return
+    triageKeyBusy.set(true)
+    fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/triage-key`, {
+      method: 'POST',
+      credentials: 'same-origin',
+    })
+      .then(r => r.json().then((b: any) => ({ ok: r.ok, b })))
+      .then((res) => {
+        triageKeyBusy.set(false)
+        if (!res.ok) {
+          triageKeyNote.set({ text: res.b.error || 'Could not issue a key.', ok: false })
+          return
+        }
+        triageKeyOnce.set(String(res.b.triage_key || ''))
+        hasTriageKey.set(true)
+        triageKeyUsed.set('')
+        triageKeyNote.set({ text: 'Copy it now. This is the only time it is shown.', ok: true })
+      })
+      .catch(() => {
+        triageKeyBusy.set(false)
+        triageKeyNote.set({ text: 'Network error.', ok: false })
+      })
+  })
+}
+
+function revokeTriageKey(): void {
+  const ask = window.stxConfirm
+    ? window.stxConfirm('Anything using this key can no longer change an issue\'s status. Continue?', { title: 'Revoke triage key?', confirmText: 'Revoke', cancelText: 'Cancel', type: 'warning' })
+    : Promise.resolve(false)
+  Promise.resolve(ask).then((ok) => {
+    if (!ok)
+      return
+    triageKeyBusy.set(true)
+    fetch(`/api/projects/${encodeURIComponent(apiProjectId)}/triage-key`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    })
+      .then(r => r.json().then((b: any) => ({ ok: r.ok, b })))
+      .then((res) => {
+        triageKeyBusy.set(false)
+        if (!res.ok) {
+          triageKeyNote.set({ text: res.b.error || 'Could not revoke.', ok: false })
+          return
+        }
+        hasTriageKey.set(false)
+        triageKeyUsed.set('')
+        triageKeyOnce.set('')
+        triageKeyNote.set({ text: 'Revoked.', ok: true })
+      })
+      .catch(() => {
+        triageKeyBusy.set(false)
+        triageKeyNote.set({ text: 'Network error.', ok: false })
       })
   })
 }
@@ -1342,6 +1441,52 @@ function unarchive(): void {
           @endif
           @if (readKeyNote() && !readKeyNote()?.ok)
             <span class="mt-2 text-xs note note-err show" :text="noteText(readKeyNote())"></span>
+          @endif
+        </div>
+      </section>
+
+      <!-- ========================= TRIAGE KEY ========================= -->
+      <section id="triage-key" class="mb-10 sec">
+        <div class="mb-3 sec-title">Triage key</div>
+        <div class="px-5 py-5 panel">
+          <p class="mb-4 text-sm text-subtle">
+            Lets a release pipeline or an agent mark this project's issues resolved, ignored or reopened without signing in as you.
+            It changes an issue's status and nothing else: it cannot read your errors, so pair it with a read key when the caller also needs the list.
+            Send it as <span class="mono">Authorization: Bearer</span>.
+          </p>
+
+          {{-- Just issued: the only time the key is ever shown, with the call
+               that uses it. --}}
+          <div :show="!!triageKeyOnce()">
+            <div class="flex flex-wrap gap-2 items-center">
+              <code :text="triageKeyOnce()" class="flex-1 px-3.5 py-2.5 min-w-[220px] text-sm tracking-[0.01em] truncate field field-quiet mono"></code>
+              <button @click="copyText('triagekey', triageKeyOnce())" :text="copyLabel('triagekey')" class="px-3 py-2 font-medium text-sm bg-panel btn-ghost">Copy</button>
+            </div>
+            <p class="mt-3.5 leading-relaxed text-[var(--warn)] text-xs">
+              Copy it now. It is not stored anywhere you can read it back, so leaving this page means issuing a new one.
+            </p>
+            <div :text="triageExample()" class="mt-3 break-all whitespace-pre-wrap code-block"></div>
+          </div>
+
+          {{-- Otherwise: whether one exists, and whether it is still in use. --}}
+          <div :show="!triageKeyOnce()">
+            <div class="flex flex-wrap gap-2 items-center">
+              <span :text="triageKeyStatus()" class="flex-1 min-w-[220px] text-sm text-subtle"></span>
+              <Button variant="ghost" @click="issueTriageKey" :loading="triageKeyBusy()" :label="hasTriageKey() ? 'Replace' : 'Issue key'" className="btn-cta btn-solid">Issue key</Button>
+              <span :show="hasTriageKey()">
+                <Button variant="ghost" @click="revokeTriageKey" :loading="triageKeyBusy()" className="btn-danger btn-sm">Revoke</Button>
+              </span>
+            </div>
+            <p class="mt-3.5 leading-relaxed text-subtle text-xs">
+              One issue: <span class="mono">POST /api/projects/{{ projectId }}/issues/ISSUE_ID/status</span>. Up to 200 at once: <span class="mono">POST /api/projects/{{ projectId }}/issues/status</span> with <span class="mono">ids</span>. The body's <span class="mono">status</span> is resolved, ignored or unresolved.
+            </p>
+          </div>
+
+          @if (triageKeyNote() && triageKeyNote()?.ok)
+            <span class="mt-2 text-xs note note-ok show" :text="noteText(triageKeyNote())"></span>
+          @endif
+          @if (triageKeyNote() && !triageKeyNote()?.ok)
+            <span class="mt-2 text-xs note note-err show" :text="noteText(triageKeyNote())"></span>
           @endif
         </div>
       </section>

@@ -16,6 +16,7 @@ import { FREE_PROJECTS } from '../app/Billing/plans'
 import { isPro } from '../app/Billing/pro'
 import { newIngestKey, newProjectId } from '../app/Support/project-keys'
 import { newReadKey } from '../app/Support/read-key'
+import { newTriageKey } from '../app/Support/triage-key'
 import { deliverInvite, joinUrl, newInviteToken } from '../app/Invites/invites'
 
 function json(data: unknown, status = 200): Response {
@@ -268,6 +269,38 @@ route.delete('/api/projects/{projectId}/read-key', async (request: any) => {
     return json({ error: 'not found' }, 404)
 
   await db.unsafe('UPDATE projects SET read_key = NULL, read_key_last_used_at = NULL, updated_at = NOW() WHERE id = $1', [projectId])
+  return json({ revoked: true })
+}).skipCsrf()
+
+// Issue (or replace) a project's triage key. Owner-only.
+//
+// The credential a machine presents to change the status of this project's
+// issues (app/Support/triage-key.ts): a release pipeline resolving what it
+// fixed, without a person's session. Shown once, here, like the read key, and
+// replacing it stops the previous one at once.
+route.post('/api/projects/{projectId}/triage-key', async (request: any) => {
+  const user = await currentUser(request)
+  if (!user)
+    return json({ error: 'unauthorized' }, 401)
+  const projectId = request.params.projectId
+  if (!(await ownsProject(user, projectId)))
+    return json({ error: 'not found' }, 404)
+
+  const key = newTriageKey()
+  await db.unsafe('UPDATE projects SET triage_key = $1, triage_key_last_used_at = NULL, updated_at = NOW() WHERE id = $2', [key, projectId])
+  return json({ triage_key: key })
+}).skipCsrf()
+
+// Revoke a project's triage key. Owner-only.
+route.delete('/api/projects/{projectId}/triage-key', async (request: any) => {
+  const user = await currentUser(request)
+  if (!user)
+    return json({ error: 'unauthorized' }, 401)
+  const projectId = request.params.projectId
+  if (!(await ownsProject(user, projectId)))
+    return json({ error: 'not found' }, 404)
+
+  await db.unsafe('UPDATE projects SET triage_key = NULL, triage_key_last_used_at = NULL, updated_at = NOW() WHERE id = $1', [projectId])
   return json({ revoked: true })
 }).skipCsrf()
 

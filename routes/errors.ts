@@ -8,7 +8,8 @@
  */
 
 import { Auth } from '@stacksjs/auth'
-import { projectReadAccess } from '../app/Support/access'
+import { projectReadAccess, projectTriageAccess } from '../app/Support/access'
+import { bulkIssueIds, MAX_BULK_TRIAGE } from '../app/Support/triage-key'
 import { db } from '@stacksjs/database'
 import { route } from '@stacksjs/router'
 import { sameOrigin } from '../app/Support/origin'
@@ -571,6 +572,70 @@ route.post('/issue/{issueId}/status', async (request: any) => {
     headers: { Location: `/issue/${encodeURIComponent(issueId)}`, ...CORS },
   })
 }).skipCsrf() // plain HTML form POST from the issue page (no CSRF cookie)
+
+// ---------------------------------------------------------------------------
+// Triage API (machine-to-machine)
+// ---------------------------------------------------------------------------
+
+// Change the status of one issue, or of up to MAX_BULK_TRIAGE of them, in a
+// project. For whatever closes issues without a person at the keyboard: a
+// release pipeline resolving what it shipped a fix for, an agent that has
+// verified one. Authorised by the project's triage key
+// (app/Support/triage-key.ts) sent as `Authorization: Bearer`, or by a
+// signed-in owner or member, who can already do this from the issue page.
+//
+// The project is in the path, and the statement below is scoped to it, so a
+// key can never touch an issue that belongs to another project: an id from
+// elsewhere is reported as missing, the same answer an id that does not exist
+// gets.
+//
+// Resolving through here is the same act as pressing Resolve: the status is
+// set and any snooze is cleared, and an issue that occurs again afterwards is
+// reopened by the ingest as a regression.
+async function changeIssueStatuses(request: any, projectId: string, ids: string[], status: unknown): Promise<{ response: Response, updated: string[] }> {
+  if (!sameOrigin(request))
+    return { response: json({ error: 'forbidden' }, 403), updated: [] }
+  const access = await projectTriageAccess(request, projectId)
+  if (!access.ok)
+    return { response: json({ error: access.error }, access.status), updated: [] }
+  if (!isIssueStatus(status))
+    return { response: json({ error: 'invalid status' }, 400), updated: [] }
+
+  const placeholders = ids.map((_, index) => `$${index + 3}`).join(', ')
+  const rows = await db.unsafe(
+    `UPDATE issues SET status = $1, snoozed_until = NULL
+     WHERE project_id = $2 AND id IN (${placeholders})
+     RETURNING id`,
+    [status, projectId, ...ids],
+  )
+  const updated = (rows ?? []).map((row: any) => String(row.id))
+  const missing = ids.filter(id => !updated.includes(id))
+  return { response: json({ ok: true, status, updated, missing }), updated }
+}
+
+route.post('/api/projects/{projectId}/issues/{issueId}/status', async (request: any) => {
+  const issueId = String(request.params.issueId ?? '')
+  const ids = bulkIssueIds([issueId])
+  if (!ids)
+    return json({ error: 'invalid issue id' }, 400)
+  const status = request.jsonBody?.status ?? 'resolved'
+  const { response, updated } = await changeIssueStatuses(request, String(request.params.projectId ?? ''), ids, status)
+  if (response.status !== 200)
+    return response
+  // One issue asked for, so one that is not this project's is a 404 rather
+  // than a 200 carrying an empty list.
+  if (!updated.includes(issueId))
+    return json({ error: 'not found' }, 404)
+  return json({ ok: true, issue: { id: issueId, status } })
+}).skipCsrf()
+
+route.post('/api/projects/{projectId}/issues/status', async (request: any) => {
+  const ids = bulkIssueIds(request.jsonBody?.ids)
+  if (!ids)
+    return json({ error: `ids must be a list of 1 to ${MAX_BULK_TRIAGE} issue ids` }, 400)
+  const { response } = await changeIssueStatuses(request, String(request.params.projectId ?? ''), ids, request.jsonBody?.status ?? 'resolved')
+  return response
+}).skipCsrf()
 
 // ---------------------------------------------------------------------------
 // SDK + health
