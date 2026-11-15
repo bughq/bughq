@@ -22,7 +22,7 @@ import { categorize, culprit, fingerprint, fingerprintFromParts, issueTitle, ran
 import { authorizeIngest } from '../app/Errors/ingest'
 import { allowAlert, rateLimit } from '../app/Errors/limits'
 import { isDesktopPlatform, isNativePlatform, nativeCulprit, nativeFingerprintParts, parseNativeException, renderNativeStack } from '../app/Errors/native'
-import { buildMetadata, clip, col255, MAX_MESSAGE, MAX_STACK, parseIngestEnvelope } from '../app/Errors/payload'
+import { buildMetadata, clip, col255, headerIngestKey, MAX_MESSAGE, MAX_STACK, parseIngestEnvelope } from '../app/Errors/payload'
 import { sessionFromEvent } from '../app/Releases/health'
 import { parseSessions, recordSessions } from '../app/Releases/sessions'
 import { symbolicate, symbolicateJs } from '../app/Symbols/store'
@@ -42,7 +42,7 @@ const RATE_WINDOW_MS = 10_000
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-BugHQ-Key',
+  'Access-Control-Allow-Headers': 'Content-Type, X-BugHQ-Key, Authorization',
   'Access-Control-Max-Age': '86400',
   // Without this a browser SDK cannot read the header the ingest answers with.
   'Access-Control-Expose-Headers': USAGE_HEADER,
@@ -141,7 +141,7 @@ route.post('/errors', async (request: any) => {
   // ACTUAL parsed payload too, or an understated/missing length slips past.
   if (Buffer.byteLength(JSON.stringify(body)) > MAX_BODY_BYTES)
     return json({ error: 'payload too large' }, 413)
-  const parsed = parseIngestEnvelope(body, request.headers?.get('x-bughq-key'))
+  const parsed = parseIngestEnvelope(body, headerIngestKey(request.headers))
   if (!parsed.ok)
     return json({ error: parsed.error }, 400)
 

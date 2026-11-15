@@ -30,6 +30,22 @@ export function col255(value: unknown): string | null {
 }
 
 /**
+ * The ingest key a request's headers carry.
+ *
+ * SDKs send `X-BugHQ-Key`. A plain error webhook (a self-hosted tool that
+ * posts JSON to whatever URL its operator configured) only knows how to send
+ * a token as `Authorization: Bearer`, so that is read too. The SDK header wins
+ * when both are present.
+ */
+export function headerIngestKey(headers: { get: (name: string) => string | null } | null | undefined): string | null {
+  const own = headers?.get('x-bughq-key')
+  if (own != null && String(own).trim() !== '')
+    return String(own).trim()
+  const bearer = /^bearer\s+(\S+)\s*$/i.exec(String(headers?.get('authorization') ?? ''))
+  return bearer ? bearer[1] : null
+}
+
+/**
  * The wire boundary shared by the browser, Vue, Nuxt, Stacks, PHP, and Laravel
  * SDKs. Keeping this pure makes their recorded payloads testable without a
  * database and prevents route code from quietly growing a second schema.
@@ -65,8 +81,20 @@ export function buildMetadata(body: Record<string, unknown>): string | null {
   const metadata: Record<string, unknown> = {}
   if (body.extra && typeof body.extra === 'object')
     metadata.extra = body.extra
+  // A plain webhook has no `extra` or `tags`; it sends what its author thought
+  // relevant as `context`, the request id as `traceId`, and how many repeats it
+  // held back as `suppressed`. Keep them where the issue page already looks.
+  const webhook: Record<string, unknown> = {}
+  if (body.context && typeof body.context === 'object' && !Array.isArray(body.context))
+    Object.assign(webhook, body.context)
+  if (typeof body.suppressed === 'number' && Number.isFinite(body.suppressed))
+    webhook.suppressed = body.suppressed
+  if (Object.keys(webhook).length)
+    metadata.extra = { ...webhook, ...(metadata.extra as Record<string, unknown> | undefined) }
   if (body.tags && typeof body.tags === 'object')
     metadata.tags = body.tags
+  if (typeof body.traceId === 'string' && body.traceId.trim() !== '')
+    metadata.tags = { trace_id: body.traceId.trim().slice(0, 255), ...(metadata.tags as Record<string, unknown> | undefined) }
   if (body.contexts && typeof body.contexts === 'object')
     metadata.contexts = body.contexts
   if (Array.isArray(body.breadcrumbs) && body.breadcrumbs.length)

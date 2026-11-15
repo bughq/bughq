@@ -32,6 +32,28 @@ X-BugHQ-Key: bughq_your_project_key
 
 The message is required. The key can also be sent in the body. The collector rejects payloads above 256 KiB, applies rate limits, and returns `401`, `413`, or `429` when authorization or limits fail.
 
+### Error webhooks
+
+A tool that can only post JSON to a URL with a token (a self-hosted service's error webhook, a relay, a script) needs no SDK. Send the project key as `Authorization: Bearer` to the same address:
+
+```http
+POST /errors
+Content-Type: application/json
+Authorization: Bearer bughq_your_project_key
+```
+
+```json
+{
+  "message": "runner group is backing off: 3 launches died",
+  "stack": "Error: runner group is backing off\n    at alertOperators (alerts.ts:41:9)",
+  "traceId": "920bdc4ece9e41b8-0s",
+  "context": { "group": "linux", "launches": 3 },
+  "suppressed": 4
+}
+```
+
+`context` and `suppressed` are kept with the event's extra data and `traceId` becomes the `trace_id` tag. `X-BugHQ-Key` wins when both headers are sent.
+
 ### Native events
 
 Native apps add `platform` and a structured `exception`. `platform` is `ios`, `android`, `macos`, `windows` or `linux`; any other value is treated as a web or server event. Frames are top of the stack first. An Apple frame (`ios`, `macos`) names its binary, the binary's UUID and the offset into it, which the ingest symbolicates with uploaded symbols. A JVM frame names its class, method, file and line, which the ingest retraces with an uploaded R8 mapping. Windows and Linux frames are stored with the names the app resolved.
