@@ -1,7 +1,7 @@
 import type { ConnectGrant, UsageReport } from '@stacksjs/hq/service'
 import type { HqProject, HqUser, ProjectStore } from '../../app/Hq/adapter'
 import { describe, expect, test } from 'bun:test'
-import { createHqService, createMemoryConnectCodeStore } from '@stacksjs/hq/service'
+import { confirmationCode, createHqService, createMemoryConnectCodeStore } from '@stacksjs/hq/service'
 import { hqServiceContract } from '@stacksjs/hq/testing'
 import { FREE_PROJECTS } from '../../app/Billing/plans'
 import { ConnectRefusedError, createBughqAdapter } from '../../app/Hq/adapter'
@@ -68,7 +68,7 @@ function setup(options: { projects?: HqProject[], pro?: number[], used?: Record<
   const start = async (app: string) => (await call('/api/cli/connect', { method: 'POST', body: { app } })).body as { code: string, approveUrl: string }
   const connect = async (app: string, user: HqUser): Promise<ConnectGrant> => {
     const { code } = await start(app)
-    await service.approveConnect(code, user)
+    await service.approveConnect(code, user, await confirmationCode(code))
     return (await call(`/api/cli/connect/${code}`)).body
   }
   const usage = (key?: string) => call('/api/v1/usage', { headers: key ? { Authorization: `Bearer ${key}` } : undefined })
@@ -96,7 +96,7 @@ describe('connect flow', () => {
   test('approving creates a project named after the app and hands over its keys once', async () => {
     const { start, call, service, projects } = setup()
     const { code } = await start('cursio')
-    expect(await service.approveConnect(code, ALICE)).toEqual({ ok: true, project: { id: projects.rows[0]!.id, name: 'cursio' } })
+    expect(await service.approveConnect(code, ALICE, await confirmationCode(code))).toEqual({ ok: true, project: { id: projects.rows[0]!.id, name: 'cursio' } })
 
     const first = await call(`/api/cli/connect/${code}`)
     expect(first.status).toBe(200)
@@ -114,12 +114,22 @@ describe('connect flow', () => {
     expect(await call(`/api/cli/connect/${code}`)).toEqual({ status: 404, body: { status: 'expired' } })
   })
 
+  test('a wrong confirmation code approves nothing and leaves the code pending', async () => {
+    const { start, call, service, projects } = setup()
+    const { code } = await start('cursio')
+    for (const typed of [undefined, '', 'ABC-DEF'])
+      expect(await service.approveConnect(code, ALICE, typed)).toEqual({ ok: false, reason: 'confirmation_mismatch' })
+    expect(projects.rows).toEqual([])
+    expect(await call(`/api/cli/connect/${code}`)).toEqual({ status: 200, body: { status: 'pending' } })
+    expect((await service.approveConnect(code, ALICE, await confirmationCode(code))).ok).toBe(true)
+  })
+
   test('a code that is never approved expires', async () => {
     const { start, call, service, clock, projects } = setup()
     const { code } = await start('cursio')
     clock.at += 10 * 60_000 + 1
     expect(await call(`/api/cli/connect/${code}`)).toEqual({ status: 404, body: { status: 'expired' } })
-    expect(await service.approveConnect(code, ALICE)).toEqual({ ok: false, reason: 'expired' })
+    expect(await service.approveConnect(code, ALICE, await confirmationCode(code))).toEqual({ ok: false, reason: 'expired' })
     expect(await service.describeConnect(code)).toBeNull()
     expect(projects.rows).toEqual([])
   })
@@ -128,7 +138,7 @@ describe('connect flow', () => {
     const { call, service, projects } = setup()
     expect(await call(`/api/cli/connect/${'x'.repeat(43)}`)).toEqual({ status: 404, body: { status: 'expired' } })
     expect(await call('/api/cli/connect/short')).toEqual({ status: 404, body: { status: 'expired' } })
-    expect(await service.approveConnect('x'.repeat(43), ALICE)).toEqual({ ok: false, reason: 'expired' })
+    expect(await service.approveConnect('x'.repeat(43), ALICE, await confirmationCode('x'.repeat(43)))).toEqual({ ok: false, reason: 'expired' })
     expect(projects.rows).toEqual([])
   })
 
@@ -167,7 +177,7 @@ describe('connect flow', () => {
     const full = Array.from({ length: FREE_PROJECTS }, (_, i): HqProject => ({ id: `p${i}`, name: `app ${i}`, ownerId: 1, ingestKey: `k${i}`, readKey: null, isActive: true }))
     const { start, service, projects, call } = setup({ projects: full })
     const { code } = await start('one-more')
-    const refusal = await service.approveConnect(code, ALICE).catch(error => error)
+    const refusal = await service.approveConnect(code, ALICE, await confirmationCode(code)).catch(error => error)
     expect(refusal).toBeInstanceOf(ConnectRefusedError)
     expect((refusal as ConnectRefusedError).reason).toBe('project_limit')
     expect(projects.rows).toHaveLength(FREE_PROJECTS)
@@ -188,7 +198,7 @@ describe('connect flow', () => {
     const archived: HqProject = { id: 'old', name: 'cursio', ownerId: 1, ingestKey: 'bughq_old', readKey: null, isActive: false }
     const { start, service } = setup({ projects: [archived] })
     const { code } = await start('cursio')
-    const refusal = await service.approveConnect(code, ALICE).catch(error => error)
+    const refusal = await service.approveConnect(code, ALICE, await confirmationCode(code)).catch(error => error)
     expect((refusal as ConnectRefusedError).reason).toBe('project_archived')
   })
 })

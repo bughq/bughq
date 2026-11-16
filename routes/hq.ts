@@ -12,7 +12,6 @@
  */
 
 import type { HqRequest } from '@stacksjs/hq/service'
-import { confirmationCode, confirmationMatches } from '@stacksjs/hq/service'
 import { route } from '@stacksjs/router'
 import { ConnectRefusedError } from '../app/Hq/adapter'
 import { hq } from '../app/Hq/service'
@@ -55,14 +54,10 @@ route.post('/api/cli/connect', async (request: any) => {
   const limit = await rateLimit(`hq-connect:${clientIp(request)}`, START_LIMIT, START_WINDOW_MS)
   if (!limit.ok)
     return json({ error: 'rate limited' }, 429, { 'Retry-After': String(limit.retryAfter) })
-  // `confirmCode` is what the CLI prints and the approve page asks for, the
-  // same on every HQ service (`@stacksjs/hq` confirm). It goes only to the
-  // caller that asked for the code, never into the approve URL.
-  const started = await hq.startConnect(hqRequest(request))
-  if (started.status !== 201)
-    return started
-  const body = await started.json() as { code: string, approveUrl: string, confirmCode?: string }
-  return json({ ...body, confirmCode: body.confirmCode ?? await confirmationCode(body.code) }, 201)
+  // The service answers `confirmCode` beside the code and the approve URL
+  // (`@stacksjs/hq` 0.75.600 on): what the CLI prints and the approve page
+  // asks for. It goes only to the caller that asked, never into the URL.
+  return hq.startConnect(hqRequest(request))
 }).skipCsrf() // called by a CLI: no browser, no cookie, nothing to forge
 
 route.get('/api/cli/connect/{code}', async (request: any) => {
@@ -80,9 +75,10 @@ route.get('/api/v1/usage', (request: any) => hq.usage(hqRequest(request)))
 // cross-site POST would want.
 //
 // It also needs the confirmation code from the terminal that started the
-// connect, checked here and not only in the page, so no request approves
-// without it. Wrong guesses are limited per person: six characters at ten
-// tries a minute cannot be guessed within the ten minutes a connect lives.
+// connect. The service checks it (`approveConnect` takes what was typed and
+// provisions nothing on a mismatch), so no request approves without it. Wrong
+// guesses are limited here, per person: six characters at ten tries a minute
+// cannot be guessed within the ten minutes a connect lives.
 const APPROVE_LIMIT = 10
 const APPROVE_WINDOW_MS = 60_000
 
@@ -98,16 +94,16 @@ route.post('/api/cli/connect/{code}/approve', async (request: any) => {
     return json({ error: 'Too many attempts. Wait a minute and try again.' }, 429, { 'Retry-After': String(limit.retryAfter) })
 
   const code = String(request.params?.code ?? '')
-  if (!await confirmationMatches(code, request.jsonBody?.confirm)) {
-    return json({
-      error: 'That code does not match. Enter the confirmation code your terminal is showing.',
-      reason: 'confirmation_mismatch',
-    }, 422)
-  }
 
   try {
-    const result = await hq.approveConnect(code, { id: Number(user.id) })
+    const result = await hq.approveConnect(code, { id: Number(user.id) }, request.jsonBody?.confirm)
     if (!result.ok) {
+      if (result.reason === 'confirmation_mismatch') {
+        return json({
+          error: 'That code does not match. Enter the confirmation code your terminal is showing.',
+          reason: result.reason,
+        }, 422)
+      }
       return json({
         error: result.reason === 'already_approved'
           ? 'This connection was already approved.'
