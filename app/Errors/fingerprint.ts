@@ -31,9 +31,22 @@ export function topFrame(stack: string | undefined): string {
   return frame.replace(/:\d+:\d+\)?$/, '').replace(/0x[0-9a-f]+/gi, '')
 }
 
+/**
+ * A frame without the part of its path that names one deploy.
+ *
+ * A server keeps each release in its own directory
+ * (`/var/www/app/releases/2f9ed4289/app/Jobs/SyncJob.ts`), so the same line of
+ * the same file had a different frame after every deploy, and the same error
+ * opened a new issue per release: one job's failure stood as three issues over
+ * a day. The issue list still shows the frame as it was reported (`culprit`).
+ */
+export function releaseIndependent(frame: string): string {
+  return frame.replace(/\/releases\/[^/\s]+\//g, '/releases/*/')
+}
+
 /** Stable group key for an error. */
 export function fingerprint(errorType: string, message: string, stack?: string): string {
-  const basis = `${errorType || 'Error'}|${normalizeMessage(message)}|${topFrame(stack)}`
+  const basis = `${errorType || 'Error'}|${normalizeMessage(message)}|${releaseIndependent(topFrame(stack))}`
   return createHash('sha256').update(basis).digest('hex').slice(0, 32)
 }
 

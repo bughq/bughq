@@ -31,6 +31,22 @@ describe('normalizeMessage', () => {
   })
 })
 
+describe('one error across deploys', () => {
+  const at = (release: string) => `Error: busy\n    at handle (/var/www/app/releases/${release}/app/Jobs/SyncJob.ts:25:48)`
+
+  test('groups the same frame from two release directories into one issue', () => {
+    expect(fingerprint('Error', 'busy', at('2f9ed4289'))).toBe(fingerprint('Error', 'busy', at('4ac2101e3')))
+    expect(fingerprint('Error', 'busy', at('20261115T160000'))).toBe(fingerprint('Error', 'busy', at('2f9ed4289')))
+  })
+
+  test('still tells two files apart, and leaves a path with no release in it alone', () => {
+    expect(fingerprint('Error', 'busy', at('2f9ed4289')))
+      .not.toBe(fingerprint('Error', 'busy', at('2f9ed4289').replace('SyncJob', 'OtherJob')))
+    expect(fingerprint('Error', 'busy', 'Error: busy\n    at f (app/a.ts:10:5)'))
+      .toBe(fingerprint('Error', 'busy', 'Error: busy\n    at f (app/a.ts:88:2)'))
+  })
+})
+
 describe('topFrame', () => {
   test('picks the first application frame, skipping vendor frames', () => {
     const stack = `Error: boom
