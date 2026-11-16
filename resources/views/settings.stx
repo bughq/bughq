@@ -57,7 +57,7 @@ if (token) {
 // names exactly the columns its SELECT asks for rather than the whole table —
 // a row here genuinely does not carry `dsn` or `updated_at`, and promising it
 // would be the same class of lie the row types exist to stop.
-interface ProjectRow extends Pick<Project, 'id' | 'name' | 'platform' | 'ingest_key' | 'is_active' | 'read_key' | 'read_key_last_used_at'> {}
+interface ProjectRow extends Pick<Project, 'id' | 'name' | 'platform' | 'ingest_key' | 'is_active'> {}
 interface ChannelRow extends Pick<AlertChannel, 'id' | 'type' | 'label' | 'webhook_url' | 'enabled' | 'created_at'> {}
 interface MemberRow extends Pick<ProjectMember, 'id' | 'email' | 'role'> {}
 /** `registered` is computed per row (`u.id IS NOT NULL`), not a project_invites column. */
@@ -72,14 +72,17 @@ let channels: ChannelRow[] = []
 let members: MemberRow[] = []
 let invites: InviteRow[] = []
 // Native projects' upload tokens (only their prefixes) and uploaded symbols.
-interface UploadTokenRow { id: string, name: string, last_used_at: string | null }
+interface UploadTokenRow { id: string, name: string, created_at: string }
 interface DebugFileRow { id: string, kind: string, debug_id: string, code_name: string | null, release: string | null, symbol_count: number, created_at: string }
 let uploadTokens: UploadTokenRow[] = []
+// How many read keys the project holds: one from this page, plus one for each
+// `buddy hq:connect`.
+let readKeyCount = 0
 let debugFiles: DebugFileRow[] = []
 if (user) {
   // Owned projects only — settings is the owner's admin surface.
   projects = ((await db.unsafe(
-    'SELECT id, name, platform, ingest_key, is_active, read_key, read_key_last_used_at FROM projects WHERE owner_id = $1 ORDER BY created_at DESC NULLS LAST, id',
+    'SELECT id, name, platform, ingest_key, is_active FROM projects WHERE owner_id = $1 ORDER BY created_at DESC NULLS LAST, id',
     [Number(user.id)],
   )) as unknown as ProjectRow[]) ?? []
   if (projects.length === 0)
@@ -104,20 +107,12 @@ if (user) {
        WHERE i.project_id = $1 ORDER BY i.created_at ASC NULLS LAST, i.email`,
       [activeProject.id],
     )) as unknown as InviteRow[]) ?? []
-    // Upload tokens are Stacks personal access tokens the owner holds, each
-    // scoped to one project (app/Errors/uploadTokens.ts): this project's are
-    // the owner's live tokens carrying its scope.
-    const { tokens } = await import('@stacksjs/auth')
-    const { uploadScope } = await import('../../app/Errors/uploadTokens')
-    const scope = uploadScope(String(activeProject.id))
-    uploadTokens = (await tokens(Number(user.id)))
-      .filter(t => !t.scopes.includes('*') && t.scopes.includes(scope))
-      .filter(t => t.expiresAt == null || t.expiresAt.getTime() > Date.now())
-      .map(t => ({
-        id: String(t.id),
-        name: t.name,
-        last_used_at: t.updatedAt.getTime() - t.createdAt.getTime() > 1000 ? t.updatedAt.toISOString() : null,
-      }))
+    // Upload tokens and read keys are project tokens: Stacks personal access
+    // tokens owned by the project (app/Support/project-tokens.ts).
+    const { PROJECT_SCOPES, projectTokens } = await import('../../app/Support/project-tokens')
+    uploadTokens = (await projectTokens(String(activeProject.id), PROJECT_SCOPES.upload))
+      .map(t => ({ id: t.id, name: t.name, created_at: t.created_at }))
+    readKeyCount = (await projectTokens(String(activeProject.id), PROJECT_SCOPES.read)).length
     debugFiles = ((await db.unsafe(
       `SELECT id, kind, debug_id, code_name, release, symbol_count, created_at FROM debug_files
        WHERE project_id = $1 ORDER BY created_at DESC LIMIT 20`,
@@ -136,7 +131,7 @@ const symbolsBlurb = activeProject?.platform === 'ios'
     : activeProject?.platform === 'macos'
       ? 'Webview and agent errors arrive minified, and native frames as addresses. Upload each build\'s JavaScript sourcemaps and dSYM symbols and bughq turns them into functions, files and lines.'
       : 'Webview and agent errors arrive minified. Upload each build\'s JavaScript sourcemaps and bughq turns them into functions, files and lines.'
-const tokenView = uploadTokens.map(t => ({ id: t.id, name: t.name, used: t.last_used_at ? `last used ${String(t.last_used_at).slice(0, 10)}` : 'never used' }))
+const tokenView = uploadTokens.map(t => ({ id: t.id, name: t.name, made: `created ${String(t.created_at).slice(0, 10)}` }))
 const debugFileView = debugFiles.map(f => ({ id: f.id, label: f.kind === 'apple' ? `${f.code_name || 'binary'} ${f.debug_id}` : f.kind === 'sourcemap' ? `${f.code_name || 'script'}.map ${f.release || ''}`.trim() : `mapping.txt ${f.debug_id}`, symbols: `${Number(f.symbol_count || 0).toLocaleString()} ${f.kind === 'sourcemap' ? 'sources' : 'symbols'}`, at: String(f.created_at).slice(0, 10) }))
 
 // Whether this owner can invite. Asked here so the form can say so before
@@ -209,11 +204,9 @@ const inviteView = invites.map(i => ({
 const inviteEmails: Record<string, string> = Object.fromEntries(inviteView.map((i): [string, string] => [i.id, i.email]))
 const keyFull = activeProject ? String(activeProject.ingest_key || '') : ''
 const keyMask = maskKey(keyFull)
-// The read key itself never reaches the page: it is a secret, shown once when
-// it is issued and never again (#19). Only whether one exists, and when it was
-// last used, so a live key can be told from a forgotten one before revoking.
-const hasReadKeyInitial = !!(activeProject && activeProject.read_key)
-const readKeyUsedInitial = activeProject && activeProject.read_key_last_used_at ? String(activeProject.read_key_last_used_at) : ''
+// A read key never reaches the page: it is a secret, shown once when it is
+// issued and stored only as a hash (#19). Only how many the project holds.
+const readKeyCountInitial = readKeyCount
 
 // Framework-specific install snippet, keyed off the project's platform. Key-only
 // (Flare-style): the ingest key alone identifies the project — no project id, no DSN.
@@ -350,7 +343,7 @@ const projectName = activeProject?.name || ''
 // bridge escapes `<` to < on the way out (see the long note above) — and
 // naming them makes it explicit which values carry that hazard rather than
 // leaving it to whoever next reads the client block.
-defineClientPayload({ channelEnabled, codeText, hasReadKeyInitial, installText, inviteEmails, justRotated, keyFull, keyMask, projectId, projectName, readKeyUsedInitial })
+defineClientPayload({ channelEnabled, codeText, installText, inviteEmails, justRotated, keyFull, keyMask, projectId, projectName, readKeyCountInitial })
 </script>
 
 <script client>
@@ -456,25 +449,17 @@ function noteText(note: FormNote | null): string {
 // kept honest. A read key appears in exactly one place and is never rendered
 // from the server, so reloading would throw away the only copy the browser
 // ever had of it.
-const hasReadKey = state(hasReadKeyInitial)
-const readKeyUsed = state(readKeyUsedInitial)
+const readKeyHeld = state(readKeyCountInitial)
+const hasReadKey = (): boolean => readKeyHeld() > 0
 const readKeyOnce = state('')
 const readKeyBusy = state(false)
 const readKeyNote = state<FormNote | null>(null)
 
-/** "never used", or the stamp as the browser's locale writes it. */
-function readKeyUsedLabel(): string {
-  const at = readKeyUsed()
-  if (!at)
-    return 'never used'
-  const when = new Date(at)
-  return Number.isNaN(when.getTime()) ? 'used recently' : `last used ${when.toLocaleString()}`
-}
-
 function readKeyStatus(): string {
-  return hasReadKey()
-    ? `A read key is active, ${readKeyUsedLabel()}.`
-    : 'No read key. Issue one to let a server read this project.'
+  const held = readKeyHeld()
+  if (held === 0)
+    return 'No read key. Issue one to let a server read this project.'
+  return held === 1 ? 'A read key is active.' : `${held} read keys are active.`
 }
 
 function issueReadKey(): void {
@@ -483,7 +468,7 @@ function issueReadKey(): void {
   const ask = !hasReadKey()
     ? Promise.resolve(true)
     : window.stxConfirm
-      ? window.stxConfirm('The current read key stops working immediately, and anything still using it is answered 404 until you update it. Continue?', { title: 'Replace read key?', confirmText: 'Replace key', cancelText: 'Cancel', type: 'warning' })
+      ? window.stxConfirm('Every read key this project holds stops working immediately, the ones given to connected apps included, and anything still using one is refused until you update it. Continue?', { title: 'Replace read key?', confirmText: 'Replace key', cancelText: 'Cancel', type: 'warning' })
       // Declining is the right failure for a destructive action, the same
       // reasoning as rotateKey: nothing is lost by not replacing.
       : Promise.resolve(false)
@@ -503,8 +488,7 @@ function issueReadKey(): void {
           return
         }
         readKeyOnce.set(String(res.b.read_key || ''))
-        hasReadKey.set(true)
-        readKeyUsed.set('')
+        readKeyHeld.set(1)
         readKeyNote.set({ text: 'Copy it now. This is the only time it is shown.', ok: true })
       })
       .catch(() => {
@@ -516,7 +500,7 @@ function issueReadKey(): void {
 
 function revokeReadKey(): void {
   const ask = window.stxConfirm
-    ? window.stxConfirm('Anything using this key stops reading immediately. Continue?', { title: 'Revoke read key?', confirmText: 'Revoke', cancelText: 'Cancel', type: 'warning' })
+    ? window.stxConfirm('Anything using a read key for this project stops reading immediately. Continue?', { title: 'Revoke read keys?', confirmText: 'Revoke', cancelText: 'Cancel', type: 'warning' })
     : Promise.resolve(false)
   Promise.resolve(ask).then((ok) => {
     if (!ok)
@@ -533,8 +517,7 @@ function revokeReadKey(): void {
           readKeyNote.set({ text: res.b.error || 'Could not revoke.', ok: false })
           return
         }
-        hasReadKey.set(false)
-        readKeyUsed.set('')
+        readKeyHeld.set(0)
         readKeyOnce.set('')
         readKeyNote.set({ text: 'Revoked.', ok: true })
       })
@@ -1342,7 +1325,7 @@ function unarchive(): void {
               </span>
             </div>
             <p class="mt-3.5 leading-relaxed text-subtle text-xs">
-              The last-used time is written at most once a minute, so a key in constant use shows a time up to a minute old.
+              Only a hash of a key is stored, so one cannot be shown again. Each app connected with <span class="mono">buddy hq:connect</span> is given its own.
             </p>
           </div>
 
@@ -1383,7 +1366,7 @@ function unarchive(): void {
               @foreach (tokenView as t)
                 <div class="flex gap-3 items-center justify-between py-2 text-sm border-t border-line">
                   <span class="text-muted">{{ t.name }}</span>
-                  <span class="text-subtle text-xs">{{ t.used }}</span>
+                  <span class="text-subtle text-xs">{{ t.made }}</span>
                   <Button variant="ghost" @click="revokeUploadToken('{{ t.id }}')" className="btn-danger btn-xs">Revoke</Button>
                 </div>
               @endforeach

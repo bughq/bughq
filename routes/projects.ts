@@ -14,7 +14,8 @@ import type { InviteDelivery } from '../app/Invites/invites'
 import { FREE_PROJECTS } from '../app/Billing/plans'
 import { isPro } from '../app/Billing/pro'
 import { newIngestKey, newProjectId } from '../app/Support/project-keys'
-import { newReadKey } from '../app/Support/read-key'
+import { SETTINGS_READ_KEY_NAME } from '../app/Support/read-key'
+import { mintProjectToken, PROJECT_SCOPES, revokeProjectTokens } from '../app/Support/project-tokens'
 import { sessionUser } from '../app/Support/access'
 import { deliverInvite, joinUrl, newInviteToken } from '../app/Invites/invites'
 
@@ -244,15 +245,17 @@ route.post('/api/projects/{projectId}/read-key', async (request: any) => {
   if (!(await ownsProject(user, projectId)))
     return json({ error: 'not found' }, 404)
 
-  const key = newReadKey()
-  // A new key starts with no last-used stamp: keeping the old one would read
-  // as "used before it existed".
-  await db.unsafe('UPDATE projects SET read_key = $1, read_key_last_used_at = NULL, updated_at = NOW() WHERE id = $2', [key, projectId])
-  return json({ read_key: key })
+  // Issuing from settings REPLACES: every read key the project holds stops
+  // working and one new key is answered, which is what the page says it does.
+  // (`buddy hq:connect` adds a key instead, in app/Hq/adapter.ts, so a second
+  // machine does not break the first.)
+  await revokeProjectTokens(projectId, PROJECT_SCOPES.read)
+  const created = await mintProjectToken(projectId, PROJECT_SCOPES.read, SETTINGS_READ_KEY_NAME)
+  return json({ read_key: created.token })
 }).skipCsrf()
 
-// Revoke a project's read key. Owner-only. Anything still presenting it gets
-// the same 404 an unknown project gets, on its next request.
+// Revoke a project's read keys, all of them. Owner-only. Anything still
+// presenting one is answered 401 on its next request.
 route.delete('/api/projects/{projectId}/read-key', async (request: any) => {
   const user = await currentUser(request)
   if (!user)
@@ -261,7 +264,7 @@ route.delete('/api/projects/{projectId}/read-key', async (request: any) => {
   if (!(await ownsProject(user, projectId)))
     return json({ error: 'not found' }, 404)
 
-  await db.unsafe('UPDATE projects SET read_key = NULL, read_key_last_used_at = NULL, updated_at = NOW() WHERE id = $1', [projectId])
+  await revokeProjectTokens(projectId, PROJECT_SCOPES.read)
   return json({ revoked: true })
 }).skipCsrf()
 
@@ -276,6 +279,11 @@ route.delete('/api/projects/{projectId}', async (request: any) => {
   if (!(await ownsProject(user, projectId)))
     return json({ error: 'not found' }, 404)
 
+  // Its tokens first: a read key or an upload token for a project that no
+  // longer exists must not stay live in the framework's token table.
+  await revokeProjectTokens(projectId, PROJECT_SCOPES.read)
+  await revokeProjectTokens(projectId, PROJECT_SCOPES.upload)
+  await db.unsafe('DELETE FROM project_principals WHERE project_id = $1', [projectId])
   await db.unsafe('DELETE FROM error_events WHERE project_id = $1', [projectId])
   await db.unsafe('DELETE FROM autofix_runs WHERE project_id = $1', [projectId])
   await db.unsafe('DELETE FROM issues WHERE project_id = $1', [projectId])

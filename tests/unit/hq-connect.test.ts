@@ -5,18 +5,25 @@ import { confirmationCode, createHqService, createMemoryConnectCodeStore } from 
 import { hqServiceContract } from '@stacksjs/hq/testing'
 import { FREE_PROJECTS } from '../../app/Billing/plans'
 import { ConnectRefusedError, createBughqAdapter } from '../../app/Hq/adapter'
-import { looksLikeReadKey } from '../../app/Support/read-key'
 
 const ORIGIN = 'https://bughq.test'
 
-/** The `projects` table, as much of it as the adapter touches. */
-function memoryProjects(seed: HqProject[] = []): ProjectStore & { rows: HqProject[], touched: string[] } {
+/** A read key as the store keeps it: which project it reads, and whether it is still live. */
+interface IssuedKey { projectId: string, key: string, name: string, revoked: boolean }
+
+/**
+ * The `projects` table and the project's read keys, as much of both as the
+ * adapter touches. The real store mints a framework token and keeps a hash
+ * (app/Support/project-tokens.ts); this one keeps the key so a test can
+ * present it back.
+ */
+function memoryProjects(seed: HqProject[] = []): ProjectStore & { rows: HqProject[], keys: IssuedKey[] } {
   const rows = seed.map(project => ({ ...project }))
-  const touched: string[] = []
+  const keys: IssuedKey[] = []
   const byId = (id: string) => rows.find(project => project.id === id)
   return {
     rows,
-    touched,
+    keys,
     async findOwnedByName(ownerId, name) {
       const found = rows.find(project => project.ownerId === ownerId && project.name.toLowerCase() === name.toLowerCase())
       return found ? { ...found } : null
@@ -27,18 +34,18 @@ function memoryProjects(seed: HqProject[] = []): ProjectStore & { rows: HqProjec
     async create({ platform: _platform, ...project }) {
       rows.push({ ...project })
     },
-    async setReadKey(projectId, readKey) {
-      byId(projectId)!.readKey = readKey
-    },
     async setIngestKey(projectId, ingestKey) {
       byId(projectId)!.ingestKey = ingestKey
     },
-    async findByReadKey(readKey) {
-      const found = rows.find(project => project.readKey === readKey)
-      return found ? { ...found } : null
+    async issueReadKey(projectId, name) {
+      const key = `read-key-${keys.length + 1}-${globalThis.crypto.randomUUID()}`
+      keys.push({ projectId, key, name, revoked: false })
+      return key
     },
-    async touchReadKey(projectId) {
-      touched.push(projectId)
+    async findByReadKey(readKey) {
+      const issued = keys.find(entry => entry.key === readKey && !entry.revoked)
+      const found = issued ? byId(issued.projectId) : undefined
+      return found ? { ...found } : null
     },
   }
 }
@@ -104,11 +111,12 @@ describe('connect flow', () => {
       status: 'approved',
       project: { id: projects.rows[0]!.id, name: 'cursio' },
       ingestKey: projects.rows[0]!.ingestKey,
-      readKey: projects.rows[0]!.readKey,
+      readKey: projects.keys[0]!.key,
       dashboardUrl: `${ORIGIN}/dashboard?project=${projects.rows[0]!.id}`,
     })
     expect(first.body.ingestKey).toMatch(/^bughq_[0-9a-f]{64}$/)
-    expect(looksLikeReadKey(first.body.readKey)).toBe(true)
+    // Named after the app it was connected for, so it can be told apart in a list.
+    expect(projects.keys[0]).toMatchObject({ projectId: projects.rows[0]!.id, name: 'Connected: cursio' })
     expect(projects.rows[0]).toMatchObject({ ownerId: 1, isActive: true })
 
     expect(await call(`/api/cli/connect/${code}`)).toEqual({ status: 404, body: { status: 'expired' } })
@@ -150,18 +158,19 @@ describe('connect flow', () => {
     expect(projects.rows).toHaveLength(1)
     expect(second.project).toEqual(first.project)
     expect(second.ingestKey).toBe(first.ingestKey)
-    // Not rotated: the first machine's deployment is still reading with it.
-    expect(second.readKey).toBe(first.readKey)
+    // A key of its own, because a stored key is a hash and cannot be handed
+    // out twice. The first machine's is not rotated: it still reads.
+    expect(second.readKey).not.toBe(first.readKey)
+    expect(projects.keys.map(entry => entry.revoked)).toEqual([false, false])
   })
 
   test('a project made in the dashboard, with no read key yet, is issued one', async () => {
-    const existing: HqProject = { id: 'cursio-abc123', name: 'cursio', ownerId: 1, ingestKey: 'bughq_existing', readKey: null, isActive: true }
+    const existing: HqProject = { id: 'cursio-abc123', name: 'cursio', ownerId: 1, ingestKey: 'bughq_existing', isActive: true }
     const { connect, projects } = setup({ projects: [existing] })
     const grant = await connect('cursio', ALICE)
     expect(grant.project.id).toBe('cursio-abc123')
     expect(grant.ingestKey).toBe('bughq_existing')
-    expect(looksLikeReadKey(grant.readKey)).toBe(true)
-    expect(projects.rows[0]!.readKey).toBe(grant.readKey)
+    expect(projects.keys).toEqual([{ projectId: 'cursio-abc123', key: grant.readKey, name: 'Connected: cursio', revoked: false }])
   })
 
   test('two accounts connecting the same app name get separate projects', async () => {
@@ -174,7 +183,7 @@ describe('connect flow', () => {
   })
 
   test('a Free account at its project allowance is refused, and the code stays pending', async () => {
-    const full = Array.from({ length: FREE_PROJECTS }, (_, i): HqProject => ({ id: `p${i}`, name: `app ${i}`, ownerId: 1, ingestKey: `k${i}`, readKey: null, isActive: true }))
+    const full = Array.from({ length: FREE_PROJECTS }, (_, i): HqProject => ({ id: `p${i}`, name: `app ${i}`, ownerId: 1, ingestKey: `k${i}`, isActive: true }))
     const { start, service, projects, call } = setup({ projects: full })
     const { code } = await start('one-more')
     const refusal = await service.approveConnect(code, ALICE, await confirmationCode(code)).catch(error => error)
@@ -185,7 +194,7 @@ describe('connect flow', () => {
   })
 
   test('the allowance gates new projects only: reusing one is always allowed, and Pro is not capped', async () => {
-    const full = Array.from({ length: FREE_PROJECTS }, (_, i): HqProject => ({ id: `p${i}`, name: `app ${i}`, ownerId: 1, ingestKey: `k${i}`, readKey: null, isActive: true }))
+    const full = Array.from({ length: FREE_PROJECTS }, (_, i): HqProject => ({ id: `p${i}`, name: `app ${i}`, ownerId: 1, ingestKey: `k${i}`, isActive: true }))
     const free = setup({ projects: full })
     expect((await free.connect('app 0', ALICE)).project.id).toBe('p0')
 
@@ -195,7 +204,7 @@ describe('connect flow', () => {
   })
 
   test('an archived project is not handed out', async () => {
-    const archived: HqProject = { id: 'old', name: 'cursio', ownerId: 1, ingestKey: 'bughq_old', readKey: null, isActive: false }
+    const archived: HqProject = { id: 'old', name: 'cursio', ownerId: 1, ingestKey: 'bughq_old', isActive: false }
     const { start, service } = setup({ projects: [archived] })
     const { code } = await start('cursio')
     const refusal = await service.approveConnect(code, ALICE, await confirmationCode(code)).catch(error => error)
@@ -210,7 +219,6 @@ describe('GET /api/v1/usage', () => {
     const { status, body } = await usage(grant.readKey)
     expect(status).toBe(200)
     expect(body).toEqual([{ meter: 'errors', used: 412, limit: 500, period: '2026-03', state: 'warn', upgradeUrl: `${ORIGIN}/pricing` }] satisfies UsageReport[])
-    expect(projects.touched).toEqual([grant.project.id])
   })
 
   test('reports over and sampled the way the ingest decides them', async () => {
@@ -248,7 +256,7 @@ describe('GET /api/v1/usage', () => {
     projects.rows[0]!.isActive = false
     expect((await usage(grant.readKey)).status).toBe(401)
     projects.rows[0]!.isActive = true
-    projects.rows[0]!.readKey = null
+    projects.keys[0]!.revoked = true
     expect((await usage(grant.readKey)).status).toBe(401)
   })
 })

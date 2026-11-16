@@ -1,7 +1,7 @@
 import type { ConnectCodeStore, ConnectGrant, HqServiceAdapter, ReadPrincipal } from '@stacksjs/hq/service'
 import { ERRORS_METER, errorsPerMonth, FREE_PROJECTS } from '../Billing/plans'
 import { newIngestKey, newProjectId } from '../Support/project-keys'
-import { looksLikeReadKey, newReadKey, sameKey } from '../Support/read-key'
+import { connectReadKeyName } from '../Support/read-key'
 
 /**
  * BugHQ's side of the HQ connect contract (`@stacksjs/hq/service`).
@@ -21,7 +21,6 @@ export interface HqProject {
   name: string
   ownerId: number | null
   ingestKey: string | null
-  readKey: string | null
   isActive: boolean
 }
 
@@ -30,11 +29,14 @@ export interface ProjectStore {
   findOwnedByName: (ownerId: number, name: string) => Promise<HqProject | null>
   countOwned: (ownerId: number) => Promise<number>
   create: (project: HqProject & { platform: string }) => Promise<void>
-  setReadKey: (projectId: string, readKey: string) => Promise<void>
   setIngestKey: (projectId: string, ingestKey: string) => Promise<void>
+  /**
+   * Mint a read key for the project and answer it. The only time it is ever
+   * readable: what is kept is a hash (app/Support/project-tokens.ts).
+   */
+  issueReadKey: (projectId: string, name: string) => Promise<string>
+  /** The project a presented read key reads, or null when it is not a live one. */
   findByReadKey: (readKey: string) => Promise<HqProject | null>
-  /** Note that the key was used. Optional bookkeeping; must not throw. */
-  touchReadKey?: (projectId: string) => Promise<void>
 }
 
 /** The signed-in person approving a connect. */
@@ -90,23 +92,21 @@ export function createBughqAdapter(deps: BughqAdapterDeps): HqServiceAdapter<HqU
         name: app,
         ownerId,
         ingestKey: newIngestKey(),
-        readKey: newReadKey(),
         isActive: true,
       }
       await projects.create({ ...project, platform: 'stacks' })
     }
 
-    // A reused project keeps the keys it has. Connecting a second machine must
-    // not rotate the read key out from under the first one's deployment.
-    let { ingestKey, readKey } = project
+    // A reused project keeps its ingest key, and gets a read key of its own
+    // for this connect. A read key is stored hashed, so the one a first
+    // machine was given cannot be handed out again; minting another leaves the
+    // first machine's deployment working, and each can be revoked alone.
+    let { ingestKey } = project
     if (!ingestKey) {
       ingestKey = newIngestKey()
       await projects.setIngestKey(project.id, ingestKey)
     }
-    if (!looksLikeReadKey(readKey)) {
-      readKey = newReadKey()
-      await projects.setReadKey(project.id, readKey)
-    }
+    const readKey = await projects.issueReadKey(project.id, connectReadKeyName(app))
 
     return {
       project: { id: project.id, name: project.name },
@@ -117,14 +117,11 @@ export function createBughqAdapter(deps: BughqAdapterDeps): HqServiceAdapter<HqU
   }
 
   async function authenticateReadKey(presented: string): Promise<ReadPrincipal | null> {
-    // Shape first: an ingest key, a session token or anything else never
-    // reaches the lookup, so none of them can be tried as a read key.
-    if (!looksLikeReadKey(presented))
-      return null
+    // Whether it is a live read key at all is the store's answer: an ingest
+    // key, a session token or a key for something else resolves to nothing.
     const project = await projects.findByReadKey(presented)
-    if (!project || !project.isActive || !looksLikeReadKey(project.readKey) || !sameKey(presented, project.readKey))
+    if (!project || !project.isActive)
       return null
-    await projects.touchReadKey?.(project.id).catch(() => {})
     // Usage is the ACCOUNT's, so the owner is the principal. A project with no
     // owner is not metered; the empty owner reads as exactly that below.
     return { owner: project.ownerId == null ? '' : String(project.ownerId), project: project.id }

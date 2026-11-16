@@ -1,7 +1,6 @@
 import { Auth, findToken } from '@stacksjs/auth'
 import { db } from '@stacksjs/database'
-import { uploadProject } from '../Errors/uploadTokens'
-import { authorizeRead, looksLikeReadKey, shouldRecordUse } from './read-key'
+import { PROJECT_SCOPES, projectForToken } from './project-tokens'
 
 /**
  * Who is calling, and may they touch this project.
@@ -34,13 +33,6 @@ export const GRANTABLE_SCOPES: readonly TokenScope[] = [TOKEN_SCOPES.read, TOKEN
 /** What a sign-in is issued, and what an API token must never carry. */
 const FULL_ACCESS = '*'
 
-/** Credentials that are shaped like a bearer but are never a person's token. */
-function isProjectCredential(token: string): boolean {
-  // A read key (app/Support/read-key.ts) authorises one project rather than a
-  // person, and is resolved by its own check.
-  return looksLikeReadKey(token)
-}
-
 /**
  * Whether these scopes are a full session rather than an API token.
  *
@@ -60,12 +52,15 @@ export function scopesAllow(scopes: readonly string[], scope: TokenScope): boole
 
 /** The user a token belongs to and the scopes it carries, or null. */
 async function tokenHolder(token: string): Promise<{ user: any, scopes: readonly string[] } | null> {
-  if (!token || isProjectCredential(token))
+  if (!token)
     return null
   try {
     // `findToken` is the native lookup: it answers only for a live token (not
     // revoked, not expired, not issued before the last password change).
     const access = await findToken(token)
+    // A person's token only. A project's read key or upload token is a
+    // framework token too, owned by the project's principal rather than a
+    // user (app/Support/project-tokens.ts), and it is nobody's session.
     if (!access || (access.subjectType ?? 'users') !== 'users')
       return null
     const user = await Auth.getUserFromToken(token)
@@ -148,41 +143,27 @@ function bearerFrom(request: any): string {
 }
 
 /**
- * Who may read this project: the person signed in, or a key issued for it.
+ * Who may read this project: the person signed in, an API token of theirs
+ * that may read issues, or a read key issued for the project.
  *
- * Only the two read endpoints named on #19 call this — the issue list and a
- * single issue. Autofix and the debug-file endpoints keep asking for a user,
- * so a read key refuses them rather than quietly reaching further than the
- * credential was meant to.
+ * Only the two read endpoints call this, the issue list and a single issue.
+ * Autofix and the debug-file endpoints keep asking for a user, so a read key
+ * refuses them rather than quietly reaching further than it was meant to.
  *
- * A key belonging to a different project answers 404 rather than 403, matching
- * canAccessProject: a caller who cannot read a project should not learn it
- * exists.
+ * A read key is a project token carrying `project:read`
+ * (app/Support/project-tokens.ts). One that belongs to a different project
+ * answers 404 rather than 403, matching canAccessProject: a caller who cannot
+ * read a project should not learn it exists.
  */
 export async function projectReadAccess(request: any, projectId: string): Promise<ProjectReadAccess> {
   const presented = bearerFrom(request)
 
-  if (looksLikeReadKey(presented)) {
-    // db.unsafe answers an untyped row, so the columns are narrowed here rather
-    // than asserted: authorizeRead decides who may read a project and should be
-    // reading values it can see the shape of.
-    const found = (await db.unsafe(
-      'SELECT id, read_key, read_key_last_used_at, is_active FROM projects WHERE id = $1 LIMIT 1',
-      [String(projectId)],
-    ))?.[0]
-    const row = found
-      ? {
-          id: String(found.id),
-          read_key: found.read_key == null ? null : String(found.read_key),
-          read_key_last_used_at: found.read_key_last_used_at == null ? null : String(found.read_key_last_used_at),
-          is_active: found.is_active as boolean | number | null,
-        }
-      : null
-    const verdict = authorizeRead(row, presented)
-    if (!verdict.ok)
-      return verdict.status === 401 ? { ok: false, status: 404, error: 'not found' } : verdict
-    if (row)
-      await recordReadKeyUse(row)
+  const key = await projectForToken(presented, PROJECT_SCOPES.read)
+  if (key) {
+    if (key.projectId !== String(projectId))
+      return { ok: false, status: 404, error: 'not found' }
+    if (!key.isActive)
+      return { ok: false, status: 403, error: 'project inactive' }
     return { ok: true, as: 'key' }
   }
 
@@ -193,16 +174,6 @@ export async function projectReadAccess(request: any, projectId: string): Promis
   if (!(await canAccessProject(user, projectId)))
     return { ok: false, status: 404, error: 'not found' }
   return { ok: true, as: 'user', user }
-}
-
-/** Stamp the key as used, at most once a minute — see LAST_USED_RESOLUTION_MS. */
-async function recordReadKeyUse(project: { id: string, read_key_last_used_at?: string | null }): Promise<void> {
-  const now = new Date()
-  if (!shouldRecordUse(project.read_key_last_used_at, now))
-    return
-  // Never let the stamp fail a read: it aids revoking a key, it does not
-  // authorise one.
-  await db.unsafe('UPDATE projects SET read_key_last_used_at = $1 WHERE id = $2', [now.toISOString(), String(project.id)]).catch(() => {})
 }
 
 export type ProjectTriageAccess =
@@ -228,35 +199,16 @@ export async function projectTriageAccess(request: any, projectId: string): Prom
 }
 
 /**
- * Where an upload token may upload: the project its `symbols:upload:<id>`
- * scope names, when the token is live, the project is active and the token's
- * holder still owns it. Null otherwise.
+ * Where an upload token may upload: its project, when the token is a live
+ * project token carrying `project:upload` and the project is active. Null
+ * otherwise.
  *
- * The holder is checked on every upload, not only when the token is made, so
- * a token stops working the moment its project changes hands or is archived,
- * without anybody having to remember to revoke it.
+ * The project is read on every upload, so a token stops working the moment
+ * its project is archived or deleted without anybody having to revoke it. It
+ * belongs to the project and not to a person, so nobody's password change or
+ * departure ends it.
  */
 export async function uploadTarget(token: string): Promise<{ projectId: string, tokenId: string } | null> {
-  if (!token || isProjectCredential(token))
-    return null
-  try {
-    const access = await findToken(token)
-    if (!access || (access.subjectType ?? 'users') !== 'users')
-      return null
-    const projectId = uploadProject(access.scopes)
-    if (!projectId)
-      return null
-    // Resolving the holder is also what stamps the token as used.
-    const user = await Auth.getUserFromToken(token)
-    if (!user)
-      return null
-    const row = (await db.unsafe(
-      'SELECT 1 FROM projects WHERE id = $1 AND owner_id = $2 AND is_active IS NOT FALSE LIMIT 1',
-      [projectId, Number(user.id)],
-    ))?.[0]
-    return row ? { projectId, tokenId: String(access.id) } : null
-  }
-  catch {
-    return null
-  }
+  const target = await projectForToken(token, PROJECT_SCOPES.upload)
+  return target && target.isActive ? { projectId: target.projectId, tokenId: target.tokenId } : null
 }

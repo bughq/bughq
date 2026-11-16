@@ -77,10 +77,9 @@ export async function handleDebugFileUpload(request: any, deps: DebugFileUploadD
   if (!limit.ok)
     return json({ error: 'rate limited' }, 429)
 
-  // The token says which project it uploads to (its `symbols:upload:<id>`
-  // scope); the framework says whether it is live. Anything else is a 401:
-  // revoked, expired, a session, an API token for something else, or a token
-  // whose project is archived or no longer its holder's.
+  // The token's owner says which project it uploads to; the framework says
+  // whether it is live. Anything else is a 401: revoked, expired, a session,
+  // a token for something else, or a token whose project is archived.
   const owner = await (deps.authorize ?? uploadTarget)(token)
   if (!owner)
     return json({ error: 'invalid upload token' }, 401)
@@ -105,8 +104,7 @@ export async function handleDebugFileUpload(request: any, deps: DebugFileUploadD
   const url = new URL(request.url)
   const kind = url.searchParams.get('kind') ?? detectDebugFileKind(text)
   const projectId = owner.projectId
-  // Recorded on each stored file as who uploaded it. The framework stamps the
-  // token as used when it resolves it, so there is no last-used write here.
+  // Recorded on each stored file as which token uploaded it.
   const tokenId = owner.tokenId
 
   if (kind === 'apple') {

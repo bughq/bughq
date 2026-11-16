@@ -4,7 +4,7 @@ import { createHqService, sqlConnectCodeStore } from '@stacksjs/hq/service'
 import { usageCounter } from '../Billing/meter'
 import { ERRORS_METER } from '../Billing/plans'
 import { isPro } from '../Billing/pro'
-import { shouldRecordUse } from '../Support/read-key'
+import { mintProjectToken, PROJECT_SCOPES, projectForToken } from '../Support/project-tokens'
 import { appUrl } from '../Support/urls'
 import { createBughqAdapter } from './adapter'
 
@@ -14,9 +14,9 @@ import { createBughqAdapter } from './adapter'
  * `describeConnect`. The table behind the codes is created by 0000000048.
  */
 
-const COLUMNS = 'id, name, owner_id, ingest_key, read_key, read_key_last_used_at, is_active'
+const COLUMNS = 'id, name, owner_id, ingest_key, is_active'
 
-function toProject(row: Record<string, any> | null | undefined): (HqProject & { readKeyLastUsedAt: string | null }) | null {
+function toProject(row: Record<string, any> | null | undefined): HqProject | null {
   if (!row)
     return null
   return {
@@ -24,15 +24,10 @@ function toProject(row: Record<string, any> | null | undefined): (HqProject & { 
     name: String(row.name ?? ''),
     ownerId: row.owner_id == null ? null : Number(row.owner_id),
     ingestKey: row.ingest_key == null ? null : String(row.ingest_key),
-    readKey: row.read_key == null ? null : String(row.read_key),
     // sqlite hands booleans back as 0/1.
     isActive: !(row.is_active === false || row.is_active === 0),
-    readKeyLastUsedAt: row.read_key_last_used_at == null ? null : String(row.read_key_last_used_at),
   }
 }
-
-/** When each key was last stamped, so the stamp costs a write a minute, not one per read. */
-const lastStamped = new Map<string, Date>()
 
 export const sqlProjectStore: ProjectStore = {
   async findOwnedByName(ownerId, name) {
@@ -55,29 +50,18 @@ export const sqlProjectStore: ProjectStore = {
       owner_id: project.ownerId,
       is_active: true,
     }).execute()
-    // read_key is not fillable on the model (app/Models/Project.ts), so it is
-    // written the way the read-key endpoint writes it.
-    if (project.readKey)
-      await db.unsafe('UPDATE projects SET read_key = $1, read_key_last_used_at = NULL WHERE id = $2', [project.readKey, project.id])
-  },
-  async setReadKey(projectId, readKey) {
-    await db.unsafe('UPDATE projects SET read_key = $1, read_key_last_used_at = NULL, updated_at = NOW() WHERE id = $2', [readKey, projectId])
   },
   async setIngestKey(projectId, ingestKey) {
     await db.unsafe('UPDATE projects SET ingest_key = $1, updated_at = NOW() WHERE id = $2', [ingestKey, projectId])
   },
-  async findByReadKey(readKey) {
-    const project = toProject((await db.unsafe(`SELECT ${COLUMNS} FROM projects WHERE read_key = $1 LIMIT 1`, [readKey]))?.[0])
-    if (project && !lastStamped.has(project.id) && project.readKeyLastUsedAt)
-      lastStamped.set(project.id, new Date(project.readKeyLastUsedAt))
-    return project
+  async issueReadKey(projectId, name) {
+    return (await mintProjectToken(projectId, PROJECT_SCOPES.read, name)).token
   },
-  async touchReadKey(projectId) {
-    const now = new Date()
-    if (!shouldRecordUse(lastStamped.get(projectId), now))
-      return
-    lastStamped.set(projectId, now)
-    await db.unsafe('UPDATE projects SET read_key_last_used_at = $1 WHERE id = $2', [now.toISOString(), projectId])
+  async findByReadKey(readKey) {
+    const target = await projectForToken(readKey, PROJECT_SCOPES.read)
+    if (!target)
+      return null
+    return toProject((await db.unsafe(`SELECT ${COLUMNS} FROM projects WHERE id = $1 LIMIT 1`, [target.projectId]))?.[0])
   },
 }
 
