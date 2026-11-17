@@ -35,6 +35,12 @@ useHead({ title: 'Create your account - bughq' })
 </script>
 
 <script client>
+import { connectReturn } from '../data/connect-return'
+
+// Read for `next`, which is honoured only when it is this site's connect
+// approve page; `connectReturn` explains why nothing else is followed.
+const route = useRoute()
+
 // Token auth via stx client directives (hydrated on the served page). Inputs are
 // uncontrolled and read from the submit event; error/loading are signals.
 const error = state('')
@@ -138,7 +144,9 @@ async function handleSubmit(e: SubmitEvent): Promise<void> {
     // an invite link, in which case land on the dashboard where the join banner
     // is waiting for them to accept.
     const invited = new URLSearchParams(typeof location !== 'undefined' ? location.search : '').get('invite')
-    navigate(invited ? '/dashboard' : '/projects/new')
+    // Somebody who came from a terminal's connect link goes back to it: approving
+    // it is what creates their first app.
+    navigate(connectReturn(route.query.next) || (invited ? '/dashboard' : '/projects/new'))
   }
   catch {
     error.set('Something went wrong. Please try again.')
