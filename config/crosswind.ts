@@ -841,18 +841,7 @@ function pageCss(): string {
    and never match. */
 a.pill:hover, button.pill:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, transparent); }
 a.pill:active, button.pill:active { transform: translateY(1px); }
-/* Project dropdown: replace the native select chevron (which hugged the rounded
-   border) with a custom one that has a comfortable inset + room for the value. */
-select.panel {
-  transition: border-color 0.15s ease; cursor: pointer;
-  -webkit-appearance: none; -moz-appearance: none; appearance: none;
-  padding-right: 2rem; background-repeat: no-repeat;
-  background-position: right 0.7rem center; background-size: 13px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2397a1b2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-}
-@media (prefers-color-scheme: dark) { select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); } }
-:root[data-theme="dark"] select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
-:root[data-theme="light"] select.panel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2397a1b2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
+select.panel { transition: border-color 0.15s ease; cursor: pointer; }
 /* Fixed chrome (Account / Log out). These used to be built with createElement
    and positioned with an inline cssText string, which is why the position and
    typography were split from the colors. They are ordinary markup now, so the
@@ -1192,6 +1181,41 @@ details.sysgroup[open] > summary .chev { transform: rotate(90deg); }
 `,
   ].join('\n')
 }
+
+/*
+ * One caret for every single-line <select>, drawn in the text's own colour.
+ *
+ * The browser's arrow sat about 3px from the rounded border whatever the
+ * padding, because Chrome does not apply padding-right to it. Two gradients
+ * paint the caret instead: unlike an SVG in a data URI they read currentColor,
+ * so it follows light and dark (prefers-color-scheme or data-theme) with no
+ * per-theme rule. Sized in em, so the 2rem date-picker select gets a smaller
+ * caret, closer in, than a 42px form field.
+ *
+ * These are the declarations ts-css 0.3.28 ships as `form-select`
+ * (stacksjs/ts-css#45). That one is opt-in per element and brings a base input
+ * look with it, and a `background` or `padding` shorthand in a component rule
+ * after it erases the caret. This rule needs no class in the markup, outranks
+ * those shorthands, and reaches a select added later, so it stays.
+ *
+ * padding-right is !important because this lands in the preflight layer and an
+ * unlayered px-* utility on the element would otherwise win and run a long
+ * label under the caret. The :not()s keep list boxes, which draw no arrow,
+ * out of it; they also put this above a bare class like .select or .drp-sel.
+ */
+const SELECT_CARET_CSS = `
+select:not([multiple]):not([size]) {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 1.3125em) 50%, calc(100% - 1em) 50%;
+  background-size: 0.3125em 0.3125em;
+  background-repeat: no-repeat;
+  padding-right: 2.25em !important;
+  print-color-adjust: exact;
+}
+`
 
 export default {
   // `content` is deliberately absent. stx collects classes by scanning the
@@ -2050,6 +2074,8 @@ export default {
     // is the only one -- the marketing value wins on these pages. It also wins
     // on specificity, the prefix being more specific than a bare class.
     { getCSS: () => MARKETING },
+    // Last, so it is the final word on a <select>'s arrow (see SELECT_CARET_CSS).
+    { getCSS: () => SELECT_CARET_CSS },
   ],
   preflight: true,
   minify: false,
