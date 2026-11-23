@@ -1157,7 +1157,7 @@ function unarchive(): void {
     `.btn` here was the accent button projects/index.stx and account.stx each
     declared separately -- it is `btn-solid` now, and the !important it carried
     went with it. `.btn-danger`, `.btn-sm`, `.btn-xs`, `.btn-dz` and the rest of
-    the bags-of-properties are shortcuts in config/crosswind.ts; the toggle, the
+    the bags-of-properties are shortcuts in config/css.ts; the toggle, the
     Slack/Discord picker, the tab nav and the danger-zone dialog are pageCss()
     rules, because each has a pseudo-element, an attribute state or a compound
     selector that no class on an element can express.
@@ -1167,7 +1167,7 @@ function unarchive(): void {
     extractor reads RENDERED pages and this one is behind an auth check, so
     `flex-none` and `whitespace-nowrap` as utilities emitted no CSS at all. The
     answer is the safelist, not hand-written CSS -- see the note above it in
-    config/crosswind.ts. --}}
+    config/css.ts. --}}
 
 <div class="px-5 py-10 md:px-10 min-h-[100dvh]">
   <div class="mx-auto max-w-2xl">

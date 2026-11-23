@@ -17,7 +17,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import theme from '../../config/crosswind'
+import theme from '../../config/css'
 // The installed STX package does not export these subpaths by bare specifier.
 import { loadCssEngine } from '../../node_modules/@stacksjs/stx/dist/dev-server/ts-css.js'
 import { mergeCssConfig } from '../../node_modules/@stacksjs/stx/dist/ts-css-config.js'

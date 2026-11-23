@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import theme from '../../config/crosswind'
+import theme from '../../config/css'
 // The installed STX package does not export these subpaths by bare specifier.
 import { loadCssEngine } from '../../node_modules/@stacksjs/stx/dist/dev-server/ts-css.js'
 import { mergeCssConfig } from '../../node_modules/@stacksjs/stx/dist/ts-css-config.js'
@@ -9,7 +9,7 @@ import { mergeCssConfig } from '../../node_modules/@stacksjs/stx/dist/ts-css-con
 const ROOT = join(import.meta.dir, '../..')
 
 /*
- * dashboard.stx's <style> block is config/crosswind.ts pageCss() now
+ * dashboard.stx's <style> block is config/css.ts pageCss() now
  * (stx-standards rule 3), so the rules below are generated rather than read out
  * of the view. That is the stronger assertion: a rule can sit in the config and
  * still not reach the page, and matching the source text never proved it did.

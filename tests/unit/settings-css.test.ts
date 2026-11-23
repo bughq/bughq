@@ -26,7 +26,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import theme from '../../config/crosswind'
+import theme from '../../config/css'
 // The installed STX package does not export these subpaths by bare specifier.
 import { loadCssEngine } from '../../node_modules/@stacksjs/stx/dist/dev-server/ts-css.js'
 import { mergeCssConfig } from '../../node_modules/@stacksjs/stx/dist/ts-css-config.js'
@@ -36,7 +36,7 @@ const read = (p: string) => readFileSync(join(ROOT, p), 'utf8')
 const SRC = read('resources/views/settings.stx')
 /**
  * The marketing sheet, read out of the MARKETING preflight. It was
- * public/marketing.css until it moved into config/crosswind.ts, scoped to the
+ * public/marketing.css until it moved into config/css.ts, scoped to the
  * marketing layout group (stx-standards rule 3, §11.2). Nesting did not
  * rewrite the rules, so every assertion below reads the same as it did.
  */

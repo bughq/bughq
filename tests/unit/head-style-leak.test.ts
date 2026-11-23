@@ -56,7 +56,7 @@ describe('head style leak', () => {
     /*
      * Stricter than it needs to be, deliberately. Only pricing.stx ever put a
      * <style> in there; the other nine pushes were empty, left behind when the
-     * /compare tables and the home page moved into crosswind.ts. An empty
+     * /compare tables and the home page moved into css.ts. An empty
      * push is an invitation to fill it, and filling it is the bug above, so
      * the stack is now unused rather than merely unoccupied.
      *
@@ -69,7 +69,7 @@ describe('head style leak', () => {
   })
 
   test('pricing.stx carries no <style> block at all', () => {
-    // The eight rules became `card-tier` / `card-tier-pro` in config/crosswind.ts
+    // The eight rules became `card-tier` / `card-tier-pro` in config/css.ts
     // and utilities at the call sites. Named rather than folded into the loop
     // above so that re-adding one to this file in particular fails loudly.
     const pricing = views.find(([f]) => f.endsWith('views/pricing.stx'))

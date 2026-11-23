@@ -16,7 +16,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import theme from '../../config/crosswind'
+import theme from '../../config/css'
 // The installed STX package does not export these subpaths by bare specifier.
 import { loadCssEngine } from '../../node_modules/@stacksjs/stx/dist/dev-server/ts-css.js'
 import { mergeCssConfig } from '../../node_modules/@stacksjs/stx/dist/ts-css-config.js'
@@ -50,7 +50,7 @@ describe('the second palette is gone', () => {
   })
 
   test('§11.2\'s own check passes across resources/', () => {
-    // "Any CSS custom property declared outside config/crosswind.ts is a
+    // "Any CSS custom property declared outside config/css.ts is a
     // violation." The standard quotes 101 for this app.
     const { globSync } = require('node:fs') as { globSync: (p: string, o: { cwd: string }) => string[] }
     const offenders = globSync('resources/**/*.stx', { cwd: ROOT })

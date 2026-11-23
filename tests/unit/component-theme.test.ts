@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import theme from '../../config/crosswind'
+import theme from '../../config/css'
 // The installed STX package does not export these subpaths by bare specifier.
 import { loadCssEngine } from '../../node_modules/@stacksjs/stx/dist/dev-server/ts-css.js'
 import { SEMANTIC_TOKENS, SHAPE_TOKENS } from '../../node_modules/@stacksjs/stx/dist/theme-tokens.js'
@@ -48,7 +48,7 @@ describe('component palette contract', () => {
      * variant="primary"> with NO fill on a dashboard page, because
      * `background-color: var(--accent-soft)` is invalid at computed-value time
      * when the variable is absent. Roles must come from the palette in
-     * config/crosswind.ts, which every page gets.
+     * config/css.ts, which every page gets.
      */
     const marketingOnly = ['--accent-soft', '--accent-line', '--surface', '--surface-2']
     const offenders = Object.entries(colors)

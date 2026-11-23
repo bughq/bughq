@@ -27,7 +27,7 @@ const signedIn = (() => {
      One source of truth for the site-wide footer, mirroring how SiteNav is shared.
      Adds an ohdear.com-style multi-column layout with a dedicated "Compare" column
      that links the alternatives index plus one page per competitor. The styles are
-     in config/crosswind.ts under pageCss(), not here: a scoped block in this file
+     in config/css.ts under pageCss(), not here: a scoped block in this file
      would be rendered into the head of whichever page the visitor entered on and
      never removed again (stx-standards rule 3). They still reuse bughq's existing
      design tokens, so the footer matches the site. -->

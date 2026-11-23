@@ -18,7 +18,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import theme from '../../config/crosswind'
+import theme from '../../config/css'
 
 const ROOT = join(import.meta.dir, '../..')
 const read = (view: string) => readFileSync(join(ROOT, 'resources/views', view), 'utf8')

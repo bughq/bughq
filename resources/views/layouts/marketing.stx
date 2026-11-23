@@ -53,7 +53,7 @@ catch {
          .mono / .reveal, which the authenticated app pages also use.
          Globalising it would have restyled the app.
 
-         It is the MARKETING preflight in config/crosswind.ts now
+         It is the MARKETING preflight in config/css.ts now
          (stx-standards rule 3, §11.2). The same constraint still decides its
          shape: it is the one preflight there that is SCOPED, carrying
          `html:has(meta[name="stx-layout-group"][content="marketing"])` so it

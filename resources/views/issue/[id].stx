@@ -640,7 +640,7 @@ function copyStack() {
 
     The one thing deliberately preserved rather than unified is this page's
     system font stack, which it has always had and which nothing records a
-    reason for. It is a `body:has(.issue-root)` rule in config/crosswind.ts now
+    reason for. It is a `body:has(.issue-root)` rule in config/css.ts now
     -- which is what the `issue-root` class below is for -- and deleting that
     one line is all it takes to put the page on --sans like every other. --}}
 
