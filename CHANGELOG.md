@@ -1,5 +1,350 @@
 # Stacks Changelog
 
+## v0.70.53
+
+## ✨ Features
+
+- mint a project's upload token or read key from the command line ([4025dff](https://github.com/bughq/bughq/commit/4025dff)) _(by Chris <chrisbreuer93@gmail.com>)_
+- stacks 0.75.602, the framework's confirmation code, and a queue that runs ([e7f37fd](https://github.com/bughq/bughq/commit/e7f37fd)) _(by Chris <chrisbreuer93@gmail.com>)_
+- API tokens are Stacks personal access tokens, and the triage key is gone ([894c0bb](https://github.com/bughq/bughq/commit/894c0bb)) _(by Chris <chrisbreuer93@gmail.com>)_
+- a triage key, so a pipeline or an agent can resolve a project's issues ([3993f63](https://github.com/bughq/bughq/commit/3993f63)) _(by Chris <chrisbreuer93@gmail.com>)_
+- accept a plain error webhook with a Bearer project key ([2ebd8f7](https://github.com/bughq/bughq/commit/2ebd8f7)) _(by Chris Breuer <chrisbreuer93@gmail.com>)_
+- approving a connect needs the confirmation code the terminal shows ([adf1236](https://github.com/bughq/bughq/commit/adf1236)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **billing**: enforce the 500 error free allowance and add the HQ connect endpoints ([b33802a](https://github.com/bughq/bughq/commit/b33802a)) _(by Chris <chrisbreuer93@gmail.com>)_
+- desktop platforms and JavaScript sourcemaps ([9d7958f](https://github.com/bughq/bughq/commit/9d7958f)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **auth**: let people turn on two-factor from their account page ([ef8267e](https://github.com/bughq/bughq/commit/ef8267e)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: check the reset link before asking for a password ([f6787ce](https://github.com/bughq/bughq/commit/f6787ce)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **a11y**: say an async button is working, not just that it is dead ([90fc4fc](https://github.com/bughq/bughq/commit/90fc4fc)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **tokens**: emit this app UI roles as values, not as classes ([26b042e](https://github.com/bughq/bughq/commit/26b042e)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_
+- **seeders**: seed an owner with a known credential ([e38151b](https://github.com/bughq/bughq/commit/e38151b)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- native iOS and Android crashes, symbolication and release health ([a4b0b30](https://github.com/bughq/bughq/commit/a4b0b30)) _(by Chris Breuer <chrisbreuer93@gmail.com>)_
+- **crosswind**: map the component library's role vocabulary onto bughq's palette ([9f4c369](https://github.com/bughq/bughq/commit/9f4c369)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stx 0.2.379, and <Button> returns to all 26 sites ([0831c90](https://github.com/bughq/bughq/commit/0831c90)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2037](https://github.com/stacksjs/stx/issues/2037))
+- **ui**: alias the component library's token vocabulary onto this palette ([36555c0](https://github.com/bughq/bughq/commit/36555c0)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1993](https://github.com/stacksjs/stx/issues/1993), [statushqorg/status#20](https://github.com/statushqorg/status/issues/20))
+- **auth**: configure GitHub sign-in credentials ([4990278](https://github.com/bughq/bughq/commit/4990278)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: converge on the uniform HQ cookie-session model ([4e4550c](https://github.com/bughq/bughq/commit/4e4550c)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dashboard**: custom date ranges with a presets-and-calendar picker ([1b83368](https://github.com/bughq/bughq/commit/1b83368)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **analytics**: report page views to analyticshq ([f2dd9db](https://github.com/bughq/bughq/commit/f2dd9db)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **cloud**: attach to the statushq box, and stop pinning the old one ([b90026d](https://github.com/bughq/bughq/commit/b90026d)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **projects**: refuse a second app with a name you already have ([3962014](https://github.com/bughq/bughq/commit/3962014)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **billing**: Free includes five projects, not one ([9233148](https://github.com/bughq/bughq/commit/9233148)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **onboarding**: offer Stacks as a platform ([eea49f1](https://github.com/bughq/bughq/commit/eea49f1)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **logging**: say at boot whether logs are actually reaching loghq ([3e14175](https://github.com/bughq/bughq/commit/3e14175)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **logging**: stream this app's logs to loghq ([47368e3](https://github.com/bughq/bughq/commit/47368e3)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ingest**: a server-side off switch for console-derived issues ([bbd82c8](https://github.com/bughq/bughq/commit/bbd82c8)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dashboard**: tell a healthy app apart from one that never connected ([c6204cd](https://github.com/bughq/bughq/commit/c6204cd)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dashboard**: label and align the issue list columns ([2e19937](https://github.com/bughq/bughq/commit/2e19937)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **billing**: show the limit before you hit it, not after ([cafbe87](https://github.com/bughq/bughq/commit/cafbe87)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **billing**: Free is one project and no invites; Pro is both ([d945ab2](https://github.com/bughq/bughq/commit/d945ab2)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **billing**: meter events per account, measure only ([173e6c6](https://github.com/bughq/bughq/commit/173e6c6)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dashboard**: unread issues, per person, like a Gmail thread ([c1160a1](https://github.com/bughq/bughq/commit/c1160a1)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dashboard**: snooze an issue until later ([68b91c6](https://github.com/bughq/bughq/commit/68b91c6)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: sessions last 24 hours, absolute, with no idle expiry ([0856fc4](https://github.com/bughq/bughq/commit/0856fc4)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dashboard**: triage from the list, and an Ignored tab ([71290d9](https://github.com/bughq/bughq/commit/71290d9)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dashboard**: show the release, environment and people an issue affects ([f1f87fe](https://github.com/bughq/bughq/commit/f1f87fe)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **store**: add the first store — session, backed by useCookie ([42afdd0](https://github.com/bughq/bughq/commit/42afdd0)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1795](https://github.com/stacksjs/stx/issues/1795))
+- **issue**: add AI Autofix panel ([4b450e7](https://github.com/bughq/bughq/commit/4b450e7)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **autofix**: add AI pull request workflow ([25c36f3](https://github.com/bughq/bughq/commit/25c36f3)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **marketing**: mega-nav, per-feature/use-case pages, compare section ([11a9274](https://github.com/bughq/bughq/commit/11a9274)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **cloud**: run bughq on its own Hetzner box + Porkbun DNS as code ([185d22a](https://github.com/bughq/bughq/commit/185d22a)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **auth**: show social buttons only when the provider is configured ([c4e0795](https://github.com/bughq/bughq/commit/c4e0795)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **limits**: shared Redis rate limiter for multi-node, fail-open ([fe5edbb](https://github.com/bughq/bughq/commit/fe5edbb)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **issue**: make the error the hero on the detail page ([01b358f](https://github.com/bughq/bughq/commit/01b358f)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **settings**: archive/delete danger zone + install lives in settings ([380f6fc](https://github.com/bughq/bughq/commit/380f6fc)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **settings**: per-project settings, team invites, and key-only ingest ([8d2cfac](https://github.com/bughq/bughq/commit/8d2cfac)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ingest**: abuse controls on the public error endpoint ([af7a81a](https://github.com/bughq/bughq/commit/af7a81a)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dashboard**: active project rides a cookie, not the URL ([3d973a0](https://github.com/bughq/bughq/commit/3d973a0)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+
+## 🐛 Bug Fixes
+
+- validate and retry BugHQ Discord deliveries ([eb3f284](https://github.com/bughq/bughq/commit/eb3f284)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **ui**: draw the select caret in the text's colour, clear of the border ([ab6efee](https://github.com/bughq/bughq/commit/ab6efee)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/ts-css#45](https://github.com/stacksjs/ts-css/issues/45))
+- signing in from a connect link comes back to it, in the same tab ([350fddf](https://github.com/bughq/bughq/commit/350fddf)) _(by Chris <chrisbreuer93@gmail.com>)_
+- group one error across deploys instead of opening an issue per release ([5f2f154](https://github.com/bughq/bughq/commit/5f2f154)) _(by Chris <chrisbreuer93@gmail.com>)_
+- a logo on the sign-in pages, and a button that no longer touches the checkbox ([111e543](https://github.com/bughq/bughq/commit/111e543)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **database**: create the webhook dedup and queue worker tables the framework reads (#28) ([ba3515d](https://github.com/bughq/bughq/commit/ba3515d)) _(by Chris <chrisbreuer93@gmail.com>)_ ([#28](https://github.com/bughq/bughq/issues/28))
+- **stx**: resolve AutofixPanel client-block typecheck ([1bb71d1](https://github.com/bughq/bughq/commit/1bb71d1)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- satisfy busy-state and notice-box gates on stx 0.2.807 ([4588ec2](https://github.com/bughq/bughq/commit/4588ec2)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **test**: boot auto-imports in tests ([3a09748](https://github.com/bughq/bughq/commit/3a09748)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **auth**: stop painting signed-in controls before the bounce to login ([3052b16](https://github.com/bughq/bughq/commit/3052b16)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **marketing**: stop fetching stock photos from a third party on /use-cases ([f4e7f4d](https://github.com/bughq/bughq/commit/f4e7f4d)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **visual**: say why Chrome failed to start, instead of timing out blind ([9d1670c](https://github.com/bughq/bughq/commit/9d1670c)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_
+- **copy**: drop the em-dashes, and gate them in CI ([2054417](https://github.com/bughq/bughq/commit/2054417)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_
+- **seeders**: treat APP_ENV=dev as a local environment ([7093a02](https://github.com/bughq/bughq/commit/7093a02)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dom**: clear bughq's five rule 8 violations, four by marking and one for real ([f92235f](https://github.com/bughq/bughq/commit/f92235f)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ci**: validate-ui's breakpoint check could not fail, and missed the CSS config ([07f6831](https://github.com/bughq/bughq/commit/07f6831)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **settings**: the upload token field takes field-quiet like the other five ([86f3e63](https://github.com/bughq/bughq/commit/86f3e63)) _(by Chris Breuer <chrisbreuer93@gmail.com>)_
+- **css**: name the real trigger for the font-family rewrite in a preflight ([86ded0c](https://github.com/bughq/bughq/commit/86ded0c)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ci**: let SiteFooter typecheck on its own ([babd1f9](https://github.com/bughq/bughq/commit/babd1f9)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: stop pricing's style block leaking into every page ([16124e0](https://github.com/bughq/bughq/commit/16124e0)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **theme**: stop fg-soft being a synonym for fg-muted ([4081b81](https://github.com/bughq/bughq/commit/4081b81)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **settings**: restore the four Button tooltips the component had been dropping ([6a42af2](https://github.com/bughq/bughq/commit/6a42af2)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2063](https://github.com/stacksjs/stx/issues/2063))
+- **crosswind**: accent-soft cannot read a variable only marketing.css declares ([370022e](https://github.com/bughq/bughq/commit/370022e)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: restore the nav dropdown caret, which I broke hoisting SiteNav ([9d8252a](https://github.com/bughq/bughq/commit/9d8252a)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **gates**: start Chrome on CI, and make the serve gate a module ([1563657](https://github.com/bughq/bughq/commit/1563657)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **serve**: exit on the check result, not on a stray handle ([b5878cb](https://github.com/bughq/bughq/commit/b5878cb)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **a11y**: trap focus, lock scroll and restore focus in the danger dialog ([80b4ee7](https://github.com/bughq/bughq/commit/80b4ee7)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **cloud**: give bughq's main site its own memoryHigh ([3b90520](https://github.com/bughq/bughq/commit/3b90520)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **account**: show initials when the avatar image fails to load ([4463ad5](https://github.com/bughq/bughq/commit/4463ad5)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **views**: guard the second call in a signal null-check ([eb04c33](https://github.com/bughq/bughq/commit/eb04c33)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: restore the env header and set rotated GitHub credentials ([159fa13](https://github.com/bughq/bughq/commit/159fa13)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: point the OAuth callback defaults at the real route ([3a64fe1](https://github.com/bughq/bughq/commit/3a64fe1)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **mail**: use BugHQ production SMTP credentials ([550a28f](https://github.com/bughq/bughq/commit/550a28f)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: hyphens not em-dashes in 2FA sign-in error copy ([3a59a92](https://github.com/bughq/bughq/commit/3a59a92)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dashboard**: type the picker's client script for stx typecheck ([709ea37](https://github.com/bughq/bughq/commit/709ea37)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ui**: repair mobile navigation and dashboard ([f685f2c](https://github.com/bughq/bughq/commit/f685f2c)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ci**: update labeler v6 configuration ([ff88b0b](https://github.com/bughq/bughq/commit/ff88b0b)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ci**: resolve STX imports from view roots ([346cbd5](https://github.com/bughq/bughq/commit/346cbd5)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: stop logging people out, match loghq at 30 days ([7c9c70b](https://github.com/bughq/bughq/commit/7c9c70b)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: pin bun-query-builder, which the analytics package pulled back ([6911cfa](https://github.com/bughq/bughq/commit/6911cfa)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **views**: make the stx typecheck clean ([796b612](https://github.com/bughq/bughq/commit/796b612)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **health**: make /api/health able to fail ([f2695d9](https://github.com/bughq/bughq/commit/f2695d9)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **api**: compare Origin against our own URL, not the proxy's Host ([ef3e844](https://github.com/bughq/bughq/commit/ef3e844)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **data**: repair the issue counts the old ingest lost ([9e7ec7e](https://github.com/bughq/bughq/commit/9e7ec7e)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **billing**: one definition of Pro, and stop downgrading paying customers ([3d0e1e2](https://github.com/bughq/bughq/commit/3d0e1e2)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **app**: the two remaining in-app navigations that reloaded the page ([07c7472](https://github.com/bughq/bughq/commit/07c7472)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ingest**: roll an occurrence into its issue atomically ([2c00b34](https://github.com/bughq/bughq/commit/2c00b34)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deploy**: production has not run a migration since 11 August ([f2049f4](https://github.com/bughq/bughq/commit/f2049f4)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **invites**: the owner is told when an invite email does not arrive ([3225903](https://github.com/bughq/bughq/commit/3225903)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **alerts**: the people you invited are told about issues too ([79c9e4e](https://github.com/bughq/bughq/commit/79c9e4e)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+
+## ♻️ Code Refactoring
+
+- **autofix**: drop the declare workaround for stx#2180 ([efa7f3b](https://github.com/bughq/bughq/commit/efa7f3b)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- read keys and upload tokens belong to the project, as Stacks tokens ([03c6a43](https://github.com/bughq/bughq/commit/03c6a43)) _(by Chris <chrisbreuer93@gmail.com>)_
+- an upload token is a Stacks personal access token, scoped to its project ([328fa19](https://github.com/bughq/bughq/commit/328fa19)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **css**: scope the marketing sheet to its layout group ([222c022](https://github.com/bughq/bughq/commit/222c022)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: move issue/[id].stx into config/crosswind.ts ([bfc7cad](https://github.com/bughq/bughq/commit/bfc7cad)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([#667085](https://github.com/bughq/bughq/issues/667085))
+- **css**: move settings.stx's 85 lines into config/crosswind.ts ([a83a44a](https://github.com/bughq/bughq/commit/a83a44a)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: reconcile the .btn family, clearing three of the five blocks ([b5e7297](https://github.com/bughq/bughq/commit/b5e7297)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: move dashboard's style block into pageCss ([65b4efc](https://github.com/bughq/bughq/commit/65b4efc)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: one .btn-ghost, unified on --text at 10px ([816ae35](https://github.com/bughq/bughq/commit/816ae35)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **settings**: put the tooltips back on the elements they describe ([15817ca](https://github.com/bughq/bughq/commit/15817ca)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2063](https://github.com/stacksjs/stx/issues/2063))
+- **css**: give .card one meaning, then hoist it ([1571a60](https://github.com/bughq/bughq/commit/1571a60)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: hoist the chrome that was byte-identical, and only that ([2638d94](https://github.com/bughq/bughq/commit/2638d94)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ui**: give the inline form notice one definition ([918ba06](https://github.com/bughq/bughq/commit/918ba06)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ui**: move the settings status badges onto the shared Badge ([a3024d4](https://github.com/bughq/bughq/commit/a3024d4)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: hoist AutofixPanel, leaving only the four rules entangled with .btn ([448c628](https://github.com/bughq/bughq/commit/448c628)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: hoist the auth-flow styles, and move the focus ring to the shortcut ([d6f9ff7](https://github.com/bughq/bughq/commit/d6f9ff7)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: hoist the landing page styles, keeping the hero nudge exact ([8818738](https://github.com/bughq/bughq/commit/8818738)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: hoist the shared nav and footer styles out of their partials ([b52841b](https://github.com/bughq/bughq/commit/b52841b)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: hoist the /compare table rules out of eight <style> blocks ([52eb1ef](https://github.com/bughq/bughq/commit/52eb1ef)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- move the client-block timers onto useDebounce and useTimeout ([dafffe1](https://github.com/bughq/bughq/commit/dafffe1)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- route every client-block location write through navigate() ([517fc90](https://github.com/bughq/bughq/commit/517fc90)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **views**: the last 66 internal links are <StxLink> ([03a8a58](https://github.com/bughq/bughq/commit/03a8a58)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **dashboard**: the join-invite button is <Button> ([c044bcb](https://github.com/bughq/bughq/commit/c044bcb)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **autofix**: Connect and Retry Autofix are <Button> ([76bb869](https://github.com/bughq/bughq/commit/76bb869)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **issue**: the four status buttons are <Button> ([7742e94](https://github.com/bughq/bughq/commit/7742e94)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **settings**: rotate, invite and add-channel are <Button> ([37d7175](https://github.com/bughq/bughq/commit/37d7175)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **settings**: the six loading buttons are <Button> ([2b8bb27](https://github.com/bughq/bughq/commit/2b8bb27)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **settings**: the danger zone's three buttons are <Button> ([8bd09d0](https://github.com/bughq/bughq/commit/8bd09d0)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: the six submit buttons are <Button> now ([6547e69](https://github.com/bughq/bughq/commit/6547e69)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **issue**: name the resolve button for what it is, not btn-primary ([085e088](https://github.com/bughq/bughq/commit/085e088)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **picker**: converge on the shared HQ date picker core ([e24e64e](https://github.com/bughq/bughq/commit/e24e64e)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ui**: adopt <Breadcrumb> on the last four use-case pages ([660dbaf](https://github.com/bughq/bughq/commit/660dbaf)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([statushqorg/status#20](https://github.com/statushqorg/status/issues/20))
+- **ui**: adopt <Breadcrumb> on the remaining feature and use-case pages ([fde9844](https://github.com/bughq/bughq/commit/fde9844)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([statushqorg/status#20](https://github.com/statushqorg/status/issues/20))
+- **ui**: adopt <Breadcrumb> on docs and the feature pages ([d0fe7c0](https://github.com/bughq/bughq/commit/d0fe7c0)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([statushqorg/status#20](https://github.com/statushqorg/status/issues/20))
+- **ui**: adopt <Breadcrumb> on five more compare pages ([29a2ac1](https://github.com/bughq/bughq/commit/29a2ac1)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([statushqorg/status#20](https://github.com/statushqorg/status/issues/20))
+- **ui**: adopt <Breadcrumb> on the first four compare pages ([adac10b](https://github.com/bughq/bughq/commit/adac10b)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([statushqorg/status#20](https://github.com/statushqorg/status/issues/20))
+- **actions**: move the auth cookie helper into Support ([f696502](https://github.com/bughq/bughq/commit/f696502)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **config**: name the stx config stx.ts, which is what the framework asks for ([b3e6619](https://github.com/bughq/bughq/commit/b3e6619)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **app**: the plan lives on the account page, not in the dashboard chrome ([f0f5f55](https://github.com/bughq/bughq/commit/f0f5f55)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **types**: the whole app typechecks, and CI now fails when it does not ([ccabdba](https://github.com/bughq/bughq/commit/ccabdba)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stacks#2232](https://github.com/stacksjs/stacks/issues/2232))
+- **types**: dashboard and AutofixPanel typecheck clean ([55d957f](https://github.com/bughq/bughq/commit/55d957f)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **router**: delete the data-no-router attributes the flag flip made inert ([90a7ab5](https://github.com/bughq/bughq/commit/90a7ab5)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: share .icon-btn; projects/index keeps its larger one on purpose ([ef9b1e2](https://github.com/bughq/bughq/commit/ef9b1e2)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([#667085](https://github.com/bughq/bughq/issues/667085))
+- **css**: name the auth-form button btn-accent and share it ([8d55a78](https://github.com/bughq/bughq/commit/8d55a78)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: share .field, .panel, .oauth-btn and body; leave the drifted ones alone ([3dc4bd0](https://github.com/bughq/bughq/commit/3dc4bd0)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: .wordmark and .mono become crosswind shortcuts ([137cbd1](https://github.com/bughq/bughq/commit/137cbd1)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **css**: one typed palette in config, not a :root block in nine views ([e679803](https://github.com/bughq/bughq/commit/e679803)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1822](https://github.com/stacksjs/stx/issues/1822), [#1822](https://github.com/bughq/bughq/issues/1822))
+- **theme**: take back the darkClass opt-out now that #1812 and #1813 landed ([302d092](https://github.com/bughq/bughq/commit/302d092)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([#1812](https://github.com/bughq/bughq/issues/1812), [#1813](https://github.com/bughq/bughq/issues/1813), [#1820](https://github.com/bughq/bughq/issues/1820), [#1819](https://github.com/bughq/bughq/issues/1819), [stacksjs/stx#1824](https://github.com/stacksjs/stx/issues/1824))
+- **theme**: config is the single source, and delete two dead composables ([0b16580](https://github.com/bughq/bughq/commit/0b16580)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1803](https://github.com/stacksjs/stx/issues/1803), [stacksjs/stx#1812](https://github.com/stacksjs/stx/issues/1812), [#1813](https://github.com/bughq/bughq/issues/1813))
+- **settings**: the danger-zone field is a template ref, not a DOM lookup ([df882ba](https://github.com/bughq/bughq/commit/df882ba)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+
+## 📝 Documentation
+
+- **ui**: the select caret shipped in ts-css 0.3.28, and why this rule stays ([2f97651](https://github.com/bughq/bughq/commit/2f97651)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deploy**: describe the Hetzner attach deploy the config defines ([7138493](https://github.com/bughq/bughq/commit/7138493)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **ci**: --lib may be repeated, and no longer forces one types file ([c1aa468](https://github.com/bughq/bughq/commit/c1aa468)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([#21](https://github.com/bughq/bughq/issues/21), [stacksjs/stx#1926](https://github.com/stacksjs/stx/issues/1926))
+- **css**: three comments said a fixed ts-css defect was still live ([4966bf7](https://github.com/bughq/bughq/commit/4966bf7)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([#36](https://github.com/bughq/bughq/issues/36), [#37](https://github.com/bughq/bughq/issues/37))
+- **css**: ts-css#36 is fixed, so stop recording it as a limitation ([5aca57c](https://github.com/bughq/bughq/commit/5aca57c)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/ts-css#36](https://github.com/stacksjs/ts-css/issues/36))
+- **crosswind**: record what the six .btn definitions actually are ([f8ef7e7](https://github.com/bughq/bughq/commit/f8ef7e7)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: point the cookie-helper references at its new home ([37e2b51](https://github.com/bughq/bughq/commit/37e2b51)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- replace framework manual with BugHQ guide ([0910532](https://github.com/bughq/bughq/commit/0910532)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **billing**: stop restating the free allowance in a comment ([570050a](https://github.com/bughq/bughq/commit/570050a)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **logging**: say what the transport actually does ([d8839dd](https://github.com/bughq/bughq/commit/d8839dd)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **pricing**: say that teams are Pro, before anything enforces it ([5ddac25](https://github.com/bughq/bughq/commit/5ddac25)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **skills**: correct the useLocalStorage shape in two skill files ([5a1454f](https://github.com/bughq/bughq/commit/5a1454f)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1797](https://github.com/stacksjs/stx/issues/1797))
+- **stacks-browse**: record the <html>-in-fragment and stale-partial traps ([342f52e](https://github.com/bughq/bughq/commit/342f52e)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- link the community as stacksjs.com/discord ([e1939fa](https://github.com/bughq/bughq/commit/e1939fa)) _(by Chris <chrisbreuer93@gmail.com>)_
+- replace framework readme with bughq guide ([d16bfe5](https://github.com/bughq/bughq/commit/d16bfe5)) _(by Chris <chrisbreuer93@gmail.com>)_
+
+## 💄 Styles
+
+- **views**: move 67 inline declarations into classes, and gate 11.5 ([e4d88c1](https://github.com/bughq/bughq/commit/e4d88c1)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_
+- **settings**: move .btn-danger to 10px, with .btn-ghost ([563f721](https://github.com/bughq/bughq/commit/563f721)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- convert the inline color styles the sweep missed to utilities ([67eb65e](https://github.com/bughq/bughq/commit/67eb65e)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ui**: replace em-dashes with hyphens in views ([e3f690f](https://github.com/bughq/bughq/commit/e3f690f)) _(by Chris <chrisbreuer93@gmail.com>)_
+
+## ✅ Tests
+
+- **stx**: gate rule 8 on every client block, not the sampled ones ([b554dff](https://github.com/bughq/bughq/commit/b554dff)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: gate the signed-in controls so they cannot drift back ([56058dc](https://github.com/bughq/bughq/commit/56058dc)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **smoke**: sign in for real on deploy, and say so loudly when we cannot ([93b879f](https://github.com/bughq/bughq/commit/93b879f)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **smoke**: check the subscribe endpoint, which is a database read in disguise ([31835cf](https://github.com/bughq/bughq/commit/31835cf)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **crosswind**: assert the whole component role vocabulary is mapped ([2e7d8b6](https://github.com/bughq/bughq/commit/2e7d8b6)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **serve**: gate deploys on the serve path rendering components ([0788fcc](https://github.com/bughq/bughq/commit/0788fcc)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2037](https://github.com/stacksjs/stx/issues/2037))
+- **smoke**: fail when a served page ships unresolved stx expressions ([c70843a](https://github.com/bughq/bughq/commit/c70843a)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **sdk**: pin ingest wire compatibility ([014f76a](https://github.com/bughq/bughq/commit/014f76a)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ui**: add responsive visual contracts ([c6f5b27](https://github.com/bughq/bughq/commit/c6f5b27)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- add static accessibility contracts ([084fe05](https://github.com/bughq/bughq/commit/084fe05)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- add deterministic product state fixtures ([6353fda](https://github.com/bughq/bughq/commit/6353fda)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- cover error capture and triage flows ([00dc8dc](https://github.com/bughq/bughq/commit/00dc8dc)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **views**: fail the build on a comment that can leak onto the page ([b1f93ab](https://github.com/bughq/bughq/commit/b1f93ab)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **spa**: probe whether a link was intercepted or navigated natively ([5890255](https://github.com/bughq/bughq/commit/5890255)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **spa**: commit the fresh-vs-arrived SPA verification harness ([fd67030](https://github.com/bughq/bughq/commit/fd67030)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- cover error fingerprinting, grouping, and categorization ([e35b11f](https://github.com/bughq/bughq/commit/e35b11f)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+
+## 💚 Continuous Integration
+
+- exact-key node_modules cache, so a stale tree cannot be restored ([9077aaf](https://github.com/bughq/bughq/commit/9077aaf)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- make migrations reproducible ([5e2f4a6](https://github.com/bughq/bughq/commit/5e2f4a6)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- harden production release validation ([cf13054](https://github.com/bughq/bughq/commit/cf13054)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- validate application and documentation builds ([7aa7921](https://github.com/bughq/bughq/commit/7aa7921)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **stx**: declare the server-to-client bridge, and gate it in CI ([e784e0d](https://github.com/bughq/bughq/commit/e784e0d)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1924](https://github.com/stacksjs/stx/issues/1924))
+- drop redundant AWS deploy jobs that created phantom deployments ([d697d16](https://github.com/bughq/bughq/commit/d697d16)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deploy**: provision own box + serve dashboard at cloud.bughq.org ([cada56c](https://github.com/bughq/bughq/commit/cada56c)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **deploy**: trace preloader directly to surface the silent throw ([7d565d5](https://github.com/bughq/bughq/commit/7d565d5)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **deploy**: add pre-flight diagnostics to trace silent buddy exit ([90eff01](https://github.com/bughq/bughq/commit/90eff01)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **deploy**: pipe deploy output through tee to capture early-exit errors ([ab2a4a2](https://github.com/bughq/bughq/commit/ab2a4a2)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **deploy**: invoke buddy CLI from node_modules, not the ./buddy wrapper ([a7722c5](https://github.com/bughq/bughq/commit/a7722c5)) _(by Chris <chrisbreuer93@gmail.com>)_
+- re-trigger staging deploy (fresh lock) ([207401a](https://github.com/bughq/bughq/commit/207401a)) _(by Chris <chrisbreuer93@gmail.com>)_
+
+## 🔧 Chores
+
+- **css**: rename config/crosswind.ts to config/css.ts ([b0b7888](https://github.com/bughq/bughq/commit/b0b7888)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stacks 0.75.652, with stx 0.2.925 ([f670440](https://github.com/bughq/bughq/commit/f670440)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stacks 0.75.635, with the stx it expects ([e8ee80c](https://github.com/bughq/bughq/commit/e8ee80c)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stacks 0.75.628 ([980f21b](https://github.com/bughq/bughq/commit/980f21b)) _(by Chris Breuer <chris@stacksjs.com>)_
+- **deps**: stacks 0.75.618, with the stx it expects ([e48dd47](https://github.com/bughq/bughq/commit/e48dd47)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **deps**: move the stx packages to 0.2.882 (#31) ([bbfb758](https://github.com/bughq/bughq/commit/bbfb758)) _(by Chris <chris@stacksjs.com>)_ ([#31](https://github.com/bughq/bughq/issues/31))
+- **deps**: upgrade to stacks 0.75.586 ([7330e8f](https://github.com/bughq/bughq/commit/7330e8f)) _(by Chris <chris@stacksjs.com>)_
+- **deps**: upgrade to stacks 0.75.585 (#29) ([4d93f20](https://github.com/bughq/bughq/commit/4d93f20)) _(by Chris <chris@stacksjs.com>)_ ([#29](https://github.com/bughq/bughq/issues/29))
+- **deps**: upgrade to stacks 0.75.575 and stx 0.2.873 (#27) ([a06ccd7](https://github.com/bughq/bughq/commit/a06ccd7)) _(by Chris <chrisbreuer93@gmail.com>)_ ([#27](https://github.com/bughq/bughq/issues/27))
+- **deps**: bump stacks to 0.75.529 and pin stx 0.2.807 ([d4cbbbf](https://github.com/bughq/bughq/commit/d4cbbbf)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **storage**: wire S3-compatible endpoint from env for off-box DB backups ([df6700b](https://github.com/bughq/bughq/commit/df6700b)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **stx**: fail the build on a prohibited DOM call in dev, warn elsewhere ([e5e7724](https://github.com/bughq/bughq/commit/e5e7724)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: ts-css 0.3.15 -> 0.3.16 ([7b5307f](https://github.com/bughq/bughq/commit/7b5307f)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/ts-css#37](https://github.com/stacksjs/ts-css/issues/37), [#36](https://github.com/bughq/bughq/issues/36))
+- update deps ([c4b0f11](https://github.com/bughq/bughq/commit/c4b0f11)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **deps**: stx family 0.2.506 -> 0.2.520 ([49308b8](https://github.com/bughq/bughq/commit/49308b8)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([#2072](https://github.com/bughq/bughq/issues/2072))
+- **deps**: ts-css -> 0.3.15 ([20fe9e2](https://github.com/bughq/bughq/commit/20fe9e2)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([#36](https://github.com/bughq/bughq/issues/36), [stacksjs/ts-css#37](https://github.com/stacksjs/ts-css/issues/37))
+- **deps**: stx family 0.2.480 -> 0.2.506 ([58a6cf0](https://github.com/bughq/bughq/commit/58a6cf0)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2063](https://github.com/stacksjs/stx/issues/2063), [stacksjs/stx#2056](https://github.com/stacksjs/stx/issues/2056))
+- **views**: retire the styles stack ([c649d75](https://github.com/bughq/bughq/commit/c649d75)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stx family 0.2.448 -> 0.2.480 ([121bbe1](https://github.com/bughq/bughq/commit/121bbe1)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stx family 0.2.401 -> 0.2.448, and pin the serve path to it ([a3c5ce0](https://github.com/bughq/bughq/commit/a3c5ce0)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2055](https://github.com/stacksjs/stx/issues/2055))
+- **deps**: stx family 0.2.399 -> 0.2.401 ([85a8d5a](https://github.com/bughq/bughq/commit/85a8d5a)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2050](https://github.com/stacksjs/stx/issues/2050))
+- exempt the dashboard auth-pending block, the last location findings ([b9aed1b](https://github.com/bughq/bughq/commit/b9aed1b)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stx family to 0.2.382 ([7189c5d](https://github.com/bughq/bughq/commit/7189c5d)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2039](https://github.com/stacksjs/stx/issues/2039))
+- **deps**: upgrade stacks to 0.75.79, checkout through the payment driver ([85cf0ba](https://github.com/bughq/bughq/commit/85cf0ba)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **deps**: stx and components to 0.2.369, and the nav bug it found ([abb6e3f](https://github.com/bughq/bughq/commit/abb6e3f)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2013](https://github.com/stacksjs/stx/issues/2013))
+- **deps**: pin stx and components to 0.2.345 ([3433000](https://github.com/bughq/bughq/commit/3433000)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: upgrade stacks to 0.74.66 ([1498ace](https://github.com/bughq/bughq/commit/1498ace)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **deps**: upgrade stacks to 0.74.64 ([1026ee6](https://github.com/bughq/bughq/commit/1026ee6)) _(by Chris <chrisbreuer93@gmail.com>)_
+- **lint**: lint .stx on commit, and clear the backlog behind it ([b090fd7](https://github.com/bughq/bughq/commit/b090fd7)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **env**: set the analyticshq app id for production ([4b52106](https://github.com/bughq/bughq/commit/4b52106)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **env**: point APP_SERVER_IP at the statushq box ([3e690f7](https://github.com/bughq/bughq/commit/3e690f7)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: Stacks 0.74.0 ([23048a8](https://github.com/bughq/bughq/commit/23048a8)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stacks#2400](https://github.com/stacksjs/stacks/issues/2400))
+- **deps**: @loghq/stacks 0.2.6, so error causes are searchable ([2aca6f0](https://github.com/bughq/bughq/commit/2aca6f0)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **env**: rotate production to a v2 keypair, and encrypt LOGHQ_KEY ([1cbbf19](https://github.com/bughq/bughq/commit/1cbbf19)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **logging**: depend on the published @loghq/stacks ([96389ef](https://github.com/bughq/bughq/commit/96389ef)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stacks 0.72.76, and drop a phantom dependency ([42841f7](https://github.com/bughq/bughq/commit/42841f7)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: install stripe, which was an uninstalled optional peer ([dd10c07](https://github.com/bughq/bughq/commit/dd10c07)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **migrations**: commit the runner's idempotency rewrite of 6, 7 and 8 ([9a01c09](https://github.com/bughq/bughq/commit/9a01c09)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **migrations**: 31 goes through the runner, and ends on a statement ([ab6a9d2](https://github.com/bughq/bughq/commit/ab6a9d2)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- keep locally rendered emails out of commits ([a197e72](https://github.com/bughq/bughq/commit/a197e72)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stacks 0.70.366, and drop the direct stx dependency again ([56afb14](https://github.com/bughq/bughq/commit/56afb14)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1926](https://github.com/stacksjs/stx/issues/1926))
+- **deps**: stx 0.2.176, and give the checker the types it needs to work ([f574208](https://github.com/bughq/bughq/commit/f574208)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1924](https://github.com/stacksjs/stx/issues/1924), [stacksjs/stacks#2232](https://github.com/stacksjs/stacks/issues/2232), [stacksjs/stx#1926](https://github.com/stacksjs/stx/issues/1926))
+- **deps**: stacks 0.70.362, for the ORM route generator installed apps need ([12f1041](https://github.com/bughq/bughq/commit/12f1041)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stacks 0.70.353, and stop needing the vendored framework at all ([4fc500e](https://github.com/bughq/bughq/commit/4fc500e)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stacks#2296](https://github.com/stacksjs/stacks/issues/2296), [#8](https://github.com/bughq/bughq/issues/8))
+- **deps**: stx 0.2.171, and delete the workaround it makes unnecessary ([4f12b78](https://github.com/bughq/bughq/commit/4f12b78)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1899](https://github.com/stacksjs/stx/issues/1899), [#1899](https://github.com/bughq/bughq/issues/1899), [stacksjs/stacks#2296](https://github.com/stacksjs/stacks/issues/2296))
+- **deps**: run the published stx 0.2.170, not a symlink into the fork ([03a949d](https://github.com/bughq/bughq/commit/03a949d)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- delete 4,274 lines of starter residue, including two unauthenticated endpoints ([ac91629](https://github.com/bughq/bughq/commit/ac91629)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: stacks 0.70.252, stx 0.2.153 ([7ad3035](https://github.com/bughq/bughq/commit/7ad3035)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1801](https://github.com/stacksjs/stx/issues/1801))
+- **deps**: stx 0.2.151 -> 0.2.152 ([a16dfe0](https://github.com/bughq/bughq/commit/a16dfe0)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **deps**: refresh the lockfile — stx 0.2.113 -> 0.2.151 ([8e83ec9](https://github.com/bughq/bughq/commit/8e83ec9)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#1793](https://github.com/stacksjs/stx/issues/1793), [#1795](https://github.com/bughq/bughq/issues/1795), [#1794](https://github.com/bughq/bughq/issues/1794))
+
+## ⏪ Reverts
+
+- **tokens**: drop the generated manifest, nothing read it ([a823809](https://github.com/bughq/bughq/commit/a823809)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- take <Button> back out of all 26 sites ([f3411e9](https://github.com/bughq/bughq/commit/f3411e9)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **settings**: the danger-zone confirm goes back to a plain button ([ff671ac](https://github.com/bughq/bughq/commit/ff671ac)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2034](https://github.com/stacksjs/stx/issues/2034))
+- **config**: keep the stx config at ui.ts, which is the only name that works ([94d6b2b](https://github.com/bughq/bughq/commit/94d6b2b)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+
+## 🎉 Miscellaneous
+
+- Merge pull request #38 from bughq/fix/autofix-panel-drop-declares ([af409f8](https://github.com/bughq/bughq/commit/af409f8)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#38](https://github.com/bughq/bughq/issues/38))
+- Merge pull request #37 from bughq/ci/node-modules-cache-exact ([f106cde](https://github.com/bughq/bughq/commit/f106cde)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#37](https://github.com/bughq/bughq/issues/37))
+- Merge pull request #36 from bughq/chore/stacks-0.75.652 ([709a749](https://github.com/bughq/bughq/commit/709a749)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#36](https://github.com/bughq/bughq/issues/36))
+- Merge pull request #35 from bughq/fix/select-caret-in-text-colour ([58fc78a](https://github.com/bughq/bughq/commit/58fc78a)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#35](https://github.com/bughq/bughq/issues/35))
+- Merge pull request #34 from bughq/chore/bump-stacks-0.75.635 ([31b04d5](https://github.com/bughq/bughq/commit/31b04d5)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#34](https://github.com/bughq/bughq/issues/34))
+- Merge pull request #24 from bughq/chore/bump-stacks-0.75.529 ([9d9b31a](https://github.com/bughq/bughq/commit/9d9b31a)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#24](https://github.com/bughq/bughq/issues/24))
+- Merge remote-tracking branch 'origin/main' into chore/bump-stacks-0.75.529 ([c92137f](https://github.com/bughq/bughq/commit/c92137f)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- A read-scoped project key, so a Stacks dashboard can read errors without a person's credentials (#20) ([9e9d0d1](https://github.com/bughq/bughq/commit/9e9d0d1)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#19](https://github.com/bughq/bughq/issues/19), [#20](https://github.com/bughq/bughq/issues/20))
+- Stop disabling location.replace app-wide; migrate three, exempt six ([c34b601](https://github.com/bughq/bughq/commit/c34b601)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Upgrade the stx family to 0.2.399 ([4120252](https://github.com/bughq/bughq/commit/4120252)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Name the triage buttons, instead of letting a sentence be the name ([ae101ec](https://github.com/bughq/bughq/commit/ae101ec)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Give the auth buttons their loading labels back ([6b1808d](https://github.com/bughq/bughq/commit/6b1808d)) _(by glennmichael123 <gtorregosa@gmail.com>)_ ([stacksjs/stx#2046](https://github.com/stacksjs/stx/issues/2046))
+- Upgrade the stx family to 0.2.396 ([9b83519](https://github.com/bughq/bughq/commit/9b83519)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Pin bun-plugin-stx to 0.2.395 as well ([89fdfa6](https://github.com/bughq/bughq/commit/89fdfa6)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Use EmptyState for the two hand-built empty states ([3cfae02](https://github.com/bughq/bughq/commit/3cfae02)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Upgrade the stx family to 0.2.395 ([a65d18f](https://github.com/bughq/bughq/commit/a65d18f)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Give the auth submit buttons a label again ([c75348e](https://github.com/bughq/bughq/commit/c75348e)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Announce new-project failures to screen readers ([5cbbb58](https://github.com/bughq/bughq/commit/5cbbb58)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Announce the rest of the auth forms to screen readers ([c003ebd](https://github.com/bughq/bughq/commit/c003ebd)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Announce sign-in failures to screen readers ([23f19d3](https://github.com/bughq/bughq/commit/23f19d3)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Merge pull request #16 from bughq/fix/production-smtp ([d78a248](https://github.com/bughq/bughq/commit/d78a248)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#16](https://github.com/bughq/bughq/issues/16))
+- Merge remote-tracking branch 'origin/main' into feat/auth-uniform ([c9e17e2](https://github.com/bughq/bughq/commit/c9e17e2)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Merge pull request #12 from bughq/docs/bunpress-product-guide ([fa188a2](https://github.com/bughq/bughq/commit/fa188a2)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#12](https://github.com/bughq/bughq/issues/12))
+- Merge pull request #15 from bughq/feat/dashboard-date-picker ([14e66c8](https://github.com/bughq/bughq/commit/14e66c8)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#15](https://github.com/bughq/bughq/issues/15))
+- Merge branch 'main' into docs/bunpress-product-guide ([5bbaf8d](https://github.com/bughq/bughq/commit/5bbaf8d)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_
+- Merge pull request #14 from bughq/fix/labeler-v6 ([bc55e6a](https://github.com/bughq/bughq/commit/bc55e6a)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#14](https://github.com/bughq/bughq/issues/14))
+- Merge pull request #13 from bughq/fix/mobile-qa ([2a1e525](https://github.com/bughq/bughq/commit/2a1e525)) _(by Glenn Michael Torregosa <gtorregosa@gmail.com>)_ ([#13](https://github.com/bughq/bughq/issues/13))
+- Reapply "chore(deps): Stacks 0.74.0" ([a7b8fce](https://github.com/bughq/bughq/commit/a7b8fce)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- Revert "chore(deps): Stacks 0.74.0" ([6c7045b](https://github.com/bughq/bughq/commit/6c7045b)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+
+## Merge
+
+- stream bughq's logs to loghq ([7cf8328](https://github.com/bughq/bughq/commit/7cf8328)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+
+## types
+
+- annotate the rest of the codebase — 69/69 parameters ([4c6f25b](https://github.com/bughq/bughq/commit/4c6f25b)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **issue**: actually type the issue page, and add the domain shapes ([ec42300](https://github.com/bughq/bughq/commit/ec42300)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+
+## harden
+
+- **issues**: same-origin check on CSRF-exempt triage endpoints ([71b2fda](https://github.com/bughq/bughq/commit/71b2fda)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **auth**: Secure cookies over https + force debug off in prod ([e6ae475](https://github.com/bughq/bughq/commit/e6ae475)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+- **ingest**: SSRF redirect guard, XFF spoof + body-size caps ([892bdd4](https://github.com/bughq/bughq/commit/892bdd4)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+
+## polish
+
+- is_active NOT NULL default, archived tag, JS install label ([b592e29](https://github.com/bughq/bughq/commit/b592e29)) _(by glennmichael123 <gtorregosa@gmail.com>)_
+
+## debug
+
+- hook process.exit via preload to trace silent deploy exit (temp) ([40210f5](https://github.com/bughq/bughq/commit/40210f5)) _(by Chris <chrisbreuer93@gmail.com>)_
+- harness deploy with process.exit trace (temp) ([5b98789](https://github.com/bughq/bughq/commit/5b98789)) _(by Chris <chrisbreuer93@gmail.com>)_
+- run deploy under a PTY to capture buffered output (temp) ([4c9fa8a](https://github.com/bughq/bughq/commit/4c9fa8a)) _(by Chris <chrisbreuer93@gmail.com>)_
+- surface loadAutoImports throw on deploy (temp) ([5d99381](https://github.com/bughq/bughq/commit/5d99381)) _(by Chris <chrisbreuer93@gmail.com>)_
+
+## Contributors
+
+- _Chris <chrisbreuer93@gmail.com>_
+- _Chris Breuer <chris@stacksjs.com>_
+- _Glenn Michael Torregosa <gtorregosa@gmail.com>_
+- _glennmichael123 <gtorregosa@gmail.com>_
+
 ## v0.70.51
 
 [compare changes](https://github.com/stacksjs/stacks/compare/v0.70.50...v0.70.51)
