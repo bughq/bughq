@@ -47,6 +47,8 @@ export function validateWebhook(type: string, rawUrl: string): { ok: boolean, er
   }
   if (url.protocol !== 'https:')
     return { ok: false, error: 'Webhook URL must use https.' }
+  if (url.username || url.password || url.port || url.hash)
+    return { ok: false, error: 'Paste the provider’s incoming-webhook URL.' }
 
   if (type === 'slack') {
     if (url.hostname !== 'hooks.slack.com')
@@ -58,7 +60,7 @@ export function validateWebhook(type: string, rawUrl: string): { ok: boolean, er
   if (type === 'discord') {
     if (!DISCORD_HOSTS.has(url.hostname))
       return { ok: false, error: 'Discord webhooks must be a discord.com URL.' }
-    if (!/^\/api\/(?:v\d+\/)?webhooks\//.test(url.pathname))
+    if (!/^\/api\/(?:v\d+\/)?webhooks\/\d+\/[A-Za-z0-9._-]+\/?$/.test(url.pathname))
       return { ok: false, error: 'That is not a Discord webhook URL.' }
     return { ok: true }
   }
@@ -145,8 +147,8 @@ function truncate(value: string, max: number): string {
   return s.length > max ? `${s.slice(0, max - 1)}…` : s
 }
 
-async function post(url: string, payload: unknown): Promise<boolean> {
-  const res = await fetch(url, {
+function post(url: string, payload: unknown): Promise<Response> {
+  return fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -156,17 +158,31 @@ async function post(url: string, payload: unknown): Promise<boolean> {
     // arbitrary internal target, so refuse to follow redirects at all.
     redirect: 'error',
   })
-  return res.ok
+}
+
+async function deliver(type: ChannelType, url: string, payload: unknown): Promise<Response> {
+  const response = await post(url, payload)
+  if (type !== 'discord' || (response.status !== 429 && response.status < 500))
+    return response
+
+  const retryAfter = response.headers.get('Retry-After')
+  const delay = retryAfter === null ? 500 : Number(retryAfter) * 1000
+  // Honor the provider's delay, with one bounded retry on this request path.
+  if (!Number.isFinite(delay) || delay < 0 || delay > 10_000)
+    return response
+  await response.body?.cancel()
+  await Bun.sleep(delay)
+  return post(url, payload)
 }
 
 /**
  * Deliver an alert to every enabled channel on a project. Best-effort: each
- * send is independent (one bad webhook can't block the others) and all failures
- * are swallowed so the ingest is never affected.
+ * send is independent and failures are logged with destination identifiers.
+ * The caller keeps delivery off the ingest response path.
  */
 export async function notifyChannels(projectId: string, issue: ChannelIssue, kind: AlertKind): Promise<void> {
   const rows = (await db.unsafe(
-    `SELECT c.type, c.webhook_url, p.name AS project_name
+    `SELECT c.id, c.type, c.webhook_url, p.name AS project_name
      FROM alert_channels c JOIN projects p ON p.id = c.project_id
      WHERE c.project_id = $1 AND c.enabled = true`,
     [projectId],
@@ -174,12 +190,24 @@ export async function notifyChannels(projectId: string, issue: ChannelIssue, kin
   if (!rows.length)
     return
   const projectName = rows[0].project_name || projectId
-  await Promise.allSettled(rows.map((r: any) => {
+  await Promise.allSettled(rows.map(async (r: any) => {
     const type = String(r.type) as ChannelType
-    if (!validateWebhook(type, String(r.webhook_url)).ok)
-      return Promise.resolve(false)
-    return post(String(r.webhook_url), buildPayload(type, projectName, issue, kind))
-      .catch(() => false)
+    const url = String(r.webhook_url)
+    const context = { channelId: r.id, projectId, issueId: issue.id, type, kind }
+    if (!validateWebhook(type, url).ok) {
+      console.warn('[alerts] Invalid chat webhook configuration', context)
+      return
+    }
+    try {
+      const response = await deliver(type, url, buildPayload(type, projectName, issue, kind))
+      if (!response.ok)
+        console.warn('[alerts] Chat webhook rejected delivery', { ...context, status: response.status })
+      await response.body?.cancel()
+    }
+    catch {
+      // Fetch errors can include the full webhook URL, which contains a secret.
+      console.warn('[alerts] Chat webhook request failed', context)
+    }
   }))
 }
 
@@ -196,7 +224,11 @@ export async function sendTestAlert(type: ChannelType, webhookUrl: string, proje
     environment: 'test',
   }
   try {
-    return await post(webhookUrl, buildPayload(type, projectName, sample, 'new'))
+    if (!validateWebhook(type, webhookUrl).ok)
+      return false
+    const response = await deliver(type, webhookUrl, buildPayload(type, projectName, sample, 'new'))
+    await response.body?.cancel()
+    return response.ok
   }
   catch {
     return false
