@@ -1,7 +1,7 @@
 {
   "name": "bughq",
   "type": "module",
-  "version": "0.70.53",
+  "version": "0.1.0",
   "private": true,
   "description": "Your project description",
   "author": "your-name <your-email>",
