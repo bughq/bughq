@@ -4,6 +4,17 @@ useSeoMeta({
   description: "Tag every event with a release and environment so a regression points straight at the deploy that caused it.",
   canonical: "https://bughq.org/features/releases",
 })
+// The snippet below, highlighted on the server (app/Support/highlight.ts).
+const { highlightCode } = await import('../../../app/Support/highlight')
+const code = `bughq.init({
+  key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',
+  release: 'checkout@2.14.0',   // git sha or version
+  environment: 'production',    // vs staging, preview
+})
+
+// an issue records the release it first appeared in,
+// so a regression points straight at the deploy`
+const codeHtml = await highlightCode(code, 'typescript')
 </script>
 
 @extends('marketing')
@@ -25,14 +36,7 @@ useSeoMeta({
       <section class="reveal section shell" aria-label="Releases and environments preview">
         <div class="code max-w-[700px]">
           <div class="code-bar"><span class="chart-cap">Tag events with a release and environment</span></div>
-          <pre class="code-body"><code>bughq.init({
-  key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',
-  release: 'checkout@2.14.0',   // git sha or version
-  environment: 'production',    // vs staging, preview
-})
-
-// an issue records the release it first appeared in,
-// so a regression points straight at the deploy</code></pre>
+          <pre class="code-body"><code>{!! codeHtml !!}</code></pre>
         </div>
       </section>
 

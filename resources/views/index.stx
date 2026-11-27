@@ -42,6 +42,9 @@ const signedIn = (() => {
     return false
   }
 })()
+// Highlighted on the server (app/Support/highlight.ts), so the page ships no highlighter.
+const { highlightCode } = await import('../../app/Support/highlight')
+const snippetHtml = await highlightCode(snippet, 'typescript')
 </script>
 <script server>
 useSeoMeta({
@@ -86,7 +89,7 @@ useSeoMeta({
             <span class="dot" aria-hidden="true"></span>
             <span class="chart-cap">app/error-boundary.ts</span>
           </div>
-          <pre class="code-body"><code>{{ snippet }}</code></pre>
+          <pre class="code-body"><code>{!! snippetHtml !!}</code></pre>
         </div>
       </section>
 

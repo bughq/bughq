@@ -4,6 +4,16 @@ useSeoMeta({
   description: "bughq is open source and runs on your own Postgres, so sensitive stack data never leaves servers you control.",
   canonical: "https://bughq.org/features/self-host",
 })
+// The snippet below, highlighted on the server (app/Support/highlight.ts).
+const { highlightCode } = await import('../../../app/Support/highlight')
+const code = `git clone https://github.com/stacksjs/bughq
+cd bughq
+
+# point it at your Postgres and go
+export DATABASE_URL=postgres://user@db/bughq
+buddy migrate
+buddy serve   # your instance, your data`
+const codeHtml = await highlightCode(code, 'bash')
 </script>
 
 @extends('marketing')
@@ -25,13 +35,7 @@ useSeoMeta({
       <section class="reveal section shell" aria-label="Self-hosting preview">
         <div class="code max-w-[700px]">
           <div class="code-bar"><span class="chart-cap">Run bughq on your own box</span></div>
-          <pre class="code-body"><code>git clone https://github.com/stacksjs/bughq
-cd bughq
-
-# point it at your Postgres and go
-export DATABASE_URL=postgres://user@db/bughq
-buddy migrate
-buddy serve   # your instance, your data</code></pre>
+          <pre class="code-body"><code>{!! codeHtml !!}</code></pre>
         </div>
       </section>
 

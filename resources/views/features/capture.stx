@@ -4,6 +4,19 @@ useSeoMeta({
   description: 'Initialize once and every uncaught error is captured with its stack trace, release, and environment. No scattered try/catch.',
   canonical: 'https://bughq.org/features/capture',
 })
+// The snippet below, highlighted on the server (app/Support/highlight.ts).
+const { highlightCode } = await import('../../../app/Support/highlight')
+const code = `import { bughq } from '@bughq/sdk'
+
+bughq.init({
+  key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',
+  release: 'checkout@2.14.0',
+  environment: 'production',
+})
+
+// from here on, every uncaught error is captured,
+// fingerprinted, and grouped into one issue`
+const codeHtml = await highlightCode(code, 'typescript')
 </script>
 
 @extends('marketing')
@@ -25,16 +38,7 @@ useSeoMeta({
       <section class="reveal section shell" aria-label="Automatic capture preview">
         <div class="code max-w-[700px]">
           <div class="code-bar"><span class="chart-cap">app/error-boundary.ts</span></div>
-          <pre class="code-body"><code>import { bughq } from '@bughq/sdk'
-
-bughq.init({
-  key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',
-  release: 'checkout@2.14.0',
-  environment: 'production',
-})
-
-// from here on, every uncaught error is captured,
-// fingerprinted, and grouped into one issue</code></pre>
+          <pre class="code-body"><code>{!! codeHtml !!}</code></pre>
         </div>
       </section>
 

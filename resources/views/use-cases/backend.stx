@@ -4,6 +4,19 @@ useSeoMeta({
   description: "Capture server, edge, and background-job failures with the request, release, and environment attached, so every 500 names the route and deploy that broke it.",
   canonical: "https://bughq.org/use-cases/backend",
 })
+// The snippet below, highlighted on the server (app/Support/highlight.ts).
+const { highlightCode } = await import('../../../app/Support/highlight')
+const code = `import { bughq } from '@bughq/sdk'
+
+bughq.init({
+  key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',
+  release: 'api@2.14.0',
+  environment: 'production',
+})
+
+// uncaught exceptions and unhandled rejections across
+// requests, workers, and cron jobs report through one SDK`
+const codeHtml = await highlightCode(code, 'typescript')
 </script>
 
 @extends('marketing')
@@ -25,16 +38,7 @@ useSeoMeta({
       <section class="reveal section shell" aria-label="Backend capture preview">
         <div class="code max-w-[700px]">
           <div class="code-bar"><span class="chart-cap">app/server.ts</span></div>
-          <pre class="code-body"><code>import { bughq } from '@bughq/sdk'
-
-bughq.init({
-  key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',
-  release: 'api@2.14.0',
-  environment: 'production',
-})
-
-// uncaught exceptions and unhandled rejections across
-// requests, workers, and cron jobs report through one SDK</code></pre>
+          <pre class="code-body"><code>{!! codeHtml !!}</code></pre>
         </div>
       </section>
 
