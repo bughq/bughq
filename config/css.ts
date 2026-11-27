@@ -18,6 +18,13 @@
  */
 import { SYNTAX_DARK, SYNTAX_LIGHT, syntaxTokenRules, syntaxVariables } from '@stacksjs/components'
 
+/**
+ * stx's light syntax set with one change: comments. Its #6e7781 is 4.4:1 on
+ * the light settings surfaces, under the 4.5:1 body-text minimum, so comments
+ * take GitHub's own darker muted grey. The dark set passes as it is.
+ */
+const SYNTAX_LIGHT_AA: Readonly<Record<string, string>> = { ...SYNTAX_LIGHT, comment: '#57606a' }
+
 /** stx's syntax palette as one line of declarations, for the theme blocks below. */
 function syntax(palette: Readonly<Record<string, string>>): string {
   return syntaxVariables(palette, '').replace(/\n/g, ' ')
@@ -182,10 +189,10 @@ function declarations(p: Palette): string {
  */
 function paletteCss(): string {
   return [
-    `:root { ${declarations(light)}; ${constants}; ${syntax(SYNTAX_LIGHT)} }`,
+    `:root { ${declarations(light)}; ${constants}; ${syntax(SYNTAX_LIGHT_AA)} }`,
     `@media (prefers-color-scheme: dark) { :root { ${declarations(dark)}; ${syntax(SYNTAX_DARK)} } }`,
     `:root[data-theme="dark"] { ${declarations(dark)}; ${syntax(SYNTAX_DARK)} }`,
-    `:root[data-theme="light"] { ${declarations(light)}; ${syntax(SYNTAX_LIGHT)} }`,
+    `:root[data-theme="light"] { ${declarations(light)}; ${syntax(SYNTAX_LIGHT_AA)} }`,
     /*
      * Syntax highlighting (app/Support/highlight.ts). The highlighter writes a
      * class on each token and no colour; these rules colour them from the
