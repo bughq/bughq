@@ -4,6 +4,21 @@ useSeoMeta({
   description: "Get bughq capturing production errors in a few minutes: install the SDK, initialize once, and read up on capture, grouping, releases, alerts, and self-hosting.",
   canonical: "https://bughq.org/docs",
 })
+// The snippet below, highlighted on the server (app/Support/highlight.ts). It is a
+// shell command and then TypeScript, so each half gets its own grammar.
+const { highlightCode } = await import('../../app/Support/highlight')
+const shellCode = `# install
+bun add @bughq/sdk
+
+# initialize once, at your entry point`
+const sdkCode = `import { bughq } from '@bughq/sdk'
+
+bughq.init({
+  key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',
+  release: 'checkout@2.14.0',
+  environment: 'production',
+})`
+const codeHtml = `${await highlightCode(shellCode, 'bash')}\n${await highlightCode(sdkCode, 'typescript')}`
 </script>
 
 @extends('marketing')
@@ -55,17 +70,7 @@ useSeoMeta({
       <section class="reveal section shell" aria-label="Install and initialize">
         <div class="code max-w-[700px]">
           <div class="code-bar"><span class="chart-cap">install and initialize</span></div>
-          <pre class="code-body"><code># install
-bun add @bughq/sdk
-
-# initialize once, at your entry point
-import { bughq } from '@bughq/sdk'
-
-bughq.init({
-  key: 'bughq_3c88ef2b5b7c42a9963792eaee64754d',
-  release: 'checkout@2.14.0',
-  environment: 'production',
-})</code></pre>
+          <pre class="code-body"><code>{!! codeHtml !!}</code></pre>
         </div>
       </section>
 

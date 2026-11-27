@@ -293,6 +293,27 @@ function installGuide(platform: string | null, key: string): InstallGuide {
 }
 const guide = activeProject ? installGuide(activeProject.platform, keyFull) : { label: '', install: '', code: '' }
 
+// The grammar each snippet above is highlighted with. The mobile ones open with
+// two .env lines above a config file and take the config's grammar; the desktop
+// and Laravel ones are .env lines and # comments, which shell reads the same way.
+function guideLanguage(platform: string | null) {
+  const p = String(platform || 'javascript').toLowerCase()
+  if (['vue', 'nuxt', 'node', 'react', 'stacks', 'ios', 'android'].includes(p))
+    return 'typescript'
+  if (p === 'php')
+    return 'php'
+  if (['macos', 'windows', 'linux', 'laravel'].includes(p))
+    return 'bash'
+  return 'html'
+}
+
+// Coloured on the server (app/Support/highlight.ts), so the page ships no
+// highlighter. Printed raw: highlightCode escapes every piece of the source.
+// The copy buttons still copy installText and codeText, never this markup.
+const { highlightCode } = await import('../../app/Support/highlight')
+const guideInstallHtml = guide.install ? await highlightCode(guide.install, 'bash') : ''
+const guideCodeHtml = guide.code ? await highlightCode(guide.code, guideLanguage(activeProject ? activeProject.platform : null)) : ''
+
 // Handed to the client block instead of being read back out of data-attributes
 // and sibling textContent, so the copy buttons, key controls and danger zone
 // need no DOM round-trip.
@@ -1254,12 +1275,12 @@ function unarchive(): void {
           </div>
           @if (guide.install)
             <div class="relative mb-2">
-              <div class="code-block">{{ guide.install }}</div>
+              <div class="code-block">{!! guideInstallHtml !!}</div>
               <button type="button" class="copy-btn" @click="copyInstall" :text="copyLabel('install')">Copy</button>
             </div>
           @endif
           <div class="relative">
-            <div class="code-block [white-space:pre]">{{ guide.code }}</div>
+            <div class="code-block [white-space:pre]">{!! guideCodeHtml !!}</div>
             <button type="button" class="copy-btn" @click="copyCode" :text="copyLabel('code')">Copy</button>
           </div>
         </div>

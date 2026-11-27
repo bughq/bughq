@@ -16,6 +16,12 @@
  *
  * @see https://github.com/cwcss/crosswind
  */
+import { SYNTAX_DARK, SYNTAX_LIGHT, syntaxTokenRules, syntaxVariables } from '@stacksjs/components'
+
+/** stx's syntax palette as one line of declarations, for the theme blocks below. */
+function syntax(palette: Readonly<Record<string, string>>): string {
+  return syntaxVariables(palette, '').replace(/\n/g, ' ')
+}
 
 /** One theme's worth of custom properties. Both modes must supply every key. */
 interface Palette {
@@ -176,10 +182,19 @@ function declarations(p: Palette): string {
  */
 function paletteCss(): string {
   return [
-    `:root { ${declarations(light)}; ${constants}; }`,
-    `@media (prefers-color-scheme: dark) { :root { ${declarations(dark)}; } }`,
-    `:root[data-theme="dark"] { ${declarations(dark)}; }`,
-    `:root[data-theme="light"] { ${declarations(light)}; }`,
+    `:root { ${declarations(light)}; ${constants}; ${syntax(SYNTAX_LIGHT)} }`,
+    `@media (prefers-color-scheme: dark) { :root { ${declarations(dark)}; ${syntax(SYNTAX_DARK)} } }`,
+    `:root[data-theme="dark"] { ${declarations(dark)}; ${syntax(SYNTAX_DARK)} }`,
+    `:root[data-theme="light"] { ${declarations(light)}; ${syntax(SYNTAX_LIGHT)} }`,
+    /*
+     * Syntax highlighting (app/Support/highlight.ts). The highlighter writes a
+     * class on each token and no colour; these rules colour them from the
+     * `--stx-syntax-*` properties above, which are stx's own GitHub light and
+     * dark pair, so highlighted code follows the theme toggle like everything
+     * else. The marketing code panels are dark in both themes, so they pin the
+     * dark set (MARKETING, `.code-body`).
+     */
+    syntaxTokenRules(),
     // Eleven views declared this identically but for one: issue/[id].stx uses a
     // system font stack instead of var(--sans), and keeps that as a local rule.
     //
@@ -428,7 +443,8 @@ a { color: inherit; text-decoration: none; }
 /* code panel */
 .code { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
 .code-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1rem; border-bottom: 1px solid rgba(148,163,184,0.14); }
-.code-body { margin: 0; padding: 1.1rem 1.25rem; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: var(--code-ink); }
+/* Every .code-body sits on the dark --code-bg (.code here, .hero-code on the home page) in both themes, so its syntax colours are the dark set. */
+.code-body { margin: 0; padding: 1.1rem 1.25rem; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: var(--code-ink);; ${syntaxVariables(SYNTAX_DARK, '').replace(/\n/g, ' ')} }
 .chart-cap { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: #8a94a6; }
 
 /* panel (data viz container) */
